@@ -18,4 +18,53 @@ from django.urls import path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    '''
+    __AUTH__
+    [] /auth
+    [] /refresh
+    [] /auth_employee
+    [] /register_employee
+    [] /register_user
+    [] /register_kiosk
+    [] /register_kiosk/<id>
+    [] /auth_kiosk
+    [] /account
+    [] /accounts_list
+    [] /accounts/<id>
+    [] /account_confirm
+    [] /groups
+    [] /group/<id>
+    [] /groups/update
+    [] /groups/import_single
+    [] /groups/import_list
+    [] /groups/import_titles
+    [] /enter
+    [] /service/email
+    [] /pass_change
+    [] /pass_reset
+    [] /operator_promotion
+    
+    
+    [] /files
+    [] /office
+    [] /offices/<id>
+    [] /zone
+    [] /zones/<id>
+    [] /floor
+    [] /floor/<id>
+    [] /room
+    [] /rooms/<id>
+    [] /table_tag
+    [] /table_tags/<id>
+    [] /table
+    [] /tables/<id>
+    [] /floor_map
+    [] /floor_map/clear
+    [] /room_map
+    [] /table/rate
+    [] /table/activate
+    [] /table/receive
+    [] /table_status_receive
+    [] /feedback
+    '''
 ]
