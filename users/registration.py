@@ -81,7 +81,7 @@ def confirm_sms_code(sms_code, user):
 
     try:
         pass
-        # token = tokenized(user)
+        # token = tokenized(user)  # TODO
         # response = {'user': user, 'account': account, 'auth': token}
         # return Response()
     finally:
