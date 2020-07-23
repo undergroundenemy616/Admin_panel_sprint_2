@@ -64,7 +64,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'phone_number'
 
     def check_sms_code(self, sms_code):
+        """Method compare inputted sms_code and user`s code.
+        Do not use method for confirming and validating sms from client. For that we have Redis.cache!"""
         return self.last_code == sms_code
+
+    def get_password(self):
+        """Returns password if it exists."""
+        return self.password or None
+
+    def get_email(self):
+        """Returns email if it exists."""
+        return self.email or None
 
     @staticmethod
     def check_phone_len(phone_number):
@@ -74,7 +84,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @staticmethod
     def check_phone_startswith_plus(phone_number):
         """Returns True if phone starts with plus"""
-        return phone_number.startswith('+')
+        return phone_number.startswith('+') and phone_number[1] == '7'
 
     @classmethod
     def normalize_phone(cls, phone_number: str):
@@ -82,7 +92,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         if cls.check_phone_len(phone_number) and cls.check_phone_startswith_plus(phone_number):
             return phone_number
         elif len(phone_number) == 11:
-            return '+' + phone_number
+            return '+7' + phone_number[1:]
         else:
             msg = 'Phone number must be 12 characters or 11 for normalize it!'
             raise ValueError(msg)

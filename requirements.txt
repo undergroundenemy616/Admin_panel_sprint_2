@@ -4,3 +4,6 @@ psycopg2==2.8.5
 pytz==2020.1
 sqlparse==0.3.1
 djangorestframework~=3.11.0
+
+PyJWT~=1.7.1
+requests~=2.24.0
