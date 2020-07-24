@@ -54,12 +54,15 @@ class BaseBroadcast(AbstractBroadcast):
         return msg
 
     @staticmethod
-    def validate_recipient(recipient):
+    def validate_url(url):
         """Validate destination address before sending"""
-        if not recipient:
-            error_msg = 'Destination is None!'
+        if not url:
+            error_msg = 'Url is None!'
             raise ValueError(error_msg)
-        return recipient
+        if not url.startswith('http://') or not url.startswith('https://'):
+            error_msg = 'Url must starts with `http://` or `https://`!'
+            raise ValueError(error_msg)
+        return url
 
     @staticmethod
     def encode_url(params: dict) -> str:  # FIXME will be deleted
@@ -70,32 +73,34 @@ class BaseBroadcast(AbstractBroadcast):
         """Returns flag is message was send."""
         return not bool(self.errors)
 
-    def send(self, recipient, body=None, **kwargs):
+    def send(self, *args, **kwargs):
         """Returns boolean. False if sms was not be send, else True.
-        `recipient` is full link to service, example: 'https://smsc.com/send'.
+        `url` is full link to service, example: 'https://smsc.com/send'.
 
         For sending query params, use keyword argument `params={}`.
         """
         self.errors = list()
+        data = kwargs.pop('data', None)
+        url = kwargs.pop('url', None)
 
-        recipient = self.validate_recipient(recipient)
-        if body is None and self.method == 'POST':
-            body = {}
+        url = self.validate_url(url)
+        if data is None and self.method == 'POST':
+            data = {}
 
         try:
-            self.response = self._send(recipient, body, **kwargs)
+            self.response = self._send(url, data, **kwargs)
         except Exception as error:
             self.errors.append(error)
             return None
 
         return self.response
 
-    def _send(self, recipient, body, **kwargs):
+    def _send(self, url, data, **kwargs):
         if self.method == 'POST':
-            response = requests.post(recipient, data=body,
+            response = requests.post(url, data=data,
                                      timeout=self.TIMEOUT, params=kwargs)
         else:
-            response = requests.get(recipient, timeout=self.TIMEOUT, params=kwargs)
+            response = requests.get(url, timeout=self.TIMEOUT, params=kwargs)
         return response
 
 
@@ -125,11 +130,11 @@ class SMSBroadcast(BaseBroadcast):
             phone_number = str(phone_number)
             return User.normalize_phone(phone_number)
         else:
-            self.check_recipient(client)
+            self.check_client(client)
             return client.phone_number
 
     @staticmethod
-    def check_recipient(client):
+    def check_client(client):
         """Check client fields."""
         if not hasattr(client, 'phone_number'):
             msg = 'User has not field `phone_number`'
@@ -138,11 +143,12 @@ class SMSBroadcast(BaseBroadcast):
     def send(self, message, **kwargs):
         """Send SMS message to one client."""
         kwargs.pop('theme', None)
+        url = kwargs.pop('url')
         params = self.create_params(message=message)
         if params:
             params.update(kwargs)
-        url_for_send = self.url
-        return super(SMSBroadcast, self).send(url_for_send, **params)
+        url_for_send = url or self.url
+        return super(SMSBroadcast, self).send(url=url_for_send, **params)
 
     def create_params(self, message: str) -> dict:
         """Create query parameters for url."""
@@ -153,3 +159,4 @@ class SMSBroadcast(BaseBroadcast):
 
 # TODO add docs
 # TODO add tests
+# TODO run only from different thread! It's I/O bound run.

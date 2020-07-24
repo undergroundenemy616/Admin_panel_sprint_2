@@ -9,20 +9,7 @@ from users.serializers import TokenSerializer
 
 
 def jwt_response_payload_handler(token, user, request):  # TODO function is not used
-    """
-    Returns the response data for both the login and refresh views.
-    Override to return a custom response such as including the
-    serialized representation of the User.
-
-    Example:
-
-    def jwt_response_payload_handler(token, user=None, request=None):
-        return {
-            'token': token,
-            'user': UserSerializer(user, context={'request': request}).data
-        }
-
-    """
+    """Function only for token obtain and token refresh api view. There are no need for a while."""
     return {
         'user': TokenSerializer(user, context={'request': request}).data,
         'token': token
@@ -57,9 +44,6 @@ def jwt_decode_handler(token):
     options = {
         'verify_exp': api_settings.JWT_VERIFY_EXPIRATION,
     }
-    # get user from token, BEFORE verification, to get user secret key
-    # unverified_payload = jwt.decode(token, None, False)
-    # secret_key = jwt_get_secret_key(unverified_payload)
     return jwt.decode(
         token,
         api_settings.JWT_PUBLIC_KEY,
