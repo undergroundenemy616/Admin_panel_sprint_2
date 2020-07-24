@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
-from users.broadcasts import send_code
+from users.broadcasts import send_code, BaseBroadcast
 from users.models import activated_code
 
 
@@ -10,6 +10,24 @@ def register_or_send_sms(created: bool, user):
         return register(user)  # Registration
     else:
         return send_new_code(user)  # Login
+
+
+class BroadcastAdapter(object):
+    """Adapter"""
+
+    def __init__(self, user, broadcast):
+        if not isinstance(broadcast, BaseBroadcast):
+            msg = 'Expected type `{0}` got `{1}`.'.format(BaseBroadcast.__name__, broadcast.__name__)
+            raise AssertionError(msg)
+        if not hasattr(broadcast, 'send'):
+            msg = 'Broadcast class has not method `.send()`.'
+            raise AssertionError(msg)
+
+        self.user = user
+        self.broadcast = broadcast  # class var
+
+    def send_message(self, message):
+        """Method send message to specify user by broadcast interface."""
 
 
 def confirm_sms_code(sms_code, phone_number):
