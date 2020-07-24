@@ -5,11 +5,12 @@ from django.conf import settings
 from users.models import User
 
 
-def send_code(message, to_user):
-    """Util for sending message and returning instance of SMSBroadcast"""
-    sms = SMSBroadcast(client=to_user)
-    sms.send(message)
-    return sms
+def send_code(message, phone_number):
+    """Util for sending message and returning instance of SMSBroadcast.
+    Returns sms-instance and text of the response."""
+    sms = SMSBroadcast(phone_number=phone_number)
+    response = sms.send(message).text
+    return sms, response
 
 
 class AbstractBroadcast(ABC):
@@ -32,6 +33,9 @@ class BaseBroadcast(AbstractBroadcast):
         self.client = client
         self.errors = None
         self.method = method or 'POST'
+
+        self.response = None
+
         self.validate()
 
     def validate(self):
@@ -79,11 +83,12 @@ class BaseBroadcast(AbstractBroadcast):
             body = {}
 
         try:
-            response = self._send(recipient, body, **kwargs)
+            self.response = self._send(recipient, body, **kwargs)
         except Exception as error:
             self.errors.append(error)
             return None
-        return response
+
+        return self.response
 
     def _send(self, recipient, body, **kwargs):
         if self.method == 'POST':

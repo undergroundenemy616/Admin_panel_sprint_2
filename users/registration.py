@@ -38,7 +38,7 @@ def register(user) -> (dict, int):
     cache.set(user.phone_number, last_code, timeout=settings.KEY_EXPIRATION)
 
     message = 'Your activation code is: {}'.format(last_code)
-    sms = send_code(message, user)
+    sms = send_code(message, user.phone_number)
 
     if not sms.is_sent():
         msg = 'Message was not send! User will be deleted.'
@@ -64,7 +64,7 @@ def send_new_code(user) -> (dict, int):
     user.save()
 
     message = 'Your activation code is: {}'.format(new_code)
-    sms = send_code(message, user)
+    sms = send_code(message, user.phone_number)
 
     if not sms.is_sent():
         cache.delete(user.phone_number)

@@ -45,7 +45,7 @@ def activated_code():
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    phone_number = models.CharField(unique=True, max_length=12)
+    phone_number = models.CharField(unique=True, max_length=16)
     username = models.CharField(unique=True, max_length=64, null=True, blank=True)
     email = models.EmailField(unique=True, max_length=128, null=True, blank=True)
     password = models.CharField(max_length=512, blank=True, null=True)
@@ -79,22 +79,42 @@ class User(AbstractBaseUser, PermissionsMixin):
     @staticmethod
     def check_phone_len(phone_number):
         """Phone len must be 12 chars. If it is not, returns False"""
-        return len(phone_number) == 12
+        return 11 <= len(phone_number) <= 16
 
     @staticmethod
     def check_phone_startswith_plus(phone_number):
         """Returns True if phone starts with plus"""
         return phone_number.startswith('+') and phone_number[1] == '7'
 
+    # @classmethod
+    # def normalize_phone(cls, phone_number: str):
+    #     """Normalize user phone to 12 characters with plus. If it can not be - raise ValueError"""
+    #     if cls.check_phone_len(phone_number) and cls.check_phone_startswith_plus(phone_number):
+    #         return phone_number
+    #     elif len(phone_number) == 11:
+    #         return '+7' + phone_number[1:]
+    #     else:
+    #         msg = 'Phone number must be greater or equal than 12 characters and less or equal than 16 for normalize it!'
+    #         raise ValueError(msg)
+
     @classmethod
-    def normalize_phone(cls, phone_number: str):
-        """Normalize user phone to 12 characters with plus. If it can not be - raise ValueError"""
-        if cls.check_phone_len(phone_number) and cls.check_phone_startswith_plus(phone_number):
-            return phone_number
-        elif len(phone_number) == 11:
+    def normalize_phone(cls, phone_number):
+        if not cls.check_phone_len(phone_number):
+            msg = 'Phone number must be greater or equal than 11 characters and less or equal than 16 for normalize it!'
+            raise ValueError(msg)
+
+        if phone_number.startswith('8') and len(phone_number) == 11 and phone_number.isdigit():
             return '+7' + phone_number[1:]
+        elif phone_number.startswith('+7') and len(phone_number) == 12 and phone_number[1:].isdigit():
+            return phone_number
+        elif phone_number.startswith('+8') and len(phone_number) == 12 and phone_number[1:].isdigit():
+            return '+7' + phone_number[2:]
+        elif phone_number.startswith('+') and phone_number[1:].isdigit():
+            return phone_number
+        elif phone_number.isdigit():
+            return '+' + phone_number
         else:
-            msg = 'Phone number must be 12 characters or 11 for normalize it!'
+            msg = 'Phone number must contains only digits and plus character in begin.'
             raise ValueError(msg)
 
 

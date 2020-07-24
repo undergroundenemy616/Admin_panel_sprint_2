@@ -8,7 +8,7 @@ from users.serializers import TokenSerializer
 # from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 
-def jwt_response_payload_handler(token, user, request):
+def jwt_response_payload_handler(token, user, request):  # TODO function is not used
     """
     Returns the response data for both the login and refresh views.
     Override to return a custom response such as including the
