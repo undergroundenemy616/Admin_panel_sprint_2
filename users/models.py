@@ -86,17 +86,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Returns True if phone starts with plus"""
         return phone_number.startswith('+') and phone_number[1] == '7'
 
-    # @classmethod
-    # def normalize_phone(cls, phone_number: str):
-    #     """Normalize user phone to 12 characters with plus. If it can not be - raise ValueError"""
-    #     if cls.check_phone_len(phone_number) and cls.check_phone_startswith_plus(phone_number):
-    #         return phone_number
-    #     elif len(phone_number) == 11:
-    #         return '+7' + phone_number[1:]
-    #     else:
-    #         msg = 'Phone number must be greater or equal than 12 characters and less or equal than 16 for normalize it!'
-    #         raise ValueError(msg)
-
     @classmethod
     def normalize_phone(cls, phone_number):
         if not cls.check_phone_len(phone_number):
