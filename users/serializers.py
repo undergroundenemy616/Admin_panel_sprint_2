@@ -6,6 +6,10 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
+        read_only_fields = ('created_at', 'updated_at')
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
 
 
 class TokenSerializer(serializers.ModelSerializer):
@@ -22,7 +26,7 @@ class AccountSerializer(serializers.ModelSerializer):
 
 class LoginOrRegisterSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=True, min_length=11, max_length=12)
-    sms_code = serializers.IntegerField(required=False, min_value=4, max_value=4)
+    sms_code = serializers.IntegerField(required=False)
 
     class Meta:
         model = User

@@ -1,11 +1,9 @@
 import time
 import jwt
 from django.contrib.auth import get_user_model
-from rest_framework.settings import api_settings
+from django.core.serializers.json import DjangoJSONEncoder
+from rest_framework_jwt.settings import api_settings
 from users.serializers import TokenSerializer
-# from rest_framework_jwt.utils import jwt_decode_handler
-# from rest_framework_jwt.serializers import JSONWebTokenSerializer
-# from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 
 def jwt_response_payload_handler(token, user, request):  # TODO function is not used
@@ -35,7 +33,8 @@ def jwt_encode_handler(payload):
     return jwt.encode(
         payload,
         key,
-        api_settings.JWT_ALGORITHM
+        api_settings.JWT_ALGORITHM,
+        json_encoder=DjangoJSONEncoder
     ).decode('utf-8')
 
 

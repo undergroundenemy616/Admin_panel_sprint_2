@@ -1,22 +1,20 @@
 from django.contrib.auth import user_logged_in
-from rest_framework import mixins
+from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.settings import api_settings
+from rest_framework_jwt.settings import api_settings
 from users.backends import jwt_encode_handler, jwt_payload_handler
-from users.models import User
-from users.registration import register_or_login
-from users.serializers import LoginOrRegisterSerializer, UserSerializer
+from users.models import User, Account
+from users.registration import send_code, confirm_code
+from users.serializers import LoginOrRegisterSerializer, UserSerializer, AccountSerializer
 
 
-def create_auth(user):
-    """Create full auth dict with token, prefix, expiration
-    and etc by given user."""
+def create_auth_data(user):
+    """Creates and returns a full auth dict with `token`, `prefix`."""
     payload = jwt_payload_handler(user)
     token = jwt_encode_handler(payload)
-    data = {'prefix': api_settings.JWT_AUTH_HEADER_PREFIX, 'token': token}
-    return data
+    return {'prefix': api_settings.JWT_AUTH_HEADER_PREFIX, 'token': token}
 
 
 class LoginOrRegister(mixins.ListModelMixin, GenericAPIView):
@@ -25,30 +23,34 @@ class LoginOrRegister(mixins.ListModelMixin, GenericAPIView):
     serializer_class = LoginOrRegisterSerializer
 
     def post(self, request):
-        """Initial login, login"""
+        """Register or login view"""
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = serializer.data
-        phone_number = data.get('phone_number', None)
-        sms_code = data.get('sms_code', None)
-        user, created = self.queryset.objects.get_or_create(phone_number=phone_number, last_code=sms_code)
 
-        if not sms_code:
-            result = register_or_initial(created, user)
-            # if result is False:
-            #     Response(data={'result': result, 'message': msg, 'extra_data': None}, status=400)
-            # Response(data={'result': result, 'message': msg, 'extra_data': None}, status=201)
-        elif sms_code and not created:
-            result, msg = confirm_sms_code(sms_code, user.phone_number)
-            user_logged_in.send(sender=user.__class__, user=user, request=request)
+        phone_number = serializer.data.get('phone_number', None)
+        sms_code = serializer.data.pop('sms_code', None)
+        user, created = User.objects.get_or_create(phone_number=phone_number)
 
-            # unverified_data = {'result': result, 'message': msg, 'extra_data': None}  # TODO них*** не понятно
-            # if result is False:
-            #     return Response(data=unverified_data, status=400)
-            #
-            # # TODO logic for creating account
-            #
-            # data = unverified_data.update({'user': UserSerializer(instance=user).data, 'auth': create_auth(user)})
-            # Response(data=data, status=200)
+        try:
+            data = {}
+            if not sms_code:  # Register or login user
+                send_code(user, created)
+                data['status'], data['phone_number'] = 'DONE', user.phone_number
+            elif sms_code and not created:  # Confirm code
+                # Confirmation code
+                confirm_code(phone_number, sms_code)
+                user_logged_in.send(sender=user.__class__, user=user, request=request)
 
-        return Response('Invalid data!', status=400)
+                # Create an account
+                account = Account.objects.create(user_id=user.id)
+                account.save()
+
+                # Creating data for response
+                data['auth'] = create_auth_data(user)
+                data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
+                data['account'] = AccountSerializer(instance=account).data
+            else:
+                raise ValueError('Invalid data!')
+        except ValueError as error:
+            data = {'message': str(error), 'status': 'ERROR'}
+        return Response(data, status=status.HTTP_200_OK)

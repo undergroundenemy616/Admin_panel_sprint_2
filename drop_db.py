@@ -35,10 +35,12 @@ def main():
 
 if __name__ == '__main__':
     try:
-        main()
+        word = input('Enter `yes` for drop all database, or any character for exit\n\n')
+        if word == 'yes':
+            main()
+            print('DATABASE WAS DROP')
     except ImproperlyConfigured:
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings')
         print('Setting environment `DJANGO_SETTINGS_MODULE`')
         main()
-    finally:
         print('DATABASE WAS DROP')

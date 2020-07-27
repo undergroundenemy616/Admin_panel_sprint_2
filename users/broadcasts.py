@@ -1,17 +1,8 @@
 import logging
-# import urllib.parse
 import requests
 from abc import ABC, abstractmethod
 from django.conf import settings
 from users.models import User
-
-
-def send_code(message, phone_number):
-    """Util for sending message and returning instance of SMSBroadcast.
-    Returns sms-instance and text of the response."""
-    sms = SMSBroadcast(phone_number=phone_number)
-    response = sms.send(message).text
-    return sms, response
 
 
 class AbstractBroadcast(ABC):
@@ -27,26 +18,28 @@ class BaseBroadcast(AbstractBroadcast):
     def __init__(self):
         self.errors = list()
         self.logger = logging.getLogger('__name__')
-        self.validate()
 
     @property
     def is_sent(self):
-        """Returns flag is message was send."""
-        return bool(self.errors)
+        """Returns flag True if message was send."""
+        return not bool(self.errors)
 
-    def send(self, url, data=None, **params):
+    def send(self, url=None, data=None, **params):
         """Builder method"""
         url = self.build_url(url)
         data = self.build_data(data)
         extra = self.build_params(**params)
         try:
-            return self._send(url, data, extra)
+            response = self._send(url, data, extra)
+            self.validate(response)
         except Exception as error:
             self.logger.exception(error)
             self.errors.append(error)
+        else:
+            return response
 
     def _send(self, url, body, extra):
-        """Create post request to service."""
+        """Send request."""
         response = requests.post(url=url, data=body, timeout=self.TIMEOUT, params=extra)
         return response
 
@@ -59,7 +52,7 @@ class BaseBroadcast(AbstractBroadcast):
     def build_params(self, *args, **kwargs):
         """Method must be override."""
 
-    def validate(self):
+    def validate(self, *args, **kwargs):
         """Validating hook."""
 
 
@@ -89,6 +82,7 @@ class SMSBroadcast(BaseBroadcast):
         extra = {'login': self.login, 'psw': self.password, 'phones': self.phone_number, 'mes': message}
         return extra
 
-
-# TODO add docs
-# TODO add tests
+    def validate(self, response):
+        """Validating response."""
+        if 'OK' not in response.text:
+            raise ValueError('Invalid response from server!')

@@ -6,8 +6,8 @@ django.setup()
 from users.broadcasts import SMSBroadcast
 
 if __name__ == '__main__':
-    sms_instance = SMSBroadcast(phone_number='89098357415')
-    mesg = 'Test from yarik. YOHOO IT IS WORKING'
-    response = sms_instance.send(mesg)
-    print(sms_instance.is_sent())
-    print(response.text)
+    phone_num = '89045196397'
+    broadcast = SMSBroadcast(phone_number=phone_num)
+    text = broadcast.send(message='hello pump')
+    print(broadcast.is_sent)
+    print(text)
