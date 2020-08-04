@@ -2,6 +2,7 @@ import random
 import uuid
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -43,7 +44,7 @@ def activated_code():
     return random.randint(1000, 9999)
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     phone_number = models.CharField(unique=True, max_length=16)
     username = models.CharField(unique=True, max_length=64, null=True, blank=True)
@@ -51,6 +52,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=512, blank=True, null=True)
 
     last_code = models.IntegerField(blank=True, null=True, default=activated_code)
+    groups = models.ForeignKey('groups.Group', default=4, related_name='groups', on_delete=models.CASCADE)
 
     is_staff = models.BooleanField(default=False)  # Mocked
     is_active = models.BooleanField(default=True)
@@ -62,29 +64,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
     EMAIL_FIELD = 'email'
     USERNAME_FIELD = 'phone_number'
-
-    def check_sms_code(self, sms_code):
-        """Method compare inputted sms_code and user`s code.
-        Do not use method for confirming and validating sms from client. For that we have Redis.cache!"""
-        return self.last_code == sms_code
-
-    def get_password(self):
-        """Returns password if it exists."""
-        return self.password or None
-
-    def get_email(self):
-        """Returns email if it exists."""
-        return self.email or None
-
-    @staticmethod
-    def check_phone_len(phone_number):
-        """Phone len must be 12 chars. If it is not, returns False"""
-        return 11 <= len(phone_number) <= 16
-
-    @staticmethod
-    def check_phone_startswith_plus(phone_number):
-        """Returns True if phone starts with plus"""
-        return phone_number.startswith('+') and phone_number[1] == '7'
 
     @classmethod
     def normalize_phone(cls, phone_number):
@@ -105,6 +84,30 @@ class User(AbstractBaseUser, PermissionsMixin):
         else:
             msg = 'Phone number must contains only digits and plus character in begin.'
             raise ValueError(msg)
+
+    @staticmethod
+    def check_phone_len(phone_number):
+        """Phone len must be 12 chars. If it is not, returns False"""
+        return 11 <= len(phone_number) <= 16
+
+    def clean(self):  # TODO
+        try:
+            self.normalize_phone(self.phone_number)
+        except ValueError as error:
+            raise ValidationError(str(error))
+
+    def check_sms_code(self, sms_code):
+        """Method compare inputted sms_code and user`s code.
+        Do not use method for confirming and validating sms from client. For that we have Redis.cache!"""
+        return self.last_code == sms_code
+
+    def get_password(self):
+        """Returns password if it exists."""
+        return self.password or None
+
+    def get_email(self):
+        """Returns email if it exists."""
+        return self.email or None
 
 
 class Account(models.Model):

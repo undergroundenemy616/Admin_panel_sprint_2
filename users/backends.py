@@ -17,7 +17,7 @@ def jwt_response_payload_handler(token, user, request):  # TODO function is not 
 def jwt_get_secret_key(payload=None):
     """Returns user secret key or project SECRET KEY."""
     if api_settings.JWT_GET_USER_SECRET_KEY and payload is not None:
-        user_model = get_user_model()  # noqa: N806
+        user_model = get_user_model()
         if not hasattr(user_model, 'objects'):
             msg = 'Default user model has not attribute `objects`.'
             raise AssertionError(msg)
@@ -43,9 +43,11 @@ def jwt_decode_handler(token):
     options = {
         'verify_exp': api_settings.JWT_VERIFY_EXPIRATION,
     }
+    secret_key = jwt_get_secret_key()
+
     return jwt.decode(
         token,
-        api_settings.JWT_PUBLIC_KEY,
+        api_settings.JWT_PUBLIC_KEY or secret_key,
         api_settings.JWT_VERIFY,
         options=options,
         leeway=api_settings.JWT_LEEWAY,
@@ -73,3 +75,8 @@ def jwt_payload_handler(user):
         payload['orig_iat'] = int(time.time())
 
     return payload
+
+
+def jwt_get_phone_from_payload_handler(payload):
+    """Get user `phone_number` for authorization instead of `username`."""
+    return payload.get('phone_number')

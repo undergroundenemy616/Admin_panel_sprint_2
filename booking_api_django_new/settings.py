@@ -74,10 +74,13 @@ JWT_AUTH = {
     'JWT_RESPONSE_PAYLOAD_HANDLER':
         'users.backends.jwt_response_payload_handler',
 
+    'JWT_PAYLOAD_GET_USERNAME_HANDLER':
+        'users.backends.jwt_get_phone_from_payload_handler',
+
     'JWT_SECRET_KEY': SECRET_KEY,
     'JWT_GET_USER_SECRET_KEY': None,
     'JWT_ALGORITHM': 'HS256',
-
+    'JWT_PUBLIC_KEY': None,
     'JWT_VERIFY': True,
     'JWT_VERIFY_EXPIRATION': True,
     'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=60 * 30),  # expiration 30 minutes, then go to refresh
@@ -88,7 +91,8 @@ JWT_AUTH = {
 }
 
 INSTALLED_APPS = [
-    'users',
+    'users.apps.UsersConfig',
+    # 'groups.apps.GroupsConfig',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -101,7 +105,7 @@ INSTALLED_APPS = [
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": "redis://127.0.0.1:6379",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }

@@ -1,4 +1,3 @@
-
 from users import views
 from django.urls import path
 
