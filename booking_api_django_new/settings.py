@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
-
+import datetime
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -24,6 +24,8 @@ SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+KEY_EXPIRATION = 60 * 3  # 3 minutes
+
 if DEBUG is True:
     ALLOWED_HOSTS = ['*']
 else:
@@ -31,7 +33,67 @@ else:
 
 # Application definition
 
+AUTH_USER_MODEL = 'users.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+    )
+}
+
+SMSC = {
+    'SMSC_LOGIN': "liis_engineering",  # логин клиента
+    'SMSC_PASSWORD': "Zz5eM5!kn!",  # пароль
+    'SMSC_POST': False,  # использовать метод POST
+    'SMSC_HTTPS': False,  # использовать HTTPS протокол
+    'SMSC_CHARSET': 'utf-8',  # кодировка сообщения (windows-1251 или koi8-r), по умолчанию используется utf-8
+    'SMSC_DEBUG': True,  # флаг отладки
+    'SMSC_SEND_URL': 'https://smsc.ru/sys/send.php',
+    # 'SMSC_COST_URL': 'https://smsc.ru/sys/send.php?cost=1 '
+}
+
+JWT_AUTH = {
+    # 'JWT_ENCODE_HANDLER':
+    # 'rest_framework_jwt.utils.jwt_encode_handler',
+    'JWT_ENCODE_HANDLER':
+        'users.backends.jwt_encode_handler',
+
+    'JWT_DECODE_HANDLER':
+        'users.backends.jwt_decode_handler',
+
+    'JWT_PAYLOAD_HANDLER':
+        'users.backends.jwt_payload_handler',
+
+    'JWT_PAYLOAD_GET_USER_ID_HANDLER':
+        'rest_framework_jwt.utils.jwt_get_user_id_from_payload_handler',
+
+    'JWT_RESPONSE_PAYLOAD_HANDLER':
+        'users.backends.jwt_response_payload_handler',
+
+    'JWT_PAYLOAD_GET_USERNAME_HANDLER':
+        'users.backends.jwt_get_phone_from_payload_handler',
+
+    'JWT_SECRET_KEY': SECRET_KEY,
+    'JWT_GET_USER_SECRET_KEY': None,
+    'JWT_ALGORITHM': 'HS256',
+    'JWT_PUBLIC_KEY': None,
+    'JWT_VERIFY': True,
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=60 * 30),  # expiration 30 minutes, then go to refresh
+
+    'JWT_ALLOW_REFRESH': True,  # Was False
+    'JWT_REFRESH_EXPIRATION_DELTA': datetime.timedelta(days=14),  # 14 days for login
+    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+}
+
 INSTALLED_APPS = [
+    'users.apps.UsersConfig',
+    # 'groups.apps.GroupsConfig',
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,6 +101,38 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+LOGGING = {
+    'version': 1,
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+        }
+    },
+    'loggers': {
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+        }
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

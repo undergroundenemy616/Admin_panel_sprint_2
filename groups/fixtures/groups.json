@@ -1,0 +1,42 @@
+[
+  {
+    "model": "groups.Group",
+    "pk": 1,
+    "fields": {
+      "title": "client",
+      "access": 4
+    }
+  },
+  {
+    "model": "groups.Group",
+    "pk": 2,
+    "fields": {
+      "title": "engineer",
+      "access": 3
+    }
+  },
+  {
+    "model": "groups.Group",
+    "pk": 3,
+    "fields": {
+      "title": "admin",
+      "access": 2
+    }
+  },
+  {
+    "model": "groups.Group",
+    "pk": 4,
+    "fields": {
+      "title": "owner",
+      "access": 1
+    }
+  },
+  {
+    "model": "groups.Group",
+    "pk": 5,
+    "fields": {
+      "title": "superuser",
+      "access": 0
+    }
+  }
+]
