@@ -92,7 +92,13 @@ JWT_AUTH = {
 
 INSTALLED_APPS = [
     'users.apps.UsersConfig',
-    # 'groups.apps.GroupsConfig',
+    'groups.apps.GroupsConfig',
+    'files.apps.FilesConfig',
+    'floors.apps.FloorsConfig',
+    'licenses.apps.LicensesConfig',
+    'offices.apps.OfficesConfig',
+    'rooms.apps.RoomsConfig',
+    'tables.apps.TablesConfig',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',

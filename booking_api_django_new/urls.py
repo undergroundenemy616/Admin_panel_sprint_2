@@ -19,54 +19,59 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
+    path('files/', include('files.urls')),
     # path('groups/', include('groups.urls'))
-    '''
-    __AUTH__
-    [] /auth
-    [] /refresh
-    [] /auth_employee
-    [] /register_employee
-    [] /register_user
-    [] /register_kiosk
-    [] /register_kiosk/<id>
-    [] /auth_kiosk
-    [] /account
-    [] /accounts_list
-    [] /accounts/<id>
-    [] /account_confirm
-    [] /groups
-    [] /group/<id>
-    [] /groups/update
-    [] /groups/import_single
-    [] /groups/import_list
-    [] /groups/import_titles
-    [] /enter
-    [] /service/email
-    [] /pass_change
-    [] /pass_reset
-    [] /operator_promotion
-    
-    
-    [] /files
-    [] /office
-    [] /offices/<id>
-    [] /zone
-    [] /zones/<id>
-    [] /floor
-    [] /floor/<id>
-    [] /room
-    [] /rooms/<id>
-    [] /table_tag
-    [] /table_tags/<id>
-    [] /table
-    [] /tables/<id>
-    [] /floor_map
-    [] /floor_map/clear
-    [] /room_map
-    [] /table/rate
-    [] /table/activate
-    [] /table/receive
-    [] /table_status_receive
-    [] /feedback
-    '''
 ]
+
+'''
+__AUTH__
+[POST] /auth
+[POST] /refresh
+[POST] /auth_employee
+[POST] /register_employee
+[POST] /register_user
+[POST] /register_guest
+[POST] /register_kiosk
+[PUT] /register_kiosk/<id>
+[POST] /auth_kiosk
+[GET] /account
+[GET] /accounts_list
+[PUT, DELETE] /accounts/<id>
+[POST] /account_confirm
+[GET, POST, PUT, DELETE] /groups
+[] /group/<id>
+[PUT] /groups/update
+[POST] /groups/import_single
+[] /groups/import_list
+[] /groups/import_titles
+[POST] /enter
+[POST] /service/email
+[POST] /pass_change
+[POST] /pass_reset
+[POST] /operator_promotion
+
+__BOOKINGS__
+[] /office
+[] /offices/<id>
+[] /zone
+[] /zones/<id>
+[] /floor
+[] /floor/<id>
+[] /room
+[] /rooms/<id>
+[] /table_tag
+[] /table_tags/<id>
+[] /table
+[] /tables/<id>
+[] /floor_map
+[] /floor_map/clear
+[] /room_map
+[] /table/rate
+[] /table/activate
+[] /table/receive
+[] /table_status_receive
+[] /feedback
+
+__FILE__
+[] /files
+'''
