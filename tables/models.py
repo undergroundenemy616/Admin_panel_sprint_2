@@ -19,7 +19,7 @@ class Table(models.Model):
 	title = models.CharField(max_length=256, null=False, blank=False)
 	description = models.CharField(max_length=256, null=True, blank=True)
 	room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=False, null=False)
-	status = models.CharField(max_length=64, null=True, blank=True)
+	status = models.CharField(max_length=64, null=False, blank=False, default='not_activated')
 	tags = models.ManyToManyField(TableTag, null=True, blank=True)
 
 

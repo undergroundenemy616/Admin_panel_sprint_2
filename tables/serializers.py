@@ -6,4 +6,4 @@ class TableSerializer(serializers.ModelSerializer):
     class Meta:
         model = Table
         fields = '__all__'
-        depth = 1
+        depth = 3
