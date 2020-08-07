@@ -9,6 +9,30 @@ class Office(models.Model):
 	working_hours = models.CharField(max_length=128, null=True, blank=True)
 	service_email = models.CharField(max_length=256, null=True, blank=True)
 
+	@property
+	def occupied(self):
+		return sum(fr.occupied for fr in self.floors.all())
+
+	@property
+	def capacity(self):
+		return sum(fr.capacity for fr in self.floors.all())
+
+	@property
+	def occupied_tables(self):
+		return sum(fr.occupied_tables for fr in self.floors.all())
+
+	@property
+	def capacity_tables(self):
+		return sum(fr.capacity_tables for fr in self.floors.all())
+
+	@property
+	def occupied_meeting(self):
+		return sum(fr.occupied_meeting for fr in self.floors.all())
+
+	@property
+	def capacity_meeting(self):
+		return sum(fr.capacity_meeting for fr in self.floors.all())
+
 
 class OfficeImages(models.Model):
 	image = models.ForeignKey(Files, null=False, blank=False, on_delete=models.CASCADE)

@@ -3,7 +3,8 @@ from tables.models import Table
 
 
 class TableSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Table
-        fields = '__all__'
-        depth = 3
+	current_rating = serializers.ReadOnlyField()
+
+	class Meta:
+		model = Table
+		fields = '__all__'

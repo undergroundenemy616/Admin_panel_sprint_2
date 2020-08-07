@@ -1,7 +1,7 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from rooms.models import Room
-from users.models import User
+from users.models import Account
 from files.models import Files
 
 
@@ -18,14 +18,20 @@ class TableTag(models.Model):
 class Table(models.Model):
 	title = models.CharField(max_length=256, null=False, blank=False)
 	description = models.CharField(max_length=256, null=True, blank=True)
-	room = models.ForeignKey(Room, on_delete=models.CASCADE, blank=False, null=False)
+	room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tables', blank=False, null=False)
 	status = models.CharField(max_length=64, null=False, blank=False, default='not_activated')
 	tags = models.ManyToManyField(TableTag, null=True, blank=True)
+	is_occupied = models.BooleanField(null=False, blank=False, default=False)
+
+	@property
+	def current_rating(self):
+		queryset = self.ratings.all().aggregate(models.Avg('rating'))
+		return queryset["rating__avg"]
 
 
 class Rating(models.Model):
-	user = models.ForeignKey(User, on_delete=models.CASCADE, blank=False, null=False)
-	table = models.ForeignKey(Table, on_delete=models.CASCADE, blank=False, null=False)
+	account = models.ForeignKey(Account, on_delete=models.CASCADE, blank=False, null=False)
+	table = models.ForeignKey(Table, on_delete=models.CASCADE, related_name='ratings', blank=False, null=False)
 	rating = models.DecimalField(
 		max_digits=3,
 		decimal_places=2,

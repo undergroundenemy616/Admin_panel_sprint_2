@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAdminUser
 from tables.models import Table
-from rest_framework.response import Response
 from tables.serializers import TableSerializer
+from rest_framework.response import Response
 
 
 class ListTables(APIView):
