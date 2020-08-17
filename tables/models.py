@@ -3,9 +3,11 @@ from django.db import models
 from rooms.models import Room
 from users.models import Account
 from files.models import Files
+from offices.models import Office
 
 
 class TableTag(models.Model):
+	office = models.ForeignKey(Office, on_delete=models.CASCADE, related_name='tags', blank=False, null=False)
 	title = models.CharField(max_length=256, null=False, blank=False)
 	icon = models.ForeignKey(
 		Files,
