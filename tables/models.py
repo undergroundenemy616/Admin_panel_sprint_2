@@ -22,7 +22,7 @@ class Table(models.Model):
 	description = models.CharField(max_length=256, null=True, blank=True)
 	room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tables', blank=False, null=False)
 	status = models.CharField(max_length=64, null=False, blank=False, default='not_activated')
-	tags = models.ManyToManyField(TableTag, null=True, blank=True)
+	tags = models.ManyToManyField(TableTag, related_name='tables', null=True, blank=True)
 	is_occupied = models.BooleanField(null=False, blank=False, default=False)
 
 	@property

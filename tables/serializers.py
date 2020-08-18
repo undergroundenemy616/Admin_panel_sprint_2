@@ -19,3 +19,4 @@ class CreateTableSerializer(serializers.Serializer):
 
     class Meta:
         model = Table
+        fields = ['room', 'title', 'description', 'tags']
