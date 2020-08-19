@@ -11,4 +11,4 @@ class License(models.Model):
 	tables_available = models.IntegerField(validators=[MinValueValidator(0)], blank=True, null=True)
 	tables_infinite = models.BooleanField(blank=False, null=False)
 	forever = models.BooleanField(blank=False, null=False)
-	office = models.OneToOneField(Office, on_delete=models.CASCADE, blank=False, null=False)
+	office = models.OneToOneField(Office, on_delete=models.CASCADE, blank=True, null=True)

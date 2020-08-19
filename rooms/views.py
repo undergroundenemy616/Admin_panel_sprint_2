@@ -3,10 +3,12 @@ from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAdminUser
 from rooms.models import Room
 from tables.models import TableTag
-from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer
+from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, EditRoomSerializer
 from rest_framework.response import Response
 from django.core.paginator import Paginator
 from rest_framework import status
+
+from files.models import File
 
 
 class ListHandler(ListAPIView):
@@ -21,13 +23,13 @@ class ListHandler(ListAPIView):
         """
         serializer = CreateRoomSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        kwargs = {
+        params = {
             "floor_id": serializer.data.get('floor'),
             "title": serializer.data.get('title'),
             "description": serializer.data.get('description'),
             "type": serializer.data.get('type')
         }
-        room = Room.objects.create(**kwargs)
+        room = Room.objects.create(**params)
         room.save()
         return Response(self.serializer_class(room).data, status=status.HTTP_200_OK)
 
@@ -65,4 +67,9 @@ class ObjectHandler(RetrieveUpdateDestroyAPIView):
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
 
-    # TODO: PUT /rooms/<pk> += images, zone
+    def update(self, request, *args, **kwargs):
+        serializer = EditRoomSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        params = {key: val for key, val in serializer.validated_data.items()}
+        self.get_queryset().filter(pk=self.kwargs.get('pk')).update(**params)
+        return Response(RoomSerializer(self.get_object()).data)

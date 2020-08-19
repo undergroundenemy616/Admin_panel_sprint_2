@@ -2,7 +2,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from rooms.models import Room
 from users.models import Account
-from files.models import Files
+from files.models import File
 from offices.models import Office
 
 
@@ -10,7 +10,7 @@ class TableTag(models.Model):
 	office = models.ForeignKey(Office, on_delete=models.CASCADE, related_name='tags', blank=False, null=False)
 	title = models.CharField(max_length=256, null=False, blank=False)
 	icon = models.ForeignKey(
-		Files,
+		File,
 		on_delete=models.CASCADE,
 		blank=True,
 		null=True
@@ -22,7 +22,7 @@ class Table(models.Model):
 	description = models.CharField(max_length=256, null=True, blank=True)
 	room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tables', blank=False, null=False)
 	status = models.CharField(max_length=64, null=False, blank=False, default='not_activated')
-	tags = models.ManyToManyField(TableTag, related_name='tables', null=True, blank=True)
+	tags = models.ManyToManyField(TableTag, related_name='tables', blank=True)
 	is_occupied = models.BooleanField(null=False, blank=False, default=False)
 
 	@property

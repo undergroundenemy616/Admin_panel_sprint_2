@@ -23,7 +23,8 @@ urlpatterns = [
     path('files/', include('files.urls')),
     path('tables/', include('tables.urls')),
     path('rooms/', include('rooms.urls')),
-    path('floors/', include('floors.urls'))
+    path('floors/', include('floors.urls')),
+    path('offices/', include('offices.urls'))
     # path('groups/', include('groups.urls'))
 ]
 

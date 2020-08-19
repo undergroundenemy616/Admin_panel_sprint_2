@@ -1,11 +1,11 @@
 from django.db import models
 from offices.models import Office
-from files.models import Files
+from files.models import File
 
 
 class Floor(models.Model):
 	title = models.CharField(max_length=256, null=False, blank=False)
-	office = models.ForeignKey(Office, null=False, blank=False, on_delete=models.CASCADE)
+	office = models.ForeignKey(Office, related_name='floors', null=False, blank=False, on_delete=models.CASCADE)
 
 	@property
 	def occupied(self):
@@ -34,7 +34,7 @@ class Floor(models.Model):
 
 class FloorMap(models.Model):
 	image = models.ForeignKey(
-		Files,
+		File,
 		on_delete=models.CASCADE,
 		blank=False,
 		null=False

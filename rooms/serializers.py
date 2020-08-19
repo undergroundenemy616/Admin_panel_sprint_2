@@ -3,18 +3,23 @@ from rest_framework import serializers
 from tables.models import Table
 from rooms.models import Room
 from floors.models import Floor
-from files.models import Files
+from offices.models import OfficeZone
+from files.models import File
 from tables.serializers import TableSerializer
 
 
 class EditRoomSerializer(serializers.ModelSerializer):
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
     tables = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), many=True, required=False)
-    images = serializers.PrimaryKeyRelatedField(queryset=Files.objects.all(), many=True, required=False)
-    # TODO: zone = serializers.PrimaryKeyRelatedField(queryset=Zone.objects.all(), required=False)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
+    zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), required=False)
     title = serializers.CharField(max_length=256, required=False)
     description = serializers.CharField(max_length=256, required=False)
     type = serializers.CharField(max_length=128, required=False)
+
+    class Meta:
+        model = Room
+        fields = ['floor', 'tables', 'images', 'zone', 'title', 'description', 'type']
 
 
 class CreateRoomSerializer(serializers.ModelSerializer):

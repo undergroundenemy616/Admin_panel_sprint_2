@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from files.models import Files
+from files.models import File
 
 
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Files
+        model = File
         fields = '__all__'
         depth = 1
