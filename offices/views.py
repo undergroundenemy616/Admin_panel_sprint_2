@@ -1,81 +1,61 @@
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser
-from floors.models import Floor
-from offices.models import Office, OfficeImages
-from licenses.models import License
-from offices.serializers import OfficeSerializer, CreateOfficeSerializer, FilterOfficeSerializer, EditOfficeSerializer
+from django.db.models import QuerySet
+from backends.pagination import DefaultPagination
+from offices.models import Office
+from offices.serializers import OfficeSerializer
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import UpdateModelMixin, CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework import status
-from rest_framework import filters
-from django.core.paginator import Paginator
 
 
-class ListHandler(ListAPIView):
-    # permission_classes = [IsAdminUser]
+def get_mapped_query(request):
+    """Returns mapped literals for search in database."""
+    query_params = request.query_params
+    mapped = {"floors__rooms__type": query_params.get('type'),
+              "floors__rooms__tables__tags__title__in": query_params.getlist('tags')}
+
+    items = []
+    for field in mapped.keys():
+        if not mapped[field]:
+            items.append(field)
+    for item in items:
+        del mapped[item]
+    return mapped
+
+
+class ListCreateUpdateOfficeView(ListModelMixin,
+                                 CreateModelMixin,
+                                 UpdateModelMixin,
+                                 GenericAPIView):
     serializer_class = OfficeSerializer
     queryset = Office.objects.all()
+    # print(sys.getsizeof(queryset))  # 56
+    # print(queryset)  __
+    pagination_class = DefaultPagination
+    # permission_classes = (IsAdminUser,)
 
-    # search_fields = ['title']
-    # filter_backends = (filters.SearchFilter,)
+    def get_queryset(self):
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            queryset = queryset.all()
+        queryset = queryset.select_related('licenses')
+        queryset = queryset.prefetch_related('images')
+        queryset = queryset.prefetch_related('floors__rooms__tables')
 
-    def post(self, request):
-        """
-        Add new office
+        return queryset
 
-        """
-        serializer = CreateOfficeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        kwargs = {key: val for key, val in serializer.validated_data.items()}
-        images_id = kwargs.pop('images', [])
-        floors_number = kwargs.pop('floors_number', 0)
-        office = Office(**kwargs)
-        office.save()
-        for image_id in images_id:
-            image = OfficeImages(image_id=image_id, office=office)
-            image.save()
-        for i in range(0, floors_number):
-            floor = Floor(title=str(i + 1), office=office)
-            floor.save()
-        return Response(self.serializer_class(office).data, status=status.HTTP_200_OK)
+    def list(self, request, *args, **kwargs):
+        mapped = get_mapped_query(request)
+        queryset = self.get_queryset()
+        if mapped:
+            queryset = self.queryset.filter(**mapped)
+
+        queryset = self.filter_queryset(queryset)  # django filtering
+        page = self.paginate_queryset(queryset)  # rest page pagination
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)  # rest response by pagination
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def get(self, request, *args, **kwargs):
-        """
-        Get filtered offices
-
-        """
-        serializer = FilterOfficeSerializer(data=request.query_params)
-        if serializer.is_valid():
-            filter_dict = {
-                "floors__rooms__type": serializer.data.get('type'),
-                "floors__rooms__tables__tags__title__in": serializer.data.get('tags')
-            }
-            offices = Office.objects.filter(
-                **{key: val for key, val in filter_dict.items() if val is not None}).distinct()
-        else:
-            offices = self.get_queryset()
-        limit = serializer.data.get('limit') or 20
-        start = serializer.data.get('start') or 1
-        paged_offices = Paginator(offices, limit)
-        results = [OfficeSerializer(office).data for office in paged_offices.get_page(start)]
-        return Response({
-            "start": start,
-            "limit": limit,
-            "count": len(results),
-            "next": "",
-            "previous": "",
-            "results": results
-        })
-
-
-class ObjectHandler(RetrieveUpdateDestroyAPIView):
-    # permission_classes = [IsAdminUser]
-    serializer_class = OfficeSerializer
-    queryset = Office.objects.all()
-
-    def update(self, request, *args, **kwargs):
-        serializer = EditOfficeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        params = {key: val for key, val in serializer.validated_data.items()}
-        self.get_queryset().filter(pk=self.kwargs.get('pk')).update(**params)
-        return Response(OfficeSerializer(self.get_object()).data)
+        return self.list(request, *args, **kwargs)

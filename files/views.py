@@ -1,10 +1,10 @@
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser
+from rest_framework.generics import ListCreateAPIView
 from files.models import File
 from files.serializers import FileSerializer
 
 
-class ListFiles(APIView):
-	# permission_classes = [IsAdminUser]
+class ListCreateFilesView(ListCreateAPIView):
 	serializer_class = FileSerializer
+	queryset = File.objects.all()
+	# permission_classes = [IsAdminUser]
 

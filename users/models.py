@@ -137,7 +137,7 @@ class Account(models.Model):
     region_string = models.CharField(default='', max_length=64, blank=True)  # TODO
     district_string = models.CharField(default='', max_length=64, blank=True)  # TODO
 
-    photo = None
+    photo = None  # todo
 
     updated_at = models.DateTimeField(null=False, auto_now=True)
 

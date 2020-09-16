@@ -1,0 +1,20 @@
+[
+  {
+    "model": "files.File",
+    "pk": 1,
+    "fields": {
+      "title": "photo_1",
+      "path": "c/local",
+      "size": "4333"
+    }
+  },
+  {
+    "model": "files.File",
+    "pk": 2,
+    "fields": {
+      "title": "photo_2",
+      "path": "c/local",
+      "size": "4332"
+    }
+  }
+]

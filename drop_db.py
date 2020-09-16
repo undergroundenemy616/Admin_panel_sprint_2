@@ -1,5 +1,7 @@
 """Drop all tables in current DB."""
 import os
+os.environ.setdefault('BRANCH', 'yokohola')
+
 from django.core.exceptions import ImproperlyConfigured
 from booking_api_django_new.settings import DATABASES
 from django.db import connection
@@ -19,8 +21,7 @@ def drop_database(cursor):
     except Exception as error:
         print(error)
         return False
-    else:
-        return True
+    return True
 
 
 def main():

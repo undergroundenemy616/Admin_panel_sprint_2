@@ -17,7 +17,7 @@ def create_auth_data(user):
     return {'prefix': api_settings.JWT_AUTH_HEADER_PREFIX, 'token': token}
 
 
-class LoginOrRegister(mixins.ListModelMixin, GenericAPIView):
+class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = LoginOrRegisterSerializer
@@ -54,3 +54,7 @@ class LoginOrRegister(mixins.ListModelMixin, GenericAPIView):
         except ValueError as error:
             data = {'message': str(error), 'status': 'ERROR'}
         return Response(data, status=status.HTTP_200_OK)
+
+
+class LoginOrRegisterEmployee(GenericAPIView):
+    pass
