@@ -115,7 +115,7 @@ INSTALLED_APPS = [
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379",
+        "LOCATION": "redis://2.59.41.133:5556",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -186,11 +186,11 @@ print({
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'NAME': 'simpleoffice_dev',
+        'USER': 'yokohola',
+        'PASSWORD': 'yokohola2020',
         'HOST': '2.59.41.133',
-        'PORT': '5432',
+        'PORT': '5555',
     }
 }
 

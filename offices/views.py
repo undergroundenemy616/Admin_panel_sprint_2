@@ -28,8 +28,6 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                                  GenericAPIView):
     serializer_class = OfficeSerializer
     queryset = Office.objects.all()
-    # print(sys.getsizeof(queryset))  # 56
-    # print(queryset)  __
     pagination_class = DefaultPagination
     # permission_classes = (IsAdminUser,)
 
