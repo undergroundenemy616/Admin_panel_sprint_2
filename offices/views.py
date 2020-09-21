@@ -29,6 +29,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
     serializer_class = OfficeSerializer
     queryset = Office.objects.all()
     pagination_class = DefaultPagination
+
     # permission_classes = (IsAdminUser,)
 
     def get_queryset(self):
@@ -57,3 +58,15 @@ class ListCreateUpdateOfficeView(ListModelMixin,
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
+    def post(self, request):
+        serializer = OfficeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+
+    # def update TODO implement
+    # def create TODO implement
+    # def get on single office

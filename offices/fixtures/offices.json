@@ -1,2 +1,13 @@
-{
-}
+[
+   {
+    "model": "offices.Office",
+    "pk": 1,
+    "fields": {
+      "title": "Тестовый Бц",
+      "description": "Бц для первичного тестирования",
+      "working_hours": "Ежедневно с 10 по 20",
+      "service_email": "nap@liis.su",
+      "images": [1, 2]
+    }
+  }
+]
