@@ -3,58 +3,63 @@ from rest_framework import serializers
 from tables.models import Table
 from rooms.models import Room
 from floors.models import Floor
-from offices.models import OfficeZone
 from files.models import File
 from tables.serializers import TableSerializer
 
 
 class EditRoomSerializer(serializers.ModelSerializer):
-    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
     tables = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), many=True, required=False)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
-    zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), required=False)
     title = serializers.CharField(max_length=256, required=False)
     description = serializers.CharField(max_length=256, required=False)
-    type = serializers.CharField(max_length=128, required=False)
+    type = serializers.CharField(max_length=128, required=False)  # Todo fields will be deleted
+
+    # zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), required=False)
+    # floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
 
     class Meta:
         model = Room
-        fields = ['floor', 'tables', 'images', 'zone', 'title', 'description', 'type']
-
-
-class CreateRoomSerializer(serializers.ModelSerializer):
-    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=True)
-    title = serializers.CharField(max_length=256, required=True)
-    description = serializers.CharField(max_length=256, required=False)
-    type = serializers.CharField(max_length=128, required=True)
-
-    class Meta:
-        model = Room
-        fields = ['floor', 'title', 'description', 'type']
-
-
-class FilterRoomSerializer(serializers.ModelSerializer):
-    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=True)
-    type = serializers.CharField(max_length=256, required=False)
-    tags = serializers.ListField(required=False)
-    start = serializers.IntegerField(min_value=1, required=False)
-    limit = serializers.IntegerField(min_value=1, required=False)
-
-    class Meta:
-        model = Room
-        fields = ['floor', 'type', 'tags', 'start', 'limit']
+        fields = ['tables', 'images', 'title', 'description', 'type']  # , 'zone', 'floor',
 
 
 class RoomSerializer(serializers.ModelSerializer):
+    tables = TableSerializer(many=True, read_only=True)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+
     occupied = serializers.ReadOnlyField()
     capacity = serializers.ReadOnlyField()
     occupied_tables = serializers.ReadOnlyField()
     capacity_tables = serializers.ReadOnlyField()
     occupied_meeting = serializers.ReadOnlyField()
     capacity_meeting = serializers.ReadOnlyField()
-    tables = TableSerializer(many=True)
 
     class Meta:
         model = Room
         fields = '__all__'
-        depth = 3
+        depth = 1
+        read_only_fields = ('occupied',
+                            'capacity',
+                            'occupied_tables',
+                            'capacity_tables',
+                            'occupied_meeting',
+                            'capacity_meeting',
+                            'tables',
+                            'floor')
+
+
+class FilterRoomSerializer(serializers.ModelSerializer):
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=True)
+    type = serializers.CharField(max_length=256, required=False)  # Todo fields will be deleted
+    tags = serializers.ListField(required=False)
+
+    class Meta:
+        model = Room
+        fields = ['floor', 'type', 'tags']
+
+
+# class RoomTypeSerializer(serializers.ModelSerializer):
+#     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=True)
+#
+#     class Meta:
+#         model = RoomType
+#         fields = '__all__'

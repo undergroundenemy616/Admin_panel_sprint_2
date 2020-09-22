@@ -17,9 +17,9 @@ from floors.serializers import FloorSerializer
 
 
 class OfficeSerializer(serializers.ModelSerializer):
-    license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all(), required=False)
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
-    floors = FloorSerializer(many=True, read_only=True)  # TODO too many request in db, see log
+    license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all(), required=False, write_only=True)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False, write_only=True)
+    floors = FloorSerializer(many=True, read_only=True)
     floors_number = serializers.IntegerField(min_value=0, max_value=84, required=False)  # floors count
 
     class Meta:
@@ -31,7 +31,7 @@ class OfficeSerializer(serializers.ModelSerializer):
                             'capacity_tables',
                             'occupied_meeting',
                             'capacity_meeting',
-                            'floors_number',
+                            # 'floors_number',
                             'floors')
 
     def create(self, validated_data):

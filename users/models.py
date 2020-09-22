@@ -1,7 +1,7 @@
 import random
 import uuid
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import PermissionsMixin
+from django.contrib.auth.models import PermissionsMixin, Group
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -52,7 +52,7 @@ class User(AbstractBaseUser):
     password = models.CharField(max_length=512, blank=True, null=True)
 
     last_code = models.IntegerField(blank=True, null=True, default=activated_code)
-    groups = models.ForeignKey('groups.Group', default=4, related_name='groups', on_delete=models.CASCADE)
+    groups = models.ForeignKey('groups.Group', default=4, related_name='users', on_delete=models.CASCADE)
 
     is_staff = models.BooleanField(default=False)  # Mocked
     is_active = models.BooleanField(default=True)
@@ -117,7 +117,7 @@ class Account(models.Model):
         ('undefined', 'undefined')
     )
 
-    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='users')
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='accounts')
 
     # account_type = models.CharField(max_length=128, default)  # TODO
 

@@ -9,12 +9,7 @@ from offices.models import Office
 class TableTag(models.Model):
 	office = models.ForeignKey(Office, on_delete=models.CASCADE, related_name='tags', blank=False, null=False)
 	title = models.CharField(max_length=256, null=False, blank=False)
-	icon = models.ForeignKey(
-		File,
-		on_delete=models.CASCADE,
-		blank=True,
-		null=True
-	)
+	icon = models.ForeignKey(File, on_delete=models.CASCADE, blank=True, null=True)
 
 
 class Table(models.Model):

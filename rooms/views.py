@@ -1,75 +1,80 @@
-from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.permissions import IsAdminUser
-from rooms.models import Room
-from tables.models import TableTag
-from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, EditRoomSerializer
+from typing import Dict, Optional
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin
+from rest_framework.request import Request
 from rest_framework.response import Response
-from django.core.paginator import Paginator
-from rest_framework import status
+from backends.pagination import DefaultPagination
+from backends.mixins import FilterListMixin
+from rooms.models import Room
+from rooms.procedures import select_filtered_rooms
+from rooms.serializers import RoomSerializer, FilterRoomSerializer
 
-from files.models import File
 
-
-class ListHandler(ListAPIView):
-    # permission_classes = [IsAdminUser]
+class ListCreateRoomsView(FilterListMixin,
+                          CreateModelMixin,
+                          GenericAPIView):
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
+    pagination_class = DefaultPagination
+    # permission_classes = (IsAdminUser,)
 
-    def post(self, request):
-        """
-        Add new room
-
-        """
-        serializer = CreateRoomSerializer(data=request.data)
+    @staticmethod
+    def get_mapped_query(request: Request) -> Optional[Dict]:
+        """Returns mapped literals for search in database or None."""
+        serializer = FilterRoomSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        params = {
-            "floor_id": serializer.data.get('floor'),
-            "title": serializer.data.get('title'),
-            "description": serializer.data.get('description'),
-            "type": serializer.data.get('type')
-        }
-        room = Room.objects.create(**params)
-        room.save()
-        return Response(self.serializer_class(room).data, status=status.HTTP_200_OK)
+        query_params = serializer.data
+        mapped = {"floor_id": query_params.get('floor'),
+                  "type": query_params.get('type'),
+                  "tables__tags__title__in": query_params.get('tags')}
+        items = []
+        for field in mapped.keys():
+            if not mapped[field]:
+                items.append(field)
+        for item in items:
+            del mapped[item]
+        return mapped
 
     def get(self, request, *args, **kwargs):
-        """
-        Get filtered room
+        """Provides filtered list interface."""
+        mapped = self.get_mapped_query(request)
+        records = select_filtered_rooms()
+        return Response(data=records, status=200)
 
-        """
-        serializer = FilterRoomSerializer(data=request.query_params)
-        if serializer.is_valid():
-            filter_dict = {
-                "floor_id": serializer.data.get('floor'),
-                "type": serializer.data.get('type'),
-                "tables__tags__title__in": serializer.data.get('tags')
-            }
-            rooms = Room.objects.filter(**{key: val for key, val in filter_dict.items() if val is not None}).distinct()
-        else:
-            rooms = self.get_queryset()
-        limit = serializer.data.get('limit') or 20
-        start = serializer.data.get('start') or 1
-        paged_rooms = Paginator(rooms, limit)
-        results = [RoomSerializer(room).data for room in paged_rooms.get_page(start)]
-        return Response({
-            "start": start,
-            "limit": limit,
-            "count": len(results),
-            "next": "",
-            "previous": "",
-            "results": results
-        })
+        # mapped = self.get_mapped_query(request)
+        # is_exists = Floor.objects.filter(pk=mapped['floor_id'])
+        # rooms = Room.objects.all().filter(floor_id=1)
+        # tables = Table.objects.all().filter(room_id__in=[r.id for r in rooms])
+        #
+        # mapped = self.get_mapped_query(request)
+        # queryset = self.get_queryset()
+        # if mapped:
+        #     queryset = queryset.filter(**mapped)
+        #
+        # queryset = self.filter_queryset(queryset)  # django filtering
+        # page = self.paginate_queryset(queryset)  # rest page pagination
+        #
+        # if page is not None:
+        #     serializer = self.get_serializer(page, many=True)
+        #     return self.get_paginated_response(serializer.data)  # rest response by pagination
+        # serializer = self.get_serializer(queryset, many=True)
+        # return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
 
 
-class ObjectHandler(RetrieveUpdateDestroyAPIView):
-    # permission_classes = [IsAdminUser]
+class RetrieveUpdateRoomsView(RetrieveModelMixin,
+                              UpdateModelMixin,
+                              GenericAPIView):
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
+    pagination_class = DefaultPagination
 
-    def update(self, request, *args, **kwargs):
-        serializer = EditRoomSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        params = {key: val for key, val in serializer.validated_data.items()}
-        self.get_queryset().filter(pk=self.kwargs.get('pk')).update(**params)
-        return Response(RoomSerializer(self.get_object()).data)
+    # permission_classes = (IsAdminUser,)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)

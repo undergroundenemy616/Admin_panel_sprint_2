@@ -1,0 +1,20 @@
+[
+  {
+    "model": "rooms.Room",
+    "pk": 1,
+    "fields": {
+      "floor": 1,
+      "title": "Кабинет №12",
+      "type": "Рабочее место"
+    }
+  },
+  {
+    "model": "rooms.Room",
+    "pk": 2,
+    "fields": {
+      "floor": 1,
+      "title": "Кабинет №13",
+      "type": "Рабочее место"
+    }
+  }
+]
