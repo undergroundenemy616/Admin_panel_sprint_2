@@ -66,9 +66,9 @@ def jwt_payload_handler(user):
 
     payload = {
         'user_id': identity,
-        'phone_number': phone_number,
-        'password': password,
-        'email': email,
+        'phone_number': phone_number,  # TODO there are no need
+        'password': password,  # TODO there are no need
+        'email': email,  # TODO there are no need
         # 'expire': time.time() + 60 * 24 * 30
     }
     if api_settings.JWT_ALLOW_REFRESH:

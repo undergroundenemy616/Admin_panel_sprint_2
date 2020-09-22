@@ -1,5 +1,5 @@
 [
-   {
+  {
     "model": "offices.Office",
     "pk": 1,
     "fields": {

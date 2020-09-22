@@ -13,5 +13,3 @@ class License(models.Model):
     forever = models.BooleanField(blank=False, null=False)
     office = models.OneToOneField(Office, on_delete=models.CASCADE, related_query_name='licenses',
                                   blank=True, null=True)
-
-

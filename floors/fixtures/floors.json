@@ -1,0 +1,18 @@
+[
+  {
+    "model": "floors.Floor",
+    "pk": 1,
+    "fields": {
+      "title": "test_floor_1",
+      "office": 1
+    }
+  },
+  {
+    "model": "floors.Floor",
+    "pk": 2,
+    "fields": {
+      "title": "test_floor_2",
+      "office": 1
+    }
+  }
+]

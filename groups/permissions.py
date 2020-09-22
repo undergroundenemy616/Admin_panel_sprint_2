@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 
 
 class HasMinimalAccessOrIsAuthenticated(IsAuthenticated):
@@ -11,11 +11,14 @@ class HasMinimalAccessOrIsAuthenticated(IsAuthenticated):
         return False
 
 
-class IsEngineerOrReadOnly(HasMinimalAccessOrIsAuthenticated):
-    access = get_
+class IsAdmin(object):  # TODO!!!
+    """Must be implemented, not override!!"""
+
+    def has_permission(self, request, view):
+        return True  # TODO!!!
 
 
-class IsAdminUserOrReadOnly(IsAdminUser):
+class IsAdminUserOrReadOnly(IsAdmin):
 
     def has_permission(self, request, view):
         is_admin = super(
@@ -23,3 +26,7 @@ class IsAdminUserOrReadOnly(IsAdminUser):
             self).has_permission(request, view)
         # Python3: is_admin = super().has_permission(request, view)
         return request.method in SAFE_METHODS or is_admin
+
+
+class IsEngineerOrReadOnly(HasMinimalAccessOrIsAuthenticated):
+    pass
