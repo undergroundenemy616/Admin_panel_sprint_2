@@ -1,43 +1,6 @@
-from typing import List, Optional
-
 from django.db import models
-from django.db.models import Manager
-
 from floors.models import Floor
 from files.models import File
-
-
-class RoomManager(Manager):
-    def filtered_rooms(self, floor_id, typed: Optional[str] = None, tags: Optional[List] = None):
-        assert tags is not None and isinstance(tags, list) and len(tags), (
-            'Error'
-        )
-        row = """select r.id,
-                       r.title,
-                       r.description::varchar(256),
-                       r.type::varchar(64),
-                       (select count(*) from tables_table)::integer                              as "capacity",
-                       (select count(*) from tables_table t where t.is_occupied = True)::integer as "occupied",
-                       (select case
-                                   when r.type = 'Рабочее место'
-                                       then (select count(*) from tables_table t where t.is_occupied = True)
-                                   else 0
-                                   END)::integer                                                 as "occupied_tables",
-                       (select case
-                                   when r.type = 'Рабочее место' then (select count(*) from tables_table)
-                                   else 0
-                                   END)::integer                                                 as "capacity_tables",
-                       (select case
-                                   when r.type = 'Переговорная'
-                                       then (select count(*) from tables_table t where t.is_occupied = True)
-                                   else 0
-                                   END)::integer                                                 as "occupied_meeting",
-                       (select case
-                                   when r.type = 'Переговорная' then (select count(*) from tables_table)
-                                   else 0
-                                   END)::integer                                                 as "capacity_meeting"
-                from rooms_room r"""
-
 
 
 class Room(models.Model):
@@ -83,17 +46,12 @@ class Room(models.Model):
         return 0
 
 
-# class RoomType(models.Model):  # TODO roomtypes
-#     room = models.ForeignKey(Room, related_name='types', blank=False, null=False, on_delete=models.CASCADE)
-#     title = models.CharField(max_length=128, blank=False, null=True)  # TODO
-
-
 # class RoomImage(models.Model):
 # 	file = models.ForeignKey(File, null=False, blank=False, on_delete=models.CASCADE)
 # 	room = models.ForeignKey(Room, null=False, blank=False, on_delete=models.CASCADE)
 
 
-# class RoomMarker(models.Model):
+# class RoomMarker(models.Model):  # todo added by cybertatar
 #     room = models.OneToOneField(Room, null=False, blank=False, on_delete=models.CASCADE)
 #     icon = models.CharField(max_length=64, null=False, blank=False)
 #     x = models.DecimalField(

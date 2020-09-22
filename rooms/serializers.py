@@ -57,7 +57,7 @@ class FilterRoomSerializer(serializers.ModelSerializer):
         fields = ['floor', 'type', 'tags']
 
 
-# class RoomTypeSerializer(serializers.ModelSerializer):
+# class RoomTypeSerializer(serializers.ModelSerializer):  # todo use it
 #     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=True)
 #
 #     class Meta:

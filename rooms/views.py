@@ -16,6 +16,7 @@ class ListCreateRoomsView(FilterListMixin,
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
+
     # permission_classes = (IsAdminUser,)
 
     @staticmethod
@@ -38,7 +39,8 @@ class ListCreateRoomsView(FilterListMixin,
     def get(self, request, *args, **kwargs):
         """Provides filtered list interface."""
         mapped = self.get_mapped_query(request)
-        records = select_filtered_rooms()
+        print(mapped)
+        records = select_filtered_rooms()  # TODO filters
         return Response(data=records, status=200)
 
         # mapped = self.get_mapped_query(request)
