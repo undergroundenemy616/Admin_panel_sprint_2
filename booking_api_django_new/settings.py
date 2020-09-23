@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     'offices',
     'rooms',
     'tables',
+    'room_types',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',

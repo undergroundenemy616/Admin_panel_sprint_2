@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from rooms.models import Room
+
+from offices.models import Office
 from room_types.models import RoomType
 
 
 class RoomTypeSerializer(serializers.ModelSerializer):
-    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=True)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
 
     class Meta:
         model = RoomType
