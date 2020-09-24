@@ -1,4 +1,4 @@
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -10,7 +10,7 @@ from room_types.models import RoomType
 
 
 # Create your views here.
-class ListCreateRoomTypesView(GenericAPIView, CreateModelMixin, ListModelMixin):
+class CreateRoomTypesView(GenericAPIView, CreateModelMixin):
     serializer_class = RoomTypeSerializer
     queryset = RoomType.objects.all()
     pagination_class = DefaultPagination
@@ -18,13 +18,11 @@ class ListCreateRoomTypesView(GenericAPIView, CreateModelMixin, ListModelMixin):
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
 
-
-class UpdateDestroyRoomTypesView(GenericAPIView,
-                                 UpdateModelMixin,
-                                 DestroyModelMixin):
+class ListUpdateDestroyRoomTypesView(GenericAPIView,
+                                     ListModelMixin,
+                                     UpdateModelMixin,
+                                     DestroyModelMixin):
     serializer_class = RoomTypeSerializer
     queryset = RoomType.objects.all()
     pagination_class = DefaultPagination
@@ -34,3 +32,7 @@ class UpdateDestroyRoomTypesView(GenericAPIView,
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+    def get(self, request, pk, *args, **kwargs):
+        self.queryset = RoomType.objects.filter(office=pk)
+        return self.list(request, *args, **kwargs)
