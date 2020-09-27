@@ -1,4 +1,6 @@
 from typing import Dict, Optional
+
+from django.db.models import Q, Count, Subquery
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin
 from rest_framework.request import Request
@@ -8,6 +10,7 @@ from backends.mixins import FilterListMixin
 from rooms.models import Room
 from rooms.procedures import select_filtered_rooms
 from rooms.serializers import RoomSerializer, FilterRoomSerializer
+from tables.models import Table
 
 
 class ListCreateRoomsView(FilterListMixin,
@@ -36,31 +39,28 @@ class ListCreateRoomsView(FilterListMixin,
             del mapped[item]
         return mapped
 
-    def get(self, request, *args, **kwargs):
+    def ss(self, request, *args, **kwargs):
         """Provides filtered list interface."""
         mapped = self.get_mapped_query(request)
         print(mapped)
         records = select_filtered_rooms()  # TODO filters
         return Response(data=records, status=200)
 
+    def get(self, request, *args, **kwargs):
+        #     mapped = self.get_mapped_query(request)
+        #     print(mapped)
+        #     print('Subquery')
+        #     # counts = Count(Table.objects.filter(is_occupied=True))
+        #     tables_count = Table.objects.filter(is_occupied=True).annotate(c=Count('*')).values('c')
+        #     records = Room.objects.annotate(occupied=Subquery(tables_count))
+        #     # records = Room.objects.annotate(occupied=Count('*', Table.objects.filter(is_occupied=True).count()))
+        #     print(records)
+
         # mapped = self.get_mapped_query(request)
         # is_exists = Floor.objects.filter(pk=mapped['floor_id'])
         # rooms = Room.objects.all().filter(floor_id=1)
         # tables = Table.objects.all().filter(room_id__in=[r.id for r in rooms])
-        #
-        # mapped = self.get_mapped_query(request)
-        # queryset = self.get_queryset()
-        # if mapped:
-        #     queryset = queryset.filter(**mapped)
-        #
-        # queryset = self.filter_queryset(queryset)  # django filtering
-        # page = self.paginate_queryset(queryset)  # rest page pagination
-        #
-        # if page is not None:
-        #     serializer = self.get_serializer(page, many=True)
-        #     return self.get_paginated_response(serializer.data)  # rest response by pagination
-        # serializer = self.get_serializer(queryset, many=True)
-        # return Response(serializer.data)
+        return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)

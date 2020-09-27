@@ -7,7 +7,18 @@
       "description": "Бц для первичного тестирования",
       "working_hours": "Ежедневно с 10 по 20",
       "service_email": "nap@liis.su",
-      "images": [1, 2]
+      "images": [1, 2],
+      "license": 1
+    }
+  },
+  {
+    "model": "offices.OfficeZone",
+    "pk": 1,
+    "fields": {
+      "title": "Рабочее место",
+      "office": 1,
+      "group_whitelist": [1, 2, 3, 4, 5],
+      "is_deletable": false
     }
   }
 ]

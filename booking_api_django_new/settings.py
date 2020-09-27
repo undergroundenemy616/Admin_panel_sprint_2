@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     'offices',
     'rooms',
     'tables',
+    'drf_yasg',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',

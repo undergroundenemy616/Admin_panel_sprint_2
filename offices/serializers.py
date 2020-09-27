@@ -1,57 +1,78 @@
+from datetime import datetime
 from rest_framework import serializers
-from floors.models import Floor
-from offices.models import Office
+from rest_framework.exceptions import ValidationError
+from offices.models import Office, OfficeZone
 from files.models import File
 from licenses.models import License
 from floors.serializers import FloorSerializer
 
 
-# class EditOfficeSerializer(serializers.ModelSerializer):
-#     license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all(), required=False)
-#     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
-#     floors_number = serializers.IntegerField(min_value=0, required=False)
-#
-#     class Meta:
-#         model = Office
-#         fields = '__all__'
+def working_hours_validator(value):
+    try:
+        times = value.split('-')
+        start_time = datetime.strptime(times[0], '%H:%M')
+        end_time = datetime.strptime(times[1], '%H:%M')
+    except Exception as err:
+        print(str(err))
+        raise ValidationError
+
+    if not start_time < end_time:
+        msg = 'Start time can not be less or equal than end time'
+        raise ValidationError(msg)
+    return value
 
 
 class OfficeSerializer(serializers.ModelSerializer):
-    license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all(), required=False, write_only=True)
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False, write_only=True)
-    floors = FloorSerializer(many=True, read_only=True)
-    floors_number = serializers.IntegerField(min_value=0, max_value=84, required=False)  # floors count
+    license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all(),
+                                                 required=True,
+                                                 write_only=True)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(),
+                                                many=True,
+                                                required=False,
+                                                write_only=True,  # todo change field
+                                                help_text='Images must contains primary keys.')
+    working_hours = serializers.CharField(max_length=128,
+                                          required=False,
+                                          validators=[working_hours_validator],
+                                          help_text='Working hours `%H:%M-%H:%M`.')
 
     class Meta:
         model = Office
         fields = '__all__'
-        read_only_fields = ('occupied',
-                            'capacity',
-                            'occupied_tables',
-                            'capacity_tables',
-                            'occupied_meeting',
-                            'capacity_meeting',
-                            # 'floors_number',
-                            'floors')
 
-    def create(self, validated_data):
-        validated_data.pop('license', None)
-        floors_number = validated_data.pop('floors_number', 0)
-        instance = super(OfficeSerializer, self).create(validated_data)
-        floors_to_save = [Floor(title=str(n + 1), office=instance) for n in range(0, floors_number)]
-        Floor.objects.bulk_create(floors_to_save)
-        return instance
+    # def create(self, validated_data):
+    #     images = validated_data.pop('images', None)
+    #     instance = Office.objects.create(**validated_data)  # create office
+    #     if images
+    #
+    #     return instance
 
     def update(self, instance, validated_data):
-        floors_number = validated_data.pop('floors_number', None)
-        license_id = validated_data.pop('license', None)
-        if license_id:
-            entity = License.objects.get(pk=license_id)
-            entity.office = instance
-            entity.save()
-            # Todo test it
-        if floors_number is not None and floors_number > instance.floors_number:
-            floors_to_save = [Floor(title=str(n + 1), office=instance) for n in range(instance.floors_number,
-                                                                                      floors_number)]
-            Floor.objects.bulk_create(floors_to_save)
+        validated_data.pop('license', None)
         return super(OfficeSerializer, self).update(instance, validated_data)
+
+
+class ListOfficeSerializer(serializers.ModelSerializer):
+    # license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all(), required=True, write_only=True)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(),
+                                                many=True,
+                                                required=False,
+                                                write_only=True,
+                                                help_text='Images must contains primary keys.')
+    floors = FloorSerializer(many=True, read_only=True)
+    working_hours = serializers.CharField(max_length=128,
+                                          required=False,
+                                          validators=[working_hours_validator],
+                                          help_text='Working hours `%H:%M-%H:%M`.')
+
+    class Meta:
+        model = Office
+        fields = '__all__'
+        depth = 1
+
+
+class OfficeZoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfficeZone
+        fields = '__all__'
+        depth = 1

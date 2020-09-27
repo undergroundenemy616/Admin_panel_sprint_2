@@ -1,0 +1,10 @@
+[
+  {
+    "model": "licenses.License",
+    "pk": 1,
+    "fields": {
+      "tables_infinite": true,
+      "forever": true
+    }
+  }
+]
