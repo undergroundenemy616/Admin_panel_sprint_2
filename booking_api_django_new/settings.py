@@ -103,6 +103,7 @@ INSTALLED_APPS = [
     'licenses',
     'offices',
     'rooms',
+    'drf_yasg',
     'tables',
     'room_types',
     'rest_framework',

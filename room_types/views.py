@@ -7,10 +7,11 @@ from backends.pagination import DefaultPagination
 from backends.mixins import FilterListMixin
 from room_types.serializers import RoomTypeSerializer
 from room_types.models import RoomType
+from offices.models import Office
 
 
 # Create your views here.
-class CreateRoomTypesView(GenericAPIView, CreateModelMixin):
+class ListCreateRoomTypesView(GenericAPIView, CreateModelMixin, ListModelMixin):
     serializer_class = RoomTypeSerializer
     queryset = RoomType.objects.all()
     pagination_class = DefaultPagination
@@ -18,11 +19,14 @@ class CreateRoomTypesView(GenericAPIView, CreateModelMixin):
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
+    def get(self, request, *args, **kwargs):
+        self.queryset = RoomType.objects.filter(office=get_object_or_404(Office, pk=request.query_params.get('office')))
+        return self.list(request, *args, **kwargs)
 
-class ListUpdateDestroyRoomTypesView(GenericAPIView,
-                                     ListModelMixin,
-                                     UpdateModelMixin,
-                                     DestroyModelMixin):
+
+class UpdateDestroyRoomTypesView(GenericAPIView,
+                                 UpdateModelMixin,
+                                 DestroyModelMixin):
     serializer_class = RoomTypeSerializer
     queryset = RoomType.objects.all()
     pagination_class = DefaultPagination
@@ -32,7 +36,3 @@ class ListUpdateDestroyRoomTypesView(GenericAPIView,
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
-
-    def get(self, request, pk, *args, **kwargs):
-        self.queryset = RoomType.objects.filter(office=pk)
-        return self.list(request, *args, **kwargs)
