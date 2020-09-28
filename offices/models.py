@@ -1,7 +1,8 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.db.models import Sum
 from files.models import File
 from groups.models import Group
+from licenses.models import License
 
 
 class Office(models.Model):
@@ -10,42 +11,14 @@ class Office(models.Model):
     working_hours = models.CharField(max_length=128, null=True, blank=True)
     service_email = models.CharField(max_length=256, null=True, blank=True)
     images = models.ManyToManyField(File, related_name='offices')
+    license = models.OneToOneField(License, related_name='office', on_delete=models.PROTECT, null=True)
 
-    @property
-    def occupied(self):
-        return self.objects.all().aggregate(Sum('occupied'))
-
-    @property
-    def capacity(self):
-        return self.objects.all().aggregate(Sum('capacity'))
-
-    @property
-    def occupied_tables(self):
-        return self.objects.all().aggregate(Sum('occupied_tables'))
-
-    @property
-    def capacity_tables(self):
-        return self.objects.all().aggregate(Sum('capacity_tables'))
-
-    @property
-    def occupied_meeting(self):
-        return self.objects.all().aggregate(Sum('occupied_meeting'))
-
-    @property
-    def capacity_meeting(self):
-        return self.objects.all().aggregate(Sum('capacity_meeting'))
-
-    @property
-    def floors_number(self):
-        return self.floors.count()
+    def __str__(self):
+        return self.title
 
 
 class OfficeZone(models.Model):
     title = models.CharField(max_length=256, null=False, blank=False)
     office = models.ForeignKey(Office, on_delete=models.CASCADE, blank=False, null=False)
-    pre_defined = models.BooleanField()
-
-
-class GroupWhitelist(models.Model):
-    zone = models.ForeignKey(OfficeZone, on_delete=models.CASCADE, blank=False, null=False)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=False, null=False)
+    group_whitelist = models.ManyToManyField(Group)
+    is_deletable = models.BooleanField(default=True, blank=False, null=False)

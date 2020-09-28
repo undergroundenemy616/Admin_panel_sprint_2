@@ -28,9 +28,16 @@ class Group(models.Model):
     title = models.CharField(max_length=64, unique=True, default='client', null=False,
                              blank=False)
     access = models.IntegerField(validators=[integer_validator], default=4, null=False, blank=False)
+    is_deletable = models.BooleanField(default=True, null=False, blank=False)
 
     def clean(self):
         # Custom groups (created by user) can be any.
         if (self.title, self.title) in ALLOWED_GROUPS and (self.access, self.title) not in MAP_ACCESS:
             msg = 'Access and title cannot be mapped!'
             raise ValidationError(msg)
+
+    def delete(self, using=None, keep_parents=False):
+        if not self.is_deletable:
+            msg = f'This group {self.title} has non-deletable permissions.'
+            raise ValidationError(msg)
+        return super(Group, self).delete(using=None, keep_parents=False)

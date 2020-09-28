@@ -4,7 +4,8 @@
     "pk": 1,
     "fields": {
       "title": "client",
-      "access": 4
+      "access": 4,
+      "is_deletable": false
     }
   },
   {
@@ -12,7 +13,8 @@
     "pk": 2,
     "fields": {
       "title": "engineer",
-      "access": 3
+      "access": 3,
+      "is_deletable": false
     }
   },
   {
@@ -20,7 +22,8 @@
     "pk": 3,
     "fields": {
       "title": "admin",
-      "access": 2
+      "access": 2,
+      "is_deletable": false
     }
   },
   {
@@ -28,7 +31,8 @@
     "pk": 4,
     "fields": {
       "title": "owner",
-      "access": 1
+      "access": 1,
+      "is_deletable": false
     }
   },
   {
@@ -36,7 +40,8 @@
     "pk": 5,
     "fields": {
       "title": "superuser",
-      "access": 0
+      "access": 0,
+      "is_deletable": false
     }
   }
 ]
