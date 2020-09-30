@@ -1,6 +1,8 @@
 from rest_framework import serializers
+from files.models import File
+from files.serializers import FileSerializer
+from floors.models import Floor, FloorMap
 from offices.models import Office
-from floors.models import Floor
 from rooms.serializers import RoomSerializer
 
 
@@ -21,24 +23,34 @@ class FilterFloorSerializer(serializers.ModelSerializer):
         fields = ['type', 'tags', 'start', 'limit']
 
 
-class CreateFloorSerializer(serializers.ModelSerializer):
-    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
-
-    class Meta:
-        model = Floor
-        fields = '__all__'
-
-
-class FloorSerializer(serializers.ModelSerializer):
-    # occupied = serializers.ReadOnlyField()
-    # capacity = serializers.ReadOnlyField()
-    # occupied_tables = serializers.ReadOnlyField()
-    # capacity_tables = serializers.ReadOnlyField()
-    # occupied_meeting = serializers.ReadOnlyField()
-    # capacity_meeting = serializers.ReadOnlyField()
-    rooms = RoomSerializer(many=True)
+class BaseFloorSerializer(serializers.ModelSerializer):
+    """Only for office usages"""
+    office = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Floor
         fields = '__all__'
         depth = 1
+
+
+class FloorSerializer(BaseFloorSerializer):
+    rooms = RoomSerializer(many=True, read_only=True)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+
+
+class FloorMapSerializer(serializers.ModelSerializer):
+    image = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(),
+                                               required=True)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(),
+                                               required=True)
+
+    class Meta:
+        model = FloorMap
+        fields = '__all__'
+        depth = 1
+
+    def to_representation(self, instance):
+        data = super(FloorMapSerializer, self).to_representation(instance)
+        data['image'] = FileSerializer(instance=instance.image).data
+        data['floor'] = BaseFloorSerializer(instance=instance.floor).data
+        return data

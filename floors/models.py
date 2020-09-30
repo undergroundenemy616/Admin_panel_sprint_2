@@ -4,39 +4,24 @@ from files.models import File
 
 
 class Floor(models.Model):
-	title = models.CharField(max_length=256, null=False, blank=False)
-	office = models.ForeignKey(Office, related_name='floors', null=False, blank=False, on_delete=models.CASCADE)
+    title = models.CharField(max_length=256, null=False, blank=False, unique=True)
+    description = models.CharField(max_length=1024, null=True, blank=True)
+    office = models.ForeignKey(Office, related_name='floors', null=False, blank=False, on_delete=models.CASCADE)
 
-	@property
-	def occupied(self):
-		return sum(rm.occupied for rm in self.rooms.all())
-
-	@property
-	def capacity(self):
-		return sum(rm.capacity for rm in self.rooms.all())
-
-	@property
-	def occupied_tables(self):
-		return sum(rm.occupied_tables for rm in self.rooms.all())
-
-	@property
-	def capacity_tables(self):
-		return sum(rm.capacity_tables for rm in self.rooms.all())
-
-	@property
-	def occupied_meeting(self):
-		return sum(rm.occupied_meeting for rm in self.rooms.all())
-
-	@property
-	def capacity_meeting(self):
-		return sum(rm.capacity_meeting for rm in self.rooms.all())
+    def __str__(self):
+        return self.title
 
 
 class FloorMap(models.Model):
-	image = models.ForeignKey(
-		File,
-		on_delete=models.CASCADE,
-		blank=False,
-		null=False
-	)
-	floor = models.ForeignKey(Floor, on_delete=models.CASCADE, blank=False, null=False)
+    image = models.ForeignKey(
+        File,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False
+    )
+    height = models.CharField(max_length=12, null=False, blank=False)
+    width = models.CharField(max_length=12, null=False, blank=False)
+    floor = models.OneToOneField(Floor, on_delete=models.CASCADE, blank=False, null=False)
+
+    def __str__(self):
+        return f'{self.id}: {self.width}x{self.height}'
