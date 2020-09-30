@@ -1,12 +1,8 @@
-from django.forms import model_to_dict
 from rest_framework import status
 from rest_framework.response import Response
 from backends.pagination import DefaultPagination
-from floors.models import Floor
-from groups.models import Group
-from licenses.serializers import LicenseSerializer
-from offices.models import Office, OfficeZone
-from offices.serializers import OfficeSerializer, OfficeZoneSerializer
+from offices.models import Office
+from offices.serializers import CreateOfficeSerializer
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
     UpdateModelMixin,
@@ -21,7 +17,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                                  CreateModelMixin,
                                  GenericAPIView):
     """Office View."""
-    serializer_class = OfficeSerializer
+    serializer_class = CreateOfficeSerializer
     queryset = Office.objects.all()
     pagination_class = DefaultPagination
 
@@ -54,37 +50,12 @@ class ListCreateUpdateOfficeView(ListModelMixin,
         """Get list of all offices."""
         return self.list(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):  # done, test, todo signals
-        """Create office."""
-        serializer: OfficeSerializer
-        serializer = self.get_serializer(data=request.data)
+    def post(self, request, *args, **kwargs):
+        serializer = CreateOfficeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        office = serializer.save()
-        floor = Floor.objects.create(office=office, title='Default floor.')  # create floor
-        office_zone = OfficeZone.objects.create(office=office, is_deletable=False)  # create zone
-        groups = Group.objects.filter(is_deletable=False)
-        if groups:
-            office_zone.group_whitelist.add(*groups)  # add to group whitelist
-        zones_with_groups = OfficeZoneSerializer(instance=office_zone).data
-
+        serializer.save()
         headers = self.get_success_headers(serializer.data)
-
-        data = dict()
-        data.update(serializer.data)
-        data['id'] = office.id
-        data['images'] = [r.id for r in serializer.validated_data.get('images', [])]
-        data['license'] = LicenseSerializer(instance=serializer.validated_data['license']).data
-        data['floors'] = [model_to_dict(floor)]  # todo change to serializer
-        data['zones'] = zones_with_groups
-        data['floors_number'] = 1
-        data['occupied'] = 0
-        data['capacity'] = 0
-        data['occupied_tables'] = 0
-        data['capacity_tables'] = 0
-        data['occupied_meeting'] = 0
-        data['capacity_meeting'] = 0
-
-        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class RetrieveUpdateDeleteOfficeView(UpdateModelMixin,
@@ -92,7 +63,7 @@ class RetrieveUpdateDeleteOfficeView(UpdateModelMixin,
                                      DestroyModelMixin,
                                      GenericAPIView):
     """Detail Office view. All request required {id}"""
-    serializer_class = OfficeSerializer
+    serializer_class = CreateOfficeSerializer
     queryset = Office.objects.all()
 
     def get(self, request, *args, **kwargs):

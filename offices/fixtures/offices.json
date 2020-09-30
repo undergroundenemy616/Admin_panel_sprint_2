@@ -17,7 +17,7 @@
     "fields": {
       "title": "Рабочее место",
       "office": 1,
-      "group_whitelist": [1, 2, 3, 4, 5],
+      "groups": [1, 2, 3, 4, 5],
       "is_deletable": false
     }
   }

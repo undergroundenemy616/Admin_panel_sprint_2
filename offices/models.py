@@ -1,4 +1,3 @@
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from files.models import File
 from groups.models import Group
@@ -19,6 +18,6 @@ class Office(models.Model):
 
 class OfficeZone(models.Model):
     title = models.CharField(max_length=256, null=False, blank=False)
-    office = models.ForeignKey(Office, on_delete=models.CASCADE, blank=False, null=False)
-    group_whitelist = models.ManyToManyField(Group)
+    office = models.ForeignKey(Office, on_delete=models.CASCADE, blank=False, null=False, related_name='zones')
+    groups = models.ManyToManyField(Group, related_name='groups')
     is_deletable = models.BooleanField(default=True, blank=False, null=False)
