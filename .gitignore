@@ -6,4 +6,4 @@
 *.xml
 *.pyc
 __pycache__
-/room_types
+/bookings
