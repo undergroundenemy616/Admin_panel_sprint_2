@@ -1,5 +1,6 @@
 """Drop all tables in current DB."""
 import os
+
 os.environ.setdefault('BRANCH', 'yokohola')
 
 from django.core.exceptions import ImproperlyConfigured

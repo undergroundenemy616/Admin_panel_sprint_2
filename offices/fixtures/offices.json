@@ -1,23 +1,24 @@
 [
   {
     "model": "offices.Office",
-    "pk": 1,
+    "pk": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38",
     "fields": {
       "title": "Тестовый Бц",
       "description": "Бц для первичного тестирования",
       "working_hours": "Ежедневно с 10 по 20",
       "service_email": "nap@liis.su",
-      "images": [1, 2],
-      "license": 1
+      "images": ["8e922d9c-28fa-4a49-8bbd-4ac82d730c53",
+      "8ee4ad56-125d-4309-8f73-d12ebf447455"],
+      "license": "f28b1123-778a-4c89-b9e3-3999a7dc0fa5"
     }
   },
   {
     "model": "offices.OfficeZone",
-    "pk": 1,
+    "pk": "08e2eeeb-3eed-4426-81b7-0106b98a5ba6",
     "fields": {
       "title": "Рабочее место",
-      "office": 1,
-      "groups": [1, 2, 3, 4, 5],
+      "office": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38",
+      "groups": ["e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99"],
       "is_deletable": false
     }
   }

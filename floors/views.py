@@ -67,6 +67,7 @@ class ListCreateFloorMapView(ListModelMixin,
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
+
 # class ListHandler(ListAPIView):
 #     # permission_classes = [IsAdminUser]
 #     serializer_class = BaseFloorSerializer
@@ -99,16 +100,3 @@ class ListCreateFloorMapView(ListModelMixin,
 #             "previous": "",
 #             "results": results
 #         })
-#
-#
-# class ObjectHandler(RetrieveUpdateDestroyAPIView):
-#     # permission_classes = [IsAdminUser]
-#     serializer_class = BaseFloorSerializer
-#     queryset = Floor.objects.all()
-#
-#     def update(self, request, *args, **kwargs):
-#         serializer = EditFloorSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         params = {key: val for key, val in serializer.validated_data.items()}
-#         self.get_queryset().filter(pk=self.kwargs.get('pk')).update(**params)
-#         return Response(BaseFloorSerializer(self.get_object()).data)

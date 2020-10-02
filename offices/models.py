@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from files.models import File
 from groups.models import Group
@@ -5,6 +7,8 @@ from licenses.models import License
 
 
 class Office(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     title = models.CharField(max_length=256, null=False, blank=False)
     description = models.CharField(max_length=256, null=True, blank=True)
     working_hours = models.CharField(max_length=128, null=True, blank=True)
@@ -17,6 +21,8 @@ class Office(models.Model):
 
 
 class OfficeZone(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     title = models.CharField(max_length=256, null=False, blank=False)
     office = models.ForeignKey(Office, on_delete=models.CASCADE, blank=False, null=False, related_name='zones')
     groups = models.ManyToManyField(Group, related_name='groups')

@@ -1,3 +1,4 @@
+import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -25,6 +26,8 @@ def integer_validator(value):
 
 
 class Group(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     title = models.CharField(max_length=64, unique=True, default='client', null=False,
                              blank=False)
     access = models.IntegerField(validators=[integer_validator], default=4, null=False, blank=False)

@@ -1,9 +1,10 @@
 import random
 import uuid
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import PermissionsMixin, Group
 from django.core.exceptions import ValidationError
 from django.db import models
+
+from groups.models import Group
 
 
 class BookingUserManager(BaseUserManager):
@@ -40,19 +41,29 @@ class BookingUserManager(BaseUserManager):
 
 
 def activated_code():
-    """Returns random 4 integers"""
+    """Returns random 4 integers."""
     return random.randint(1000, 9999)
+
+
+# def get_client_group():
+#     """Returns client-group id.
+#     Migrate all to db before calling"""
+#     group_id = Group.objects.get(title='client').id
+#     assert group_id is not None, ('Group does not exists, did you forget'
+#                                   '`loaddata` before?')
+#     return group_id
 
 
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    phone_number = models.CharField(unique=True, max_length=16)
+    phone_number: str = models.CharField(unique=True, max_length=16)
     username = models.CharField(unique=True, max_length=64, null=True, blank=True)
     email = models.EmailField(unique=True, max_length=128, null=True, blank=True)
     password = models.CharField(max_length=512, blank=True, null=True)
 
     last_code = models.IntegerField(blank=True, null=True, default=activated_code)
-    groups = models.ForeignKey('groups.Group', default=4, related_name='users', on_delete=models.CASCADE)
+    groups = models.ForeignKey('groups.Group', default="e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99", related_name='users',
+                               on_delete=models.CASCADE)
 
     is_staff = models.BooleanField(default=False)  # Mocked
     is_active = models.BooleanField(default=True)
@@ -90,7 +101,7 @@ class User(AbstractBaseUser):
         """Phone len must be 12 chars. If it is not, returns False"""
         return 11 <= len(phone_number) <= 16
 
-    def clean(self):  # TODO
+    def clean(self):
         try:
             self.normalize_phone(self.phone_number)
         except ValueError as error:
@@ -111,6 +122,7 @@ class User(AbstractBaseUser):
 
 
 class Account(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     GENDERS = (
         ('male', 'male'),
         ('female', 'female'),

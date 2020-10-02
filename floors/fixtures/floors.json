@@ -1,18 +1,18 @@
 [
   {
     "model": "floors.Floor",
-    "pk": 1,
+    "pk": "5ad2004e-9b14-42d6-8ec0-a48ad642e58a",
     "fields": {
       "title": "test_floor_1",
-      "office": 1
+      "office": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38"
     }
   },
   {
     "model": "floors.Floor",
-    "pk": 2,
+    "pk": "025e49d5-06e8-4a5c-b664-dd3f2f35b88c",
     "fields": {
       "title": "test_floor_2",
-      "office": 1
+      "office": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38"
     }
   }
 ]

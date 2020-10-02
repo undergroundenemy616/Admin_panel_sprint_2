@@ -1,9 +1,13 @@
+import uuid
+
 from django.db import models
 from offices.models import Office
 from files.models import File
 
 
 class Floor(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     title = models.CharField(max_length=256, null=False, blank=False, unique=True)
     description = models.CharField(max_length=1024, null=True, blank=True)
     office = models.ForeignKey(Office, related_name='floors', null=False, blank=False, on_delete=models.CASCADE)
@@ -13,6 +17,8 @@ class Floor(models.Model):
 
 
 class FloorMap(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     image = models.ForeignKey(
         File,
         on_delete=models.CASCADE,

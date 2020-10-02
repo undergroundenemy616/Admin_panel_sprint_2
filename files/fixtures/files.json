@@ -1,7 +1,7 @@
 [
   {
     "model": "files.File",
-    "pk": 1,
+    "pk": "8e922d9c-28fa-4a49-8bbd-4ac82d730c53",
     "fields": {
       "title": "photo_1",
       "path": "c/local",
@@ -10,7 +10,7 @@
   },
   {
     "model": "files.File",
-    "pk": 2,
+    "pk": "8ee4ad56-125d-4309-8f73-d12ebf447455",
     "fields": {
       "title": "photo_2",
       "path": "c/local",

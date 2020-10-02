@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.utils.functional import cached_property
 from floors.models import Floor
@@ -5,6 +7,8 @@ from files.models import File
 
 
 class Room(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     title = models.CharField(max_length=256, null=False, blank=False)
     description = models.CharField(max_length=256, null=True, blank=True)
     type = models.CharField(max_length=128, null=False, blank=False)  # Todo change

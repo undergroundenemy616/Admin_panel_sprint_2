@@ -1,8 +1,12 @@
+import uuid
+
 from django.core.validators import MinValueValidator
 from django.db import models
 
 
 class License(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     issued_at = models.DateField(blank=True, null=True)
     expires_at = models.DateField(blank=True, null=True)
     support_available = models.BooleanField(default=False, null=True)

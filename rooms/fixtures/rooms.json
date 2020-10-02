@@ -1,18 +1,18 @@
 [
   {
     "model": "rooms.Room",
-    "pk": 1,
+    "pk": "5c0af2ad-7d29-48f9-ba8d-f101c7720847",
     "fields": {
-      "floor": 1,
+      "floor": "5ad2004e-9b14-42d6-8ec0-a48ad642e58a",
       "title": "Кабинет №12",
       "type": "Рабочее место"
     }
   },
   {
     "model": "rooms.Room",
-    "pk": 2,
+    "pk": "9017fcaf-7807-47d7-948b-18af8f4020a0",
     "fields": {
-      "floor": 1,
+      "floor": "5ad2004e-9b14-42d6-8ec0-a48ad642e58a",
       "title": "Кабинет №13",
       "type": "Рабочее место"
     }

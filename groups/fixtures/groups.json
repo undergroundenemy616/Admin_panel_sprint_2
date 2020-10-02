@@ -1,7 +1,7 @@
 [
   {
     "model": "groups.Group",
-    "pk": 1,
+    "pk": "e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99",
     "fields": {
       "title": "client",
       "access": 4,
@@ -10,7 +10,7 @@
   },
   {
     "model": "groups.Group",
-    "pk": 2,
+    "pk": "829bd75a-c75d-456d-9b1c-f6bda751b392",
     "fields": {
       "title": "engineer",
       "access": 3,
@@ -19,7 +19,7 @@
   },
   {
     "model": "groups.Group",
-    "pk": 3,
+    "pk": "c6392169-24d0-4d1a-887e-5725ec79395e",
     "fields": {
       "title": "admin",
       "access": 2,
@@ -28,7 +28,7 @@
   },
   {
     "model": "groups.Group",
-    "pk": 4,
+    "pk": "5c26647a-4016-46c5-ae02-e386c67dfb11",
     "fields": {
       "title": "owner",
       "access": 1,
@@ -37,7 +37,7 @@
   },
   {
     "model": "groups.Group",
-    "pk": 5,
+    "pk": "dba5aa21-b9e6-4fea-b9df-f3c0b6c03060",
     "fields": {
       "title": "superuser",
       "access": 0,

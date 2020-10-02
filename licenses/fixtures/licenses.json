@@ -1,7 +1,7 @@
 [
   {
     "model": "licenses.License",
-    "pk": 1,
+    "pk": "f28b1123-778a-4c89-b9e3-3999a7dc0fa5",
     "fields": {
       "issued_at": "2020-09-15",
       "expires_at": "2021-09-15",
