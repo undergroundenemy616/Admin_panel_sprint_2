@@ -36,7 +36,10 @@ class UpdateDestroyRoomTypesView(GenericAPIView,
     pagination_class = DefaultPagination
     # permission_classes = (IsAdminUser,)
 
-    def put(self, request, *args, **kwargs):
+    def put(self, request, pk=None, *args, **kwargs):
+        self.queryset = RoomType.objects.filter(pre_defined=False)
+        if pk not in [room_type.id for room_type in self.queryset]:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         return self.update(request, *args, **kwargs)
 
     def delete(self, request, pk=None, *args, **kwargs):

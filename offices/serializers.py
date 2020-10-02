@@ -8,6 +8,8 @@ from licenses.serializers import LicenseSerializer
 from offices.models import Office, OfficeZone
 from files.models import File
 from floors.serializers import BaseFloorSerializer
+from room_types.models import RoomType
+from room_types.serializers import RoomTypeSerializer
 
 
 class OfficeZoneSerializer(serializers.ModelSerializer):
@@ -124,6 +126,17 @@ class CreateOfficeSerializer(serializers.ModelSerializer):
         """
         office = super(CreateOfficeSerializer, self).create(validated_data)
         Floor.objects.create(office=office, title='Default floor.')  # create floor
+        RoomType.objects.create(office=office,
+                                title='Рабочее место',
+                                bookable=True,
+                                work_interval_days=90,
+                                pre_defined=True)
+        RoomType.objects.create(office=office,
+                                title='Переговорная',
+                                bookable=True,
+                                work_interval_hours=24,
+                                unified=True,
+                                pre_defined=True)
         office_zone = OfficeZone.objects.create(office=office, is_deletable=False)  # create zone
         groups = Group.objects.filter(is_deletable=False)
         if groups:
