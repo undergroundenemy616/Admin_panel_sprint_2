@@ -3,21 +3,13 @@
     "model": "licenses.License",
     "pk": 1,
     "fields": {
-<<<<<<< HEAD
       "issued_at": "2020-09-15",
       "expires_at": "2021-09-15",
       "support_available": "2020-09-15",
       "support_expires_at": "2021-09-15",
       "tables_available": "100",
-      "tables_infinite": "True",
-      "forever": "True"
-    }
-  }
-]
-=======
       "tables_infinite": true,
       "forever": true
     }
   }
 ]
->>>>>>> 32fb52132a692d2118761a9d746b55fe1c87e360
