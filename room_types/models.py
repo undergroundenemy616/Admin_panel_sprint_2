@@ -13,4 +13,4 @@ class RoomType(models.Model):
     work_interval_days = models.IntegerField(validators=[MaxValueValidator(90), MinValueValidator(0)], default=0)
     work_interval_hours = models.IntegerField(validators=[MaxValueValidator(24), MinValueValidator(0)], default=0)
     unified = models.BooleanField(default=False)
-    pre_defined = models.BooleanField(default=False)
+    is_deletable = models.BooleanField(default=True)

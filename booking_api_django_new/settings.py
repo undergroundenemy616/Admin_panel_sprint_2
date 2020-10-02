@@ -189,11 +189,11 @@ print({
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'simpleoffice_dev',
-        'USER': 'yokohola',
-        'PASSWORD': 'yokohola2020',
+        'NAME': os.environ.get("DB_NAME"),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': '2.59.41.133',
-        'PORT': '5555',
+        'PORT': os.environ.get('PORT'),
     }
 }
 

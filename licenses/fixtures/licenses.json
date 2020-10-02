@@ -5,7 +5,7 @@
     "fields": {
       "issued_at": "2020-09-15",
       "expires_at": "2021-09-15",
-      "support_available": "2020-09-15",
+      "support_available": true,
       "support_expires_at": "2021-09-15",
       "tables_available": "100",
       "tables_infinite": true,
