@@ -1,3 +1,4 @@
+import uuid
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from offices.models import Office
@@ -5,6 +6,7 @@ from files.models import File
 
 
 class RoomType(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=140, null=False)
     office = models.ForeignKey(Office, null=False, on_delete=models.CASCADE)
     color = models.CharField(max_length=8, default="#0079c1")
