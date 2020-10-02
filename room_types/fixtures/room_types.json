@@ -1,0 +1,21 @@
+[
+  {
+    "model": "room_types.RoomType",
+    "pk": 1,
+    "fields": {
+      "title": "Рабочее место",
+      "office": 1,
+      "bookable": true
+    }
+  },
+  {
+    "model": "room_types.RoomType",
+    "pk": 2,
+    "fields": {
+      "title": "Переговорная",
+      "office": 1,
+      "bookable": true,
+      "unified": true
+    }
+  }
+]

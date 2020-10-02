@@ -1,5 +1,0 @@
-Whats new?
-
-- New data will be return on authorization and registration.
-    some fields have been deleted.
-- rooms/ - returning floor field now doesnt contains nested object, returns just an integer

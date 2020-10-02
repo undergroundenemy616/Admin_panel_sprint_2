@@ -55,7 +55,8 @@ urlpatterns = [
     path('tables/', include('tables.urls')),
     path('rooms/', include('rooms.urls')),
     path('floors/', include('floors.urls')),
-    path('offices/', include('offices.urls'))
+    path('offices/', include('offices.urls')),
+    path('room_types/', include('room_types.urls'))
     # path('groups/', include('groups.urls'))
 ]
 

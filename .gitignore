@@ -4,3 +4,6 @@
 /.redis-server/
 /.run/
 *.xml
+*.pyc
+__pycache__
+/bookings
