@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'tables',
     'room_types',
+    'bookings',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
