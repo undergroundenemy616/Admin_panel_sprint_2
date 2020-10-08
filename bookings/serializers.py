@@ -1,6 +1,5 @@
 import random
 from datetime import datetime, timedelta
-from django.db.models import Q
 from rest_framework import serializers
 # Local imports
 from bookings.models import Booking, Table
@@ -8,15 +7,9 @@ from bookings.models import Booking, Table
 MINUTES_TO_ACTIVATE = 15
 
 
-def date_validator(value):
-    if value < datetime.utcnow():
-        raise ValueError("Cannot create booking in the past")
-    return value
-
-
 class BookingSerializer(serializers.ModelSerializer):
-    date_from = serializers.DateTimeField(required=True, validators=[date_validator])
-    date_to = serializers.DateTimeField(validators=[date_validator])
+    date_from = serializers.DateTimeField(required=True, validators=[Booking.check_is_future])
+    date_to = serializers.DateTimeField(validators=[Booking.check_is_future])
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
     theme = serializers.CharField(max_length=200, default="Без темы")
 
@@ -33,15 +26,10 @@ class BookingSerializer(serializers.ModelSerializer):
 
         if date_to < date_from:
             raise serializers.ValidationError("Ending time should be larger than the starting one")
-
-        overflows = Booking.objects.filter(table=table, is_over=False). \
-            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gte=date_to)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)
-                   | Q(date_to__gt=date_from, date_to__lt=date_to))
-        if overflows:
-            raise serializers.ValidationError("Table already booked")
-
+        try:
+            model.check_overflows(table, date_from, date_to)
+        except ValueError as ex:
+            raise serializers.ValidationError(str(ex))
         date_now = datetime.utcnow()
         if date_now <= date_from:
             if date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):
