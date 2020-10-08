@@ -30,13 +30,18 @@ class BookingSerializer(serializers.ModelSerializer):
         date_from = validated_data.pop('date_from')
         date_to = validated_data.pop('date_to')
         code_gen = random.randint(1000, 9999)
+
         if date_to < date_from:
             raise serializers.ValidationError("Ending time should be larger than the starting one")
+
         overflows = Booking.objects.filter(table=table, is_over=False). \
-            filter(Q(date_from__gt=date_to, date_to__lte=date_to) | Q(date_from__lte=date_from, date_to__lt=date_from)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to))
+            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
+                   | Q(date_from__lte=date_from, date_to__gte=date_to)
+                   | Q(date_from__gte=date_from, date_to__lte=date_to)
+                   | Q(date_to__gt=date_from, date_to__lt=date_to))
         if overflows:
             raise serializers.ValidationError("Table already booked")
+
         date_now = datetime.utcnow()
         if date_now <= date_from:
             if date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):
@@ -47,9 +52,10 @@ class BookingSerializer(serializers.ModelSerializer):
             date_activate_until = date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
         else:
             date_activate_until = date_to
+
         booking = model.objects.create(date_to=date_to, date_from=date_from,
                                        table=table, date_activate_until=date_activate_until,
-                                       code=code_gen, user=args[0])  # TODO refactor user
+                                       code=code_gen, user=args[0])  # TODO refactor user and theme fields
 
 
 class BookingActionSerializer(serializers.ModelSerializer):
