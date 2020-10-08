@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAdminUser, AllowAny
 # Local imports
 from backends.pagination import DefaultPagination
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer, BookingForActionSerializer
+from bookings.serializers import BookingSerializer
 
 
 # Create your views here.
