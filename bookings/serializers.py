@@ -34,11 +34,13 @@ class BookingSerializer(serializers.ModelSerializer):
         if date_to < date_from:
             raise serializers.ValidationError("Ending time should be larger than the starting one")
 
-        overflows = Booking.objects.filter(table=table, is_over=False). \
-            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gte=date_to)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)
-                   | Q(date_to__gt=date_from, date_to__lt=date_to))
+        overflows = Booking.check_overflow()
+
+        # overflows = Booking.objects.filter(table=table, is_over=False). \
+        #     filter(Q(date_from__gte=date_from, date_from__lte=date_to)
+        #            | Q(date_from__lte=date_from, date_to__gte=date_to)
+        #            | Q(date_from__gte=date_from, date_to__lte=date_to)
+        #            | Q(date_to__gt=date_from, date_to__lt=date_to))
         if overflows:
             raise serializers.ValidationError("Table already booked")
 
