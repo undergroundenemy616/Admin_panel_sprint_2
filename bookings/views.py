@@ -17,10 +17,14 @@ class ListCreateBookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     pagination_class = DefaultPagination
 
     def post(self, request, *args, **kwargs):
-        pass
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get(self, request, *args, **kwargs):
-        pass
+        return self.list(request, *args, **kwargs)
 
 
 class ActionActivateBookingsView(GenericAPIView):
@@ -33,4 +37,3 @@ class ActionDeactivateBookingsView(GenericAPIView):
 
 class ActionEndBookingsView(GenericAPIView):
     pass
-

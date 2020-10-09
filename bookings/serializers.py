@@ -1,6 +1,5 @@
 import random
 from rest_framework import serializers
-# Local imports
 from bookings.models import Booking, Table
 from bookings.validator import BookingTimeValidator
 

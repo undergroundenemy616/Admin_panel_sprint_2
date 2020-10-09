@@ -17,10 +17,11 @@ class TableSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         model = self.Meta.model
-        tags = validated_data.pop('tags', None)
+        tags = validated_data.pop('tags', [])
         room = validated_data.pop('room')
         instance = model.objects.create(room=room, **validated_data)
         office_id = instance.room.floor.office.id
         tags_queryset = TableTag.objects.filter(title__in=tags, office_id=office_id)
-        instance.tags.add(tags_queryset)
+        if tags_queryset:
+            instance.tags.add(tags_queryset)
         return instance

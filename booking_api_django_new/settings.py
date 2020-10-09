@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 import datetime
 import os
 from dotenv import load_dotenv
-load_dotenv(dotenv_path='booking_api_django_new/environments/' + (os.environ.get('BRANCH') or 'crowiant') + '.env')
+
+load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH') + '.env')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -35,7 +35,7 @@ class Booking(models.Model):
     objects = BookingManager()
 
     @property
-    def date_activate_until(self):
+    def date_activate_until(self) -> datetime:
         return self.date_activate_until
 
     @date_activate_until.setter
