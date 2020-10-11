@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from django.db import models
 from tables.models import Table
 from users.models import User
@@ -11,7 +11,7 @@ MINUTES_TO_ACTIVATE = 15
 class BookingManager(models.Manager):
     def is_overflowed(self, table, date_from, date_to):
         """Check for booking availability"""
-        overflows = self.objects(table=table, is_over=False). \
+        overflows = self.model.objects.filter(table=table, is_over=False). \
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
@@ -25,7 +25,7 @@ class Booking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date_from = models.DateTimeField(default=datetime.utcnow)
     date_to = models.DateTimeField()
-    date_activate_until = models.DateTimeField()
+    date_activate_until = models.DateTimeField(null=True)
     is_active = models.BooleanField(default=False)
     is_over = models.BooleanField(default=False)
     user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
@@ -34,20 +34,18 @@ class Booking(models.Model):
     theme = models.CharField(default="Без темы", max_length=200)
     objects = BookingManager()
 
-    @property
-    def date_activate_until(self) -> datetime:
-        return self.date_activate_until
+    def save(self, *args, **kwargs):
+        self.date_activate_until = self.calculate_date_activate_until()
+        super(self.__class__, self).save(*args, **kwargs)
 
-    @date_activate_until.setter
-    def date_activate_until(self, period: tuple):
-        date_from, date_to = period
-        date_now = datetime.utcnow()
-        if date_now <= date_from:
-            if date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):
-                self.date_activate_until = date_from + timedelta(minutes=MINUTES_TO_ACTIVATE)
+    def calculate_date_activate_until(self):
+        date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        if date_now <= self.date_from: # noqa
+            if self.date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE): # noqa
+                return self.date_from + timedelta(minutes=MINUTES_TO_ACTIVATE) # noqa
             else:
-                self.date_activate_until = date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
-        elif date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):
-            self.date_activate_until = date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
+                return date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
+        elif self.date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE): # noqa
+            return date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
         else:
-            self.date_activate_until = date_to
+            return self.date_to
