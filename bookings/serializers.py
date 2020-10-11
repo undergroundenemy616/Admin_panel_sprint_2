@@ -28,7 +28,7 @@ class BookingSerializer(serializers.ModelSerializer):
         code_gen = random.randint(1000, 9999)
         if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
             raise serializers.ValidationError('Table already booked for this date.')
-        return self.Meta.model.objects.create(
+        return self.Meta.model.objects.save_or_merge(
             date_to=date_to,
             date_from=date_from,
             table=table,

@@ -20,6 +20,17 @@ class BookingManager(models.Manager):
             return True
         return False
 
+    def save_or_merge(self, **kwargs):
+        obj = self.model(**kwargs)
+        consecutive_booking = obj.get_consecutive_booking()
+        if consecutive_booking:
+            consecutive_booking.date_to = obj.date_to
+            consecutive_booking.save()
+            return consecutive_booking
+        else:
+            obj.save()
+            return obj
+
 
 class Booking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -35,17 +46,32 @@ class Booking(models.Model):
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
+        # if not self.pk:
         self.date_activate_until = self.calculate_date_activate_until()
         super(self.__class__, self).save(*args, **kwargs)
 
+    def get_consecutive_booking(self):
+        """Returns previous booking if exists for merging purpose"""
+        try:
+            return Booking.objects.get(
+                user=self.user,
+                table=self.table,
+                theme=self.theme,
+                date_to=self.date_from,
+                is_over=False
+            )
+        except (Booking.MultipleObjectsReturned, Booking.DoesNotExist):
+            return None
+
     def calculate_date_activate_until(self):
+        """Calculation of activation date depending on current time"""
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
-        if date_now <= self.date_from: # noqa
-            if self.date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE): # noqa
-                return self.date_from + timedelta(minutes=MINUTES_TO_ACTIVATE) # noqa
+        if date_now <= self.date_from:  # noqa
+            if self.date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):  # noqa
+                return self.date_from + timedelta(minutes=MINUTES_TO_ACTIVATE)  # noqa
             else:
                 return date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
-        elif self.date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE): # noqa
+        elif self.date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):  # noqa
             return date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
         else:
             return self.date_to
