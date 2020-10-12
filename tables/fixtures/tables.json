@@ -1,0 +1,11 @@
+[
+  {
+    "model": "tables.Table",
+    "pk": "a7127801-a7a5-4193-a7f1-c6080b4e21c0",
+    "fields": {
+      "room": "9017fcaf-7807-47d7-948b-18af8f4020a0",
+      "title": "A-05",
+      "description": "Вместимость 20 человек"
+    }
+  }
+]

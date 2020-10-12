@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAdminUser, AllowAny
 # Local imports
 from backends.pagination import DefaultPagination
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer
+from bookings.serializers import BookingSerializer, BookingSlotsSerializer
 
 
 # Create your views here.
@@ -17,10 +17,27 @@ class ListCreateBookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     pagination_class = DefaultPagination
 
     def post(self, request, *args, **kwargs):
-        pass
+        request.data['user'] = request.user
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get(self, request, *args, **kwargs):
-        pass
+        return self.list(request, *args, **kwargs)
+
+
+class ActionCheckAvailableSlotsView(GenericAPIView):
+    serializer_class = BookingSlotsSerializer
+    queryset = Booking.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        request.data['user'] = request.user
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.instance, status=status.HTTP_200_OK)
 
 
 class ActionActivateBookingsView(GenericAPIView):
@@ -33,4 +50,3 @@ class ActionDeactivateBookingsView(GenericAPIView):
 
 class ActionEndBookingsView(GenericAPIView):
     pass
-

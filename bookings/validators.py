@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from rest_framework.exceptions import ValidationError
 
 
@@ -10,24 +10,18 @@ class BookingTimeValidator:
     """
     error_message = 'Validating error'
 
-    def __init__(self, date_to, date_from, exc_class=None):
+    def __init__(self, **attrs):
 
-        self.start = date_from
-        self.end = date_to
-        self.exc_class = exc_class
-        self.error = []
-
-    @property
-    def is_valid(self):
-        return not bool(self.error)
+        self.start = attrs.get('date_from')
+        self.end = attrs.get('date_to')
+        self.exc_class = attrs.get('exc_class')
+        self.attrs = attrs
 
     def validate(self):
-        try:
-            self.check_datetime_instance()
-            self.check_correct_period()
-            self.check_future()
-        except Exception as error:
-            self.error.append(error)
+        self.check_datetime_instance()
+        self.check_correct_period()
+        self.check_future()
+        return self.attrs
 
     def check_datetime_instance(self):
         if not isinstance((self.end or self.start), datetime):
@@ -38,17 +32,6 @@ class BookingTimeValidator:
             raise self.exc_class('Ending time should be larger than the starting one')
 
     def check_future(self):
-        if self.start < datetime.utcnow() or self.end < datetime.utcnow():
+        current_date = datetime.utcnow().replace(tzinfo=timezone.utc)
+        if self.start < current_date or self.end < current_date:
             raise self.exc_class('Cannot create booking in the past')
-
-    def check_activation_date(self):
-        pass
-
-    def check_multi(self):
-        minutes = (00, 15, 30, 45)
-        for t in (self.start, self.end):
-            if t.minute not in minutes:
-                msg = 'You can only reserve a time that is a multiple of 30 minutes'
-                raise self.exc_class(msg)
-
-

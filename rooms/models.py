@@ -49,7 +49,6 @@ class Room(models.Model):
             return self.capacity
         return 0
 
-
 # class RoomImage(models.Model):
 # 	file = models.ForeignKey(File, null=False, blank=False, on_delete=models.CASCADE)
 # 	room = models.ForeignKey(Room, null=False, blank=False, on_delete=models.CASCADE)

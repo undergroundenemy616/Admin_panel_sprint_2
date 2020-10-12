@@ -2,7 +2,9 @@ from bookings import views
 from django.urls import path
 
 urlpatterns = [
-    # path(''),
+    path('', views.ListCreateBookingsView.as_view()),
+    path('slots', views.ActionCheckAvailableSlotsView.as_view())
+
     # path('int:pk/'),
     # path('fast'),
     # path('mobile'),

@@ -25,8 +25,8 @@ class FloorMap(models.Model):
         blank=False,
         null=False
     )
-    height = models.CharField(max_length=12, null=False, blank=False)
-    width = models.CharField(max_length=12, null=False, blank=False)
+    height = models.CharField(max_length=12, null=True, blank=False)
+    width = models.CharField(max_length=12, null=True, blank=False)
     floor = models.OneToOneField(Floor, on_delete=models.CASCADE, blank=False, null=False)
 
     def __str__(self):
