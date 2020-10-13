@@ -20,7 +20,8 @@ class BookingManager(models.Manager):
             return True
         return False
 
-    def save_or_merge(self, **kwargs):
+    def create(self, **kwargs):
+        """Check for consecutive bookings and merge instead of create if exists"""
         obj = self.model(**kwargs)
         consecutive_booking = obj.get_consecutive_booking()
         if consecutive_booking:

@@ -1,11 +1,10 @@
-import random
-from rest_framework import serializers
+from rest_framework import serializers, status
+from backends.handlers import ResponseException
 from bookings.models import Booking, Table
 from bookings.validator import BookingTimeValidator
 from floors.models import Floor
 from rooms.models import Room
-from tables.models import TableTag
-from users.models import User
+import random
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -27,8 +26,8 @@ class BookingSerializer(serializers.ModelSerializer):
         date_to = validated_data.pop('date_to')
         code_gen = random.randint(1000, 9999)
         if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
-            raise serializers.ValidationError('Table already booked for this date.')
-        return self.Meta.model.objects.save_or_merge(
+            raise ResponseException('Table already booked for this date.')
+        return self.Meta.model.objects.create(
             date_to=date_to,
             date_from=date_from,
             table=table,
@@ -66,24 +65,22 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
         # TODO: protected filter for user
         user = validated_data['user']
         if isinstance(reference_object, Room):
-            tables = reference_object.tables.all()
+            tables = list(reference_object.tables)
         elif isinstance(reference_object, Floor):
-            tables = Table.objects.filter(room__in=list(reference_object.rooms.all()))
+            tables = list(Table.objects.filter(room__in=list(reference_object.rooms)))
         elif isinstance(reference_object, Table):
             tables = [reference_object, ]
         else:
-            raise serializers.ValidationError('One of the fields ("room", "floor", "table") is required')
+            raise ResponseException('One of the fields ("room", "floor", "table") is required')
 
-        # if validated_data.get('tags'):
-            # TODO: Refactor
-            # tables = Table.objects.filter(id__in=[str(table.id) for table in tables]).filter(
-            #     tags__in=list(
-            #         TableTag.objects.filter(title__in=validated_data['tags'])
-            #     )
-            # )
-            # tables = tables.filter(tags__in=list(TableTag.objects.filter(title__in=validated_data['tags'])))
-            # if not tables:
-            #     return {"message": "No suitable tables found"}, 400
+        if validated_data.get('tags'):
+            tables = [
+                table
+                for table in tables
+                if set(validated_data['tags']).issubset(set([tag.title for tag in table.tags.all()]))
+            ]
+            if not tables:
+                raise ResponseException('No suitable tables found', status.HTTP_404_NOT_FOUND)
 
         response = []
         for slot in validated_data['slots']:
