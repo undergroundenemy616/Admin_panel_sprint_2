@@ -45,15 +45,6 @@ def activated_code():
     return random.randint(1000, 9999)
 
 
-# def get_client_group():
-#     """Returns client-group id.
-#     Migrate all to db before calling"""
-#     group_id = Group.objects.get(title='client').id
-#     assert group_id is not None, ('Group does not exists, did you forget'
-#                                   '`loaddata` before?')
-#     return group_id
-
-
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     phone_number: str = models.CharField(unique=True, max_length=16)
@@ -149,7 +140,7 @@ class Account(models.Model):
     region_string = models.CharField(default='', max_length=64, blank=True)  # TODO
     district_string = models.CharField(default='', max_length=64, blank=True)  # TODO
 
-    photo = None  # todo
+    photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)  # todo
 
     updated_at = models.DateTimeField(null=False, auto_now=True)
 

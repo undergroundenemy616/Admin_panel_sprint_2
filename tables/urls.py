@@ -8,5 +8,13 @@ urlpatterns = [
     path('<int:pk>/', views.TableView.as_view({
         'get': 'retrieve',
         'put': 'update',
-        'delete': 'destroy'}))
+        'delete': 'destroy'})),
+
+    path('table_tag/', views.TableTagView.as_view({
+        'get': 'list',
+        'post': 'create'})),
+    path('table_tag/<int:pk>/', views.TableTagView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy'})),
 ]

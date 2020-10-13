@@ -7,9 +7,8 @@ from licenses.models import License
 from licenses.serializers import LicenseSerializer
 from offices.models import Office, OfficeZone
 from files.models import File
-from floors.serializers import BaseFloorSerializer
+from floors.serializers import FloorSerializer
 from room_types.models import RoomType
-from room_types.serializers import RoomTypeSerializer
 
 
 class OfficeZoneSerializer(serializers.ModelSerializer):
@@ -66,7 +65,7 @@ def validate_license(value: License) -> License:
     return value
 
 
-class CreateOfficeSerializer(serializers.ModelSerializer):
+class OfficeSerializer(serializers.ModelSerializer):
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(),
                                                 required=False,  # todo optimaze field
                                                 help_text='Images must contains primary keys.',
@@ -80,8 +79,17 @@ class CreateOfficeSerializer(serializers.ModelSerializer):
                                           validators=[working_hours_validator],
                                           help_text='Working hours `%H:%M-%H:%M`.')
 
-    floors = BaseFloorSerializer(many=True, read_only=True)
+    class Meta:
+        model = Office
+        fields = '__all__'
+        depth = 3
+
+
+class CreateOfficeSerializer(OfficeSerializer):
+    floors = FloorSerializer(many=True, read_only=True)
     zones = OfficeZoneSerializer(many=True, read_only=True)
+
+    # fields are default, cuz there are no need to calculate them
     floors_number = serializers.ReadOnlyField(default=1)
     occupied = serializers.ReadOnlyField(default=0)
     capacity = serializers.ReadOnlyField(default=0)
@@ -89,11 +97,6 @@ class CreateOfficeSerializer(serializers.ModelSerializer):
     capacity_tables = serializers.ReadOnlyField(default=0)
     occupied_meeting = serializers.ReadOnlyField(default=0)
     capacity_meeting = serializers.ReadOnlyField(default=0)
-
-    class Meta:
-        model = Office
-        fields = '__all__'
-        depth = 3
 
     def to_representation(self, instance):
         """Basic `.to_representation()` with license.
@@ -151,3 +154,14 @@ class CreateOfficeSerializer(serializers.ModelSerializer):
 
     # TODO:
     # slow performance of images validation. See more ManyRelatedField
+
+
+class NestedOfficeSerializer(OfficeSerializer):
+    floors = FloorSerializer(many=True, read_only=True)
+    zones = OfficeZoneSerializer(many=True, read_only=True)
+
+    def to_representation(self, instance):
+        instance: Office
+        data = super(NestedOfficeSerializer, self).to_representation(instance)
+        data['floors_numbers'] = instance.floors.count()
+        data['occupied'] = Office.objects.filter()А

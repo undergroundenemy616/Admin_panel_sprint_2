@@ -7,3 +7,5 @@
 *.pyc
 __pycache__
 /bookings
+/booking_api_django_new/.settings.py
+/booking_api_django_new/environments/*

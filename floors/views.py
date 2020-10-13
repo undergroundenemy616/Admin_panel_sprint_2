@@ -3,7 +3,7 @@ from backends.pagination import DefaultPagination
 from rest_framework.generics import GenericAPIView
 from floors.models import Floor, FloorMap
 from floors.serializers import (
-    FloorSerializer,
+    NestedFloorSerializer,
     FloorMapSerializer
 )
 from rest_framework.mixins import (
@@ -22,7 +22,7 @@ class ListCreateFloorView(ListModelMixin,
     queryset = Floor.objects.all()
     permission_classes = (AllowAny,)
     pagination_class = DefaultPagination
-    serializer_class = FloorSerializer
+    serializer_class = NestedFloorSerializer
 
     def post(self, request, *args, **kwargs):
         """Create new floor."""
@@ -40,7 +40,7 @@ class RetrieveUpdateDeleteFloorView(UpdateModelMixin,
     """Detail Floor API View"""
     queryset = Floor.objects.all()
     permission_classes = (AllowAny,)
-    serializer_class = FloorSerializer
+    serializer_class = NestedFloorSerializer
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
