@@ -1,15 +1,12 @@
-import random
 from datetime import datetime, timezone
-
-from rest_framework import serializers
+from rest_framework import serializers, status
+from backends.handlers import ResponseException
 from bookings.models import Booking, Table
 from bookings.validators import BookingTimeValidator
 from floors.models import Floor
 from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
-from tables.models import TableTag
-from users.models import User
 
 
 class BaseBookingSerializer(serializers.ModelSerializer):
@@ -40,24 +37,44 @@ class BookingSerializer(serializers.ModelSerializer):
         return response
 
     def create(self, validated_data, *args, **kwargs):
-        table = validated_data.pop('table')
-        date_from = validated_data.pop('date_from')
-        date_to = validated_data.pop('date_to')
-        if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
-            raise serializers.ValidationError('Table already booked for this date.')
-        # TODO make theme field
-        return self.Meta.model.objects.save_or_merge(
-            date_to=date_to,
-            date_from=date_from,
-            table=table,
+        if self.Meta.model.objects.is_overflowed(validated_data['table'],
+                                                 validated_data['date_from'],
+                                                 validated_data['date_to']):
+            raise ResponseException('Table already booked for this date.')
+        # TODO make theme handled
+        return self.Meta.model.objects.create(
+            date_to=validated_data['date_to'],
+            date_from=validated_data['date_from'],
+            table=validated_data['table'],
             user=validated_data['user']
         )
+
+
+class BookingAdminSerializer(serializers.ModelSerializer):
+    date_from = serializers.DateTimeField(required=True)
+    date_to = serializers.DateTimeField(required=True)
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
+    theme = serializers.CharField(max_length=200, default="Без темы")
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+
+    class Meta:
+        model = Booking
+        fields = ['date_from', 'date_to', 'table', 'theme', 'user']
+
+    def validate(self, attrs):
+        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+
+    def create(self, validated_data, *args, **kwargs):
+        return BookingSerializer.create(validated_data, *args, **kwargs)
 
 
 class SlotsSerializer(serializers.Serializer):
     """Serialize and validate multiple booking time periods"""
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
+
+    class Meta:
+        fields = ['date_from', 'date_to']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
@@ -76,31 +93,26 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data, *args, **kwargs):
         """OMG: actually it's not create but 'GET available tables at this time periods (= slots)' method"""
-        reference_object = validated_data.get('room') \
-            or validated_data.get('floor') \
-            or validated_data.get('table')
-
+        reference_object = validated_data.get('room') or validated_data.get('floor') or validated_data.get('table')
         # TODO: protected filter for user
         user = validated_data['user']
         if isinstance(reference_object, Room):
-            tables = reference_object.tables.all()
+            tables = list(reference_object.tables)
         elif isinstance(reference_object, Floor):
-            tables = Table.objects.filter(room__in=list(reference_object.rooms.all()))
+            tables = list(Table.objects.filter(room__in=list(reference_object.rooms)))
         elif isinstance(reference_object, Table):
             tables = [reference_object, ]
         else:
-            raise serializers.ValidationError('One of the fields ("room", "floor", "table") is required')
+            raise ResponseException('One of the fields ("room", "floor", "table") is required')
 
-        # if validated_data.get('tags'):
-            # TODO: Refactor
-            # tables = Table.objects.filter(id__in=[str(table.id) for table in tables]).filter(
-            #     tags__in=list(
-            #         TableTag.objects.filter(title__in=validated_data['tags'])
-            #     )
-            # )
-            # tables = tables.filter(tags__in=list(TableTag.objects.filter(title__in=validated_data['tags'])))
-            # if not tables:
-            #     return {"message": "No suitable tables found"}, 400
+        if validated_data.get('tags'):
+            tables = [
+                table
+                for table in tables
+                if set(validated_data['tags']).issubset(set([tag.title for tag in table.tags.all()]))
+            ]
+            if not tables:
+                raise ResponseException('No suitable tables found', status.HTTP_404_NOT_FOUND)
 
         response = []
         for slot in validated_data['slots']:

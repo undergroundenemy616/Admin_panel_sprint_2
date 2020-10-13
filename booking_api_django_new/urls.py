@@ -58,6 +58,7 @@ urlpatterns = [
     path('offices/', include('offices.urls')),
     path('room_types/', include('room_types.urls')),
     path('books/', include('bookings.urls')),
+    path('book_operator/', include('bookings.urls_operator')),
     # path('groups/', include('groups.urls'))
 ]
 
