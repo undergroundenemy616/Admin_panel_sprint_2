@@ -1,12 +1,23 @@
 import random
-from datetime import datetime
+from datetime import datetime, timezone
+
 from rest_framework import serializers
 from bookings.models import Booking, Table
-from bookings.validator import BookingTimeValidator
+from bookings.validators import BookingTimeValidator
 from floors.models import Floor
+from offices.models import Office
+from room_types.models import RoomType
 from rooms.models import Room
 from tables.models import TableTag
 from users.models import User
+
+
+class BaseBookingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Booking
+        fields = "__all__"
+        depth = 1
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -17,15 +28,15 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = '__all__'
+        fields = ['date_from', 'date_to', 'table', 'theme']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
     def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response['room'] = instance.table.room
-        response['floor'] = instance.table.room.floor
+        response = BaseBookingSerializer(instance).data
+        response['room'] = instance.table.room.id  # TODO add repr like in Flask(id, title)
+        response['floor'] = instance.table.room.floor.id  # TODO add repr like in Flask(id, title)
         return response
 
     def create(self, validated_data, *args, **kwargs):
@@ -34,6 +45,7 @@ class BookingSerializer(serializers.ModelSerializer):
         date_to = validated_data.pop('date_to')
         if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
             raise serializers.ValidationError('Table already booked for this date.')
+        # TODO make theme field
         return self.Meta.model.objects.save_or_merge(
             date_to=date_to,
             date_from=date_from,
@@ -110,34 +122,83 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
 
 
 class BookingActivateActionSerializer(serializers.ModelSerializer):
-    booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
+    # booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all())
 
     class Meta:
         model = Booking
-        fields = "__all__"
+        fields = ["table"]
+
+    def to_representation(self, instance):
+        response = BaseBookingSerializer(instance).data
+        return response
 
     def update(self, instance, validated_data):
-        user = validated_data.pop('user')
-        if user != instance.user:
+        if validated_data['user'] != instance.user:
             raise serializers.ValidationError('Access denied')
-        table = validated_data.pop('table')
-        if table != instance.table:
+        if validated_data['table'] != instance.table:
             raise serializers.ValidationError('Wrong data')
-        date_now = datetime.utcnow()
-        if not date_now > instance.date_activate_until:
+        date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        if not date_now < instance.date_activate_until:
             raise serializers.ValidationError('Activation time have passed')
-        instance.update(is_active=True)
-        return instance
+        validated_data['is_active'] = True
+        return super(BookingActivateActionSerializer, self).update(instance, validated_data)
 
 
 class BookingDeactivateActionSerializer(serializers.ModelSerializer):
-    booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
+    booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all())
 
     class Meta:
         model = Booking
-        fields = '__all__'
+        fields = ['booking']
+
+    def to_representation(self, instance):
+        response = BaseBookingSerializer(instance).data
+        return response
 
     def update(self, instance, validated_data):
-        instance.update(is_over=True, date_to=datetime.utcnow())
-        return instance
+        validated_data['is_over'] = True
+        validated_data['date_to'] = datetime.utcnow().replace(tzinfo=timezone.utc)
+        return super(BookingDeactivateActionSerializer, self). update(instance, validated_data)
+
+
+class BookingFastSerializer(serializers.ModelSerializer):
+    date_from = serializers.DateTimeField(required=True)
+    date_to = serializers.DateTimeField(required=True)
+    theme = serializers.CharField(required=False)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+    room_type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+
+    class Meta:
+        model = Booking
+        fields = ['date_from', 'date_to', 'office', 'room_type', 'theme']
+
+    def validate(self, attrs):
+        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+
+    def to_representation(self, instance):
+        response = BaseBookingSerializer(instance).data
+        response['room'] = instance.table.room.id
+        response['floor'] = instance.table.room.floor.id
+        return response
+
+    def create(self, validated_data, *args, **kwargs):
+        date_from = validated_data['date_from']
+        date_to = validated_data['date_to']
+        office = validated_data.pop('office')
+        tables = list(Table.objects.filter(room__floor__office_id=office, room___id=validated_data['room_type']))
+        for table in tables[:]:
+            if not self.Meta.model.objects.is_overflowed(table, date_from, date_to):
+                continue
+            else:
+                tables.remove(table)
+        return self.Meta.model.objects.save_or_merge(
+            date_to=date_to,
+            date_from=date_from,
+            table=tables[0],
+            user=validated_data['user']
+        )
+
+
+
+

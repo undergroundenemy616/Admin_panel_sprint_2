@@ -7,7 +7,10 @@ from rest_framework.permissions import IsAdminUser, AllowAny
 # Local imports
 from backends.pagination import DefaultPagination
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer, BookingSlotsSerializer
+from bookings.serializers import BookingSerializer, \
+    BookingSlotsSerializer, \
+    BookingActivateActionSerializer, \
+    BookingDeactivateActionSerializer, BookingFastSerializer
 
 
 # Create your views here.
@@ -17,7 +20,7 @@ class ListCreateBookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     pagination_class = DefaultPagination
 
     def post(self, request, *args, **kwargs):
-        request.data['user'] = request.user
+        # request.data['user'] = request.user
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
@@ -33,7 +36,7 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
     queryset = Booking.objects.all()
 
     def post(self, request, *args, **kwargs):
-        request.data['user'] = request.user
+        # request.data['user'] = request.user
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
@@ -41,12 +44,43 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
 
 
 class ActionActivateBookingsView(GenericAPIView):
-    pass
+    serializer_class = BookingActivateActionSerializer
+    queryset = Booking.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        # request.data['user'] = request.user
+        get_id = get_object_or_404(Booking, pk=request.data.get('booking'))
+        booking = Booking.objects.filter(id=get_id.id).first()
+        serializer = self.serializer_class(data=request.data, instance=booking)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.to_representation(booking), status=status.HTTP_200_OK)
 
 
 class ActionDeactivateBookingsView(GenericAPIView):
-    pass
+    serializer_class = BookingDeactivateActionSerializer
+    queryset = Booking.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        get_id = get_object_or_404(Booking, pk=request.data.get('booking'))
+        booking = Booking.objects.filter(id=get_id.id).first()
+        serializer = self.serializer_class(data=request.data, instance=booking)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.to_representation(booking), status=status.HTTP_200_OK)
 
 
 class ActionEndBookingsView(GenericAPIView):
     pass
+
+
+class CreateFastBookingsView(GenericAPIView):
+    serializer_class = BookingFastSerializer
+    queryset = Booking.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        # headers = self.get_success_headers()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
