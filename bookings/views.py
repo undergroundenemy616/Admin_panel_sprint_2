@@ -4,14 +4,12 @@ from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelM
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, AllowAny
-# Local imports
 from backends.pagination import DefaultPagination
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer, BookingSlotsSerializer
+from bookings.serializers import BookingSerializer, BookingSlotsSerializer, BookingAdminSerializer
 
 
-# Create your views here.
-class ListCreateBookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
+class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
     pagination_class = DefaultPagination
@@ -26,6 +24,18 @@ class ListCreateBookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
+
+class BookingsAdminView(BookingsView):
+    serializer_class = BookingAdminSerializer
+    permission_classes = (IsAdminUser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class ActionCheckAvailableSlotsView(GenericAPIView):

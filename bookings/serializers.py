@@ -6,6 +6,8 @@ from floors.models import Floor
 from rooms.models import Room
 import random
 
+from users.models import User
+
 
 class BookingSerializer(serializers.ModelSerializer):
     date_from = serializers.DateTimeField(required=True)
@@ -21,25 +23,46 @@ class BookingSerializer(serializers.ModelSerializer):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
     def create(self, validated_data, *args, **kwargs):
-        table = validated_data.pop('table')
-        date_from = validated_data.pop('date_from')
-        date_to = validated_data.pop('date_to')
-        code_gen = random.randint(1000, 9999)
-        if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
+        if self.Meta.model.objects.is_overflowed(
+                validated_data['table'],
+                validated_data['date_from'],
+                validated_data['date_to']
+        ):
             raise ResponseException('Table already booked for this date.')
         return self.Meta.model.objects.create(
-            date_to=date_to,
-            date_from=date_from,
-            table=table,
-            code=code_gen,
+            date_to=validated_data['date_to'],
+            date_from=validated_data['date_from'],
+            table=validated_data['table'],
+            code=random.randint(1000, 9999),
             user=validated_data['user']
         )
+
+
+class BookingAdminSerializer(serializers.ModelSerializer):
+    date_from = serializers.DateTimeField(required=True)
+    date_to = serializers.DateTimeField(required=True)
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
+    theme = serializers.CharField(max_length=200, default="Без темы")
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+
+    class Meta:
+        model = Booking
+        fields = ['date_from', 'date_to', 'table', 'theme', 'user']
+
+    def validate(self, attrs):
+        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+
+    def create(self, validated_data, *args, **kwargs):
+        return BookingSerializer.create(validated_data, *args, **kwargs)
 
 
 class SlotsSerializer(serializers.Serializer):
     """Serialize and validate multiple booking time periods"""
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
+
+    class Meta:
+        fields = ['date_from', 'date_to']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
@@ -58,10 +81,7 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data, *args, **kwargs):
         """OMG: actually it's not create but 'GET available tables at this time periods (= slots)' method"""
-        reference_object = validated_data.get('room') \
-            or validated_data.get('floor') \
-            or validated_data.get('table')
-
+        reference_object = validated_data.get('room') or validated_data.get('floor') or validated_data.get('table')
         # TODO: protected filter for user
         user = validated_data['user']
         if isinstance(reference_object, Room):
