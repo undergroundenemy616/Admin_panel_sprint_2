@@ -1,6 +1,7 @@
 /venv/
 /.idea
-/*/migrations
+# DO NOT PUT '/*/migrations' in .gitignore for master !
+# /*/migrations
 /.redis-server/
 /.run/
 *.xml
