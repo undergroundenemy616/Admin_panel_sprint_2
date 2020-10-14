@@ -23,7 +23,7 @@ class FilterFloorSerializer(serializers.ModelSerializer):
         fields = ['type', 'tags', 'start', 'limit']
 
 
-class BaseFloorSerializer(serializers.ModelSerializer):
+class FloorSerializer(serializers.ModelSerializer):
     """Only for office usages"""
     office = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -33,7 +33,7 @@ class BaseFloorSerializer(serializers.ModelSerializer):
         depth = 1
 
 
-class FloorSerializer(BaseFloorSerializer):
+class NestedFloorSerializer(FloorSerializer):
     rooms = RoomSerializer(many=True, read_only=True)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
 
@@ -52,5 +52,5 @@ class FloorMapSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super(FloorMapSerializer, self).to_representation(instance)
         data['image'] = FileSerializer(instance=instance.image).data
-        data['floor'] = BaseFloorSerializer(instance=instance.floor).data
+        data['floor'] = FloorSerializer(instance=instance.floor).data
         return data

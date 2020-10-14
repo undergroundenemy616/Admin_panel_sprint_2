@@ -10,15 +10,6 @@
   },
   {
     "model": "groups.Group",
-    "pk": "829bd75a-c75d-456d-9b1c-f6bda751b392",
-    "fields": {
-      "title": "engineer",
-      "access": 3,
-      "is_deletable": false
-    }
-  },
-  {
-    "model": "groups.Group",
     "pk": "c6392169-24d0-4d1a-887e-5725ec79395e",
     "fields": {
       "title": "admin",
@@ -32,15 +23,6 @@
     "fields": {
       "title": "owner",
       "access": 1,
-      "is_deletable": false
-    }
-  },
-  {
-    "model": "groups.Group",
-    "pk": "dba5aa21-b9e6-4fea-b9df-f3c0b6c03060",
-    "fields": {
-      "title": "superuser",
-      "access": 0,
       "is_deletable": false
     }
   }
