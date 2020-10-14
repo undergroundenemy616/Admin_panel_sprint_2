@@ -129,7 +129,7 @@ class Account(models.Model):
         ('undefined', 'undefined')
     )
 
-    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='accounts')
+    user = models.OneToOneField('User', on_delete=models.CASCADE)
 
     # account_type = models.CharField(max_length=128, default)  # TODO
 

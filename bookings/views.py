@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, AllowAny
 from backends.pagination import DefaultPagination
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer, BookingSlotsSerializer, BookingAdminSerializer
+from bookings.serializers import BookingSerializer, BookingSlotsSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -18,7 +18,7 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
         request.data['user'] = request.user
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        serializer.save()
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -27,15 +27,14 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
 
 
 class BookingsAdminView(BookingsView):
-    serializer_class = BookingAdminSerializer
-    permission_classes = (IsAdminUser, )
+    # permission_classes = (IsAdminUser, )
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(serializer.instance, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class ActionCheckAvailableSlotsView(GenericAPIView):
@@ -48,6 +47,7 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
         return Response(serializer.instance, status=status.HTTP_200_OK)
+
 
 
 class ActionActivateBookingsView(GenericAPIView):

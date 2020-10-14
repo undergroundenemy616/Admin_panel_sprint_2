@@ -13,9 +13,9 @@ from rooms.serializers import RoomSerializer, FilterRoomSerializer
 from tables.models import Table
 
 
-class ListCreateRoomsView(FilterListMixin,
-                          CreateModelMixin,
-                          GenericAPIView):
+class RoomsView(FilterListMixin,
+                CreateModelMixin,
+                GenericAPIView):
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
@@ -66,9 +66,9 @@ class ListCreateRoomsView(FilterListMixin,
         return self.create(request, *args, **kwargs)
 
 
-class RetrieveUpdateRoomsView(RetrieveModelMixin,
-                              UpdateModelMixin,
-                              GenericAPIView):
+class DetailRoomView(RetrieveModelMixin,
+                     UpdateModelMixin,
+                     GenericAPIView):
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
     pagination_class = DefaultPagination

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from rest_framework import serializers, status
 from backends.handlers import ResponseException
 from bookings.models import Booking, Table
@@ -14,10 +16,11 @@ class BookingSerializer(serializers.ModelSerializer):
     date_to = serializers.DateTimeField(required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
     theme = serializers.CharField(max_length=200, default="Без темы")
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'table', 'theme']
+        fields = ['date_from', 'date_to', 'table', 'theme', 'user']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
@@ -37,23 +40,31 @@ class BookingSerializer(serializers.ModelSerializer):
             user=validated_data['user']
         )
 
-
-class BookingAdminSerializer(serializers.ModelSerializer):
-    date_from = serializers.DateTimeField(required=True)
-    date_to = serializers.DateTimeField(required=True)
-    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
-    theme = serializers.CharField(max_length=200, default="Без темы")
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
-
-    class Meta:
-        model = Booking
-        fields = ['date_from', 'date_to', 'table', 'theme', 'user']
-
-    def validate(self, attrs):
-        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
-
-    def create(self, validated_data, *args, **kwargs):
-        return BookingSerializer.create(validated_data, *args, **kwargs)
+    def to_representation(self, instance: Booking):
+        # response = super(BookingSerializer, self).to_representation(instance)
+        data = {
+            "id": instance.id,
+            "code": instance.code,
+            "is_over": False if instance.date_to >= datetime.utcnow() else True,
+            "active": instance.is_active,
+            "date_from": instance.date_from,
+            "date_to": instance.date_to,
+            "date_activate_until": instance.date_activate_until,
+            "table": {
+                # TODO: Create TableSerializer.to_short_representation
+                "id": instance.table.id,
+                "title": instance.table.title
+            },
+            "user": {
+                # TODO: Create UserSerializer.to_representation
+                "id": instance.user.id
+            }
+        }
+        # data = super(FloorMapSerializer, self).to_representation(instance)
+        # data['image'] = FileSerializer(instance=instance.image).data
+        # data['floor'] = BaseFloorSerializer(instance=instance.floor).data
+        # return data
+        pass
 
 
 class SlotsSerializer(serializers.Serializer):
