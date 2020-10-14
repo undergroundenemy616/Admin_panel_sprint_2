@@ -7,6 +7,7 @@ from floors.models import Floor
 from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
+from users.models import User
 
 
 class BaseBookingSerializer(serializers.ModelSerializer):
@@ -210,6 +211,29 @@ class BookingFastSerializer(serializers.ModelSerializer):
             table=tables[0],
             user=validated_data['user']
         )
+
+
+class BookingMobileSerializer(serializers.ModelSerializer):
+    slots = SlotsSerializer(many=True, required=True)
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
+    theme = serializers.CharField(required=False)
+
+    class Meta:
+        model = Booking
+        fields = ['slots', 'table', 'theme']
+
+    def to_representation(self, instance):
+        response = {'result': 'OK',
+                    'slot': self.slots,
+                    'booking': BaseBookingSerializer(instance).data}
+        return response
+
+    def create(self, validated_data):
+        slots = validated_data.pop('slots')
+        for slot in slots:
+            date_from = slot.get('date_from')
+            date_to = slot.get('date_to')
+
 
 
 
