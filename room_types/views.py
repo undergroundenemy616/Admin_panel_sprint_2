@@ -5,8 +5,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, AllowAny
 # Local imports
-from backends.pagination import DefaultPagination
-from backends.mixins import FilterListMixin
+from core.pagination import DefaultPagination
+from core.mixins import FilterListMixin
 from room_types.serializers import RoomTypeSerializer, CreateRoomTypeSerializer
 from room_types.models import RoomType
 from offices.models import Office

@@ -8,7 +8,7 @@ from files.models import File
 class RoomType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=140, null=False)
-    office = models.ForeignKey(Office, null=False, on_delete=models.CASCADE)
+    office = models.ForeignKey(Office, null=False, related_name='roomtypes', on_delete=models.CASCADE)
     color = models.CharField(max_length=8, default="#0079c1")
     icon = models.ForeignKey(File, default=None, on_delete=models.SET_NULL, null=True)
     bookable = models.BooleanField(default=False)

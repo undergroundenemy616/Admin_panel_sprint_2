@@ -4,10 +4,10 @@ from django.db import models
 
 ALLOWED_GROUPS = (
     ('client', 'client'),  # access 4
-    ('engineer', 'engineer'),  # access 3
+    # ('engineer', 'engineer'),  # access 3
     ('admin', 'admin'),  # access 2
     ('owner', 'owner'),  # access 1
-    ('superuser', 'superuser'),  # access 0
+    # ('superuser', 'superuser'),  # access 0
 )
 
 MAP_ACCESS = tuple((val, name[0]) for val, name in enumerate(reversed(ALLOWED_GROUPS)))

@@ -1,25 +1,21 @@
 [
   {
     "model": "room_types.RoomType",
-    "pk": "151e49d5-09e8-4a5c-b664-dd3f2f35b88c",
+    "pk": "2467d075-d2b1-4cb2-9435-8215880e8ac3",
     "fields": {
       "title": "Рабочее место",
       "office": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38",
-      "bookable": true,
-      "is_deletable": false,
-      "work_interval_days": 90
+      "bookable": true
     }
   },
   {
     "model": "room_types.RoomType",
-    "pk": "152e49d5-08e8-4a5c-b664-dd3f2f35b99c",
+    "pk": "d6149a25-6fe6-4406-b164-213f2432b4bb",
     "fields": {
       "title": "Переговорная",
       "office": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38",
       "bookable": true,
-      "unified": true,
-      "is_deletable": false,
-      "work_interval_hours": 24
+      "unified": true
     }
   }
 ]
