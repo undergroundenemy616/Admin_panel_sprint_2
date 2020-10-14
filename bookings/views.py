@@ -9,7 +9,7 @@ from bookings.models import Booking
 from bookings.serializers import BookingSerializer, \
     BookingSlotsSerializer, \
     BookingActivateActionSerializer, \
-    BookingDeactivateActionSerializer, BookingFastSerializer, BookingAdminSerializer
+    BookingDeactivateActionSerializer, BookingFastSerializer, BookingAdminSerializer, BookingMobileSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -94,3 +94,14 @@ class CreateFastBookingsView(GenericAPIView):
         serializer.save(user=request.user)
         # headers = self.get_success_headers()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class CreateMultiplyBookingView(GenericAPIView):
+    serializer_class = BookingMobileSerializer
+    queryset = Booking.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.instance, status=status.HTTP_201_CREATED)

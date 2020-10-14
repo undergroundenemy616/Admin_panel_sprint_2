@@ -8,6 +8,7 @@ urlpatterns = [
     path('deactivate', views.ActionDeactivateBookingsView.as_view()),
     path('end', views.ActionEndBookingsView.as_view()),
     path('fast', views.CreateFastBookingsView.as_view()),
+    path('mobile', views.CreateMultiplyBookingView.as_view())
 
     # path('int:pk/'),
     # path('mobile'),

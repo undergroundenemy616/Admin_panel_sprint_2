@@ -11,7 +11,6 @@ from users.models import User
 
 
 class BaseBookingSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Booking
         fields = "__all__"
@@ -172,7 +171,7 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data['is_over'] = True
         validated_data['date_to'] = datetime.utcnow().replace(tzinfo=timezone.utc)
-        return super(BookingDeactivateActionSerializer, self). update(instance, validated_data)
+        return super(BookingDeactivateActionSerializer, self).update(instance, validated_data)
 
 
 class BookingFastSerializer(serializers.ModelSerializer):
@@ -214,6 +213,8 @@ class BookingFastSerializer(serializers.ModelSerializer):
 
 
 class BookingMobileSerializer(serializers.ModelSerializer):
+    # It's hard to explain, but this shit is for create multiply booking on one table
+    # You send some datetime intervals and then book table on this values
     slots = SlotsSerializer(many=True, required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
     theme = serializers.CharField(required=False)
@@ -222,19 +223,50 @@ class BookingMobileSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['slots', 'table', 'theme']
 
-    def to_representation(self, instance):
-        response = {'result': 'OK',
-                    'slot': self.slots,
-                    'booking': BaseBookingSerializer(instance).data}
-        return response
+    # def to_representation(self, instance):
+    #     # TODO rewrite according to create and existing in Flask
+    #     response = {'result': 'OK',
+    #                 'slot': self.slots,  # TODO send only choosen slot
+    #                 'booking': BaseBookingSerializer(instance).data}
+    #     return response
 
     def create(self, validated_data):
-        slots = validated_data.pop('slots')
-        for slot in slots:
+        table = validated_data.pop('table')
+        response = []
+        # booking_allowed_to_create = []
+        for slot in validated_data['slots']:
             date_from = slot.get('date_from')
             date_to = slot.get('date_to')
+            slot_response = {}
+            if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
+                slot_response['result'] = 'error'
+                slot_response['message'] = 'Date range is overflowed by existing booking'
+            else:
+                slot_response['result'] = 'OK'
+                # TODO override method bulk_create, handle theme field, make comments for all my code, make merge of slots
+                new_booking = Booking.objects.create(date_from=date_from,
+                                                     date_to=date_to,
+                                                     table=table,
+                                                     user=validated_data['user'])
+                # booking_allowed_to_create.append(new_booking)
+                slot_response['booking'] = BaseBookingSerializer(new_booking).data
+            slot_response['slot'] = {"date_from": date_from.isoformat(),
+                                     "date_to": date_to.isoformat()}
+
+            response.append(slot_response)
+        # Booking.objects.bulk_create(booking_allowed_to_create)
+        return response
 
 
+class BookingFastMultiplySerializer(serializers.ModelSerializer):
+    slots = SlotsSerializer(many=True, required=True)
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=False)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=False)
+    theme = serializers.CharField(max_length=200, required=False)
+    # tags =
+    sms_report = serializers.BooleanField(default=False, required=False)
 
-
-
+    class Meta:
+        model = Booking
+        fields = ['slots', 'room', 'floor', 'table', 'theme', 'tags', 'sms_report']
