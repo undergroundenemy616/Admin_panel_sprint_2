@@ -59,18 +59,8 @@ def jwt_decode_handler(token):
 
 def jwt_payload_handler(user):
     """Forming token payload."""
-    identity = user.id
-    phone_number = user.phone_number
-    password = user.get_password()
-    email = user.get_email()
+    payload = {'user_id': user.id}
 
-    payload = {
-        'user_id': identity,
-        'phone_number': phone_number,  # TODO there are no need
-        'password': password,  # TODO there are no need
-        'email': email,  # TODO there are no need
-        # 'expire': time.time() + 60 * 24 * 30
-    }
     if api_settings.JWT_ALLOW_REFRESH:
         payload['orig_iat'] = int(time.time())
 
@@ -80,3 +70,4 @@ def jwt_payload_handler(user):
 def jwt_get_phone_from_payload_handler(payload):
     """Get user `phone_number` for authorization instead of `username`."""
     return payload.get('phone_number')
+

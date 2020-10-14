@@ -9,6 +9,7 @@ from offices.models import Office, OfficeZone
 from files.models import File
 from floors.serializers import FloorSerializer
 from room_types.models import RoomType
+from tables.models import Table
 
 
 class OfficeZoneSerializer(serializers.ModelSerializer):
@@ -111,7 +112,6 @@ class CreateOfficeSerializer(OfficeSerializer):
         """
         response = super().to_representation(instance)
         response['license'] = LicenseSerializer(instance.license).data
-        # response['data'] = instance.get_office_booking_data()
         return response
 
     def create(self, validated_data):
@@ -162,6 +162,15 @@ class NestedOfficeSerializer(OfficeSerializer):
 
     def to_representation(self, instance):
         instance: Office
-        data = super(NestedOfficeSerializer, self).to_representation(instance)
-        data['floors_numbers'] = instance.floors.count()
-        data['occupied'] = Office.objects.filter()А
+        response = super(NestedOfficeSerializer, self).to_representation(instance)
+
+        # data['occupied_tables'] = Table.objects.overflowed()  # todo set is_overflowed
+        # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???
+
+        response['floors_numbers'] = instance.floors.count()
+        response['count_tables'] = Table.objects.filter(room__room_type__office_id=instance.id)
+        # todo set is_overflowed
+        response['occupied_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()
+        response['capacity_tables'] = instance.objects.filter(roomtype__title='Переговорная').count()
+
+        return response

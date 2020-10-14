@@ -1,5 +1,5 @@
 from rest_framework.permissions import AllowAny
-from backends.pagination import DefaultPagination
+from core.pagination import DefaultPagination
 from tables.models import Table, TableTag
 from tables.serializers import TableSerializer, TableTagSerializer
 from rest_framework.viewsets import ModelViewSet

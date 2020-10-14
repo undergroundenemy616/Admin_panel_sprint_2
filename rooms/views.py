@@ -3,8 +3,8 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from backends.pagination import DefaultPagination
-from backends.mixins import FilterListMixin
+from core.pagination import DefaultPagination
+from core.mixins import FilterListMixin
 from rooms.models import Room
 from rooms.procedures import select_filtered_rooms
 from rooms.serializers import RoomSerializer, FilterRoomSerializer

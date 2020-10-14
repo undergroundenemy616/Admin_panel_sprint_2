@@ -1,5 +1,5 @@
 from rest_framework.permissions import AllowAny
-from backends.pagination import DefaultPagination
+from core.pagination import DefaultPagination
 from rest_framework.generics import GenericAPIView
 from floors.models import Floor, FloorMap
 from floors.serializers import (

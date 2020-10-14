@@ -1,5 +1,5 @@
 from rest_framework.generics import ListCreateAPIView
-from backends.pagination import DefaultPagination
+from core.pagination import DefaultPagination
 from licenses.models import License
 from licenses.serializers import LicenseSerializer
 
