@@ -1,12 +1,10 @@
 from typing import Dict, Optional
 from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin
+from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.request import Request
-from rest_framework.response import Response
 from core.pagination import DefaultPagination
 from core.mixins import FilterListMixin
 from rooms.models import Room
-from rooms.procedures import select_filtered_rooms
 from rooms.serializers import RoomSerializer, FilterRoomSerializer
 
 
@@ -35,13 +33,6 @@ class ListCreateRoomsView(FilterListMixin,
             del mapped[item]
         return mapped
 
-    def ss(self, request, *args, **kwargs):
-        """Provides filtered list interface."""
-        mapped = self.get_mapped_query(request)
-        print(mapped)
-        records = select_filtered_rooms()  # TODO filters
-        return Response(data=records, status=200)
-
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
@@ -51,6 +42,7 @@ class ListCreateRoomsView(FilterListMixin,
 
 class RetrieveUpdateRoomsView(RetrieveModelMixin,
                               UpdateModelMixin,
+                              DestroyModelMixin,
                               GenericAPIView):
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
@@ -63,6 +55,9 @@ class RetrieveUpdateRoomsView(RetrieveModelMixin,
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
 
 #     mapped = self.get_mapped_query(request)

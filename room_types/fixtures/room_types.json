@@ -1,19 +1,19 @@
 [
   {
     "model": "room_types.RoomType",
-    "pk": 1,
+    "pk": "2467d075-d2b1-4cb2-9435-8215880e8ac3",
     "fields": {
       "title": "Рабочее место",
-      "office": 1,
+      "office": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38",
       "bookable": true
     }
   },
   {
     "model": "room_types.RoomType",
-    "pk": 2,
+    "pk": "d6149a25-6fe6-4406-b164-213f2432b4bb",
     "fields": {
       "title": "Переговорная",
-      "office": 1,
+      "office": "f11b36b9-c7d8-438b-9c3b-92074ea2ec38",
       "bookable": true,
       "unified": true
     }

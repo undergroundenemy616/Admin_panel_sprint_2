@@ -2,7 +2,6 @@ import uuid
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from rooms.models import Room
-from users.models import Account
 from files.models import File
 from offices.models import Office
 
@@ -20,6 +19,7 @@ class Table(models.Model):
     description = models.CharField(max_length=256, null=True, blank=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tables', blank=False, null=False)
     tags = models.ManyToManyField(TableTag, related_name='tables', blank=True)
+    images = models.ManyToManyField('files.File', related_name='tables', blank=True)
 
     @property
     def current_rating(self):
@@ -29,7 +29,7 @@ class Table(models.Model):
 
 class Rating(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(Account, on_delete=models.CASCADE, blank=False, null=False)
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, blank=False, null=False)
     table = models.ForeignKey(Table, on_delete=models.CASCADE, related_name='ratings', blank=False, null=False)
     rating = models.DecimalField(
         max_digits=3,

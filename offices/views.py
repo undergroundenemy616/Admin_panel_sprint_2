@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from core.pagination import DefaultPagination
 from offices.models import Office
-from offices.serializers import CreateOfficeSerializer
+from offices.serializers import CreateOfficeSerializer, NestedOfficeSerializer
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
     UpdateModelMixin,
@@ -17,7 +17,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                                  CreateModelMixin,
                                  GenericAPIView):
     """Office View."""
-    serializer_class = CreateOfficeSerializer
+    serializer_class = NestedOfficeSerializer
     queryset = Office.objects.all()
     pagination_class = DefaultPagination
 
