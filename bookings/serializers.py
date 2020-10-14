@@ -243,7 +243,8 @@ class BookingMobileSerializer(serializers.ModelSerializer):
                 slot_response['message'] = 'Date range is overflowed by existing booking'
             else:
                 slot_response['result'] = 'OK'
-                # TODO override method bulk_create, handle theme field, make comments for all my code, make merge of slots
+                # TODO override method bulk_create, handle theme field,
+                #  make comments for all my code, make merge of slots
                 new_booking = Booking.objects.create(date_from=date_from,
                                                      date_to=date_to,
                                                      table=table,
