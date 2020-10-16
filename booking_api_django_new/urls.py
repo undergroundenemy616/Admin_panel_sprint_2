@@ -66,7 +66,7 @@ urlpatterns = [
 
 '''
 __AUTH__
-[POST] /auth
+[POST] /auth -> 
 [POST] /refresh
 [POST] /auth_employee
 [POST] /register_employee

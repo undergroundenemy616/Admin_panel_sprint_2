@@ -9,16 +9,29 @@ from bookings.models import Booking
 from bookings.serializers import BookingSerializer, \
     BookingSlotsSerializer, \
     BookingActivateActionSerializer, \
-    BookingDeactivateActionSerializer, BookingFastSerializer, BookingAdminSerializer, BookingMobileSerializer
+    BookingDeactivateActionSerializer, BookingFastSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
+    """
+    Book table, get information about specific booking.
+    Methods available: GET, POST
+    GET: Return information about one booking according to requested ID
+     Params - :id:: booking id information about want to get
+    POST: Create booking on requested table if it not overflowed
+     Params - :date_from: - booking start datetime
+              :date_to: - booking end datetime
+              :table: - seat that need to be book
+              :Theme: - Used only when booking table in room.room_type.unified=True, else used default value
+    """
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
     pagination_class = DefaultPagination
 
     def post(self, request, *args, **kwargs):
-        # request.data['user'] = request.user
+        # Get information about user,
+        # made for reuse one serializer in admin booking, where field user requested
+        request.data['user'] = request.user.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -52,7 +65,6 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
         return Response(serializer.instance, status=status.HTTP_200_OK)
 
 
-
 class ActionActivateBookingsView(GenericAPIView):
     serializer_class = BookingActivateActionSerializer
     queryset = Booking.objects.all()
@@ -68,6 +80,9 @@ class ActionActivateBookingsView(GenericAPIView):
 
 
 class ActionDeactivateBookingsView(GenericAPIView):
+    """
+    G
+    """
     serializer_class = BookingDeactivateActionSerializer
     queryset = Booking.objects.all()
 
@@ -84,24 +99,28 @@ class ActionEndBookingsView(GenericAPIView):
     pass
 
 
+class ActionCancelBookingsView(GenericAPIView):
+    pass
+
+
 class CreateFastBookingsView(GenericAPIView):
     serializer_class = BookingFastSerializer
     queryset = Booking.objects.all()
 
     def post(self, request, *args, **kwargs):
+        request.data['user'] = request.user.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
-        # headers = self.get_success_headers()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class CreateMultiplyBookingView(GenericAPIView):
-    serializer_class = BookingMobileSerializer
-    queryset = Booking.objects.all()
+class FastBookingAdminView(CreateFastBookingsView):
+    # permission_classes = [IsAdminUser, ]
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.instance, status=status.HTTP_201_CREATED)
+        serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.instance, status=status.HTTP_201_CREATED, headers=headers)

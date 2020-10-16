@@ -52,9 +52,10 @@ class RetrieveUpdateDeleteFloorView(UpdateModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
-class ListCreateFloorMapView(ListModelMixin,
-                             CreateModelMixin,
-                             GenericAPIView):
+class ListCreateDeleteFloorMapView(ListModelMixin,
+                                   CreateModelMixin,
+                                   DestroyModelMixin,
+                                   GenericAPIView):
     """Floor Maps View."""
     queryset = FloorMap.objects.all()
     permission_classes = (AllowAny,)
@@ -66,6 +67,9 @@ class ListCreateFloorMapView(ListModelMixin,
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
 
 # class ListHandler(ListAPIView):

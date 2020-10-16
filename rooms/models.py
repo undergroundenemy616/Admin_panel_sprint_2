@@ -34,3 +34,10 @@ class RoomMarker(models.Model):  # todo added by cybertatar
         null=False,
         blank=False
     )
+    y = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        null=False,
+        blank=False
+    )

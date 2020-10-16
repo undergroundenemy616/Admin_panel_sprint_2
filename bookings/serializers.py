@@ -42,39 +42,20 @@ class BookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
-        # TODO make theme handled
+        if validated_data['table'].room.room_type.unified:
+            return self.Meta.model.objects.create(
+                date_to=validated_data['date_to'],
+                date_from=validated_data['date_from'],
+                table=validated_data['table'],
+                user=validated_data['user'],
+                theme=validated_data['theme']
+            )
         return self.Meta.model.objects.create(
             date_to=validated_data['date_to'],
             date_from=validated_data['date_from'],
             table=validated_data['table'],
             user=validated_data['user']
         )
-
-    def to_representation(self, instance: Booking):
-        # response = super(BookingSerializer, self).to_representation(instance)
-        data = {
-            "id": instance.id,
-            "code": instance.code,
-            "is_over": False if instance.date_to >= datetime.utcnow() else True,
-            "active": instance.is_active,
-            "date_from": instance.date_from,
-            "date_to": instance.date_to,
-            "date_activate_until": instance.date_activate_until,
-            "table": {
-                # TODO: Create TableSerializer.to_short_representation
-                "id": instance.table.id,
-                "title": instance.table.title
-            },
-            "user": {
-                # TODO: Create UserSerializer.to_representation
-                "id": instance.user.id
-            }
-        }
-        # data = super(FloorMapSerializer, self).to_representation(instance)
-        # data['image'] = FileSerializer(instance=instance.image).data
-        # data['floor'] = BaseFloorSerializer(instance=instance.floor).data
-        # return data
-        pass
 
 
 class SlotsSerializer(serializers.Serializer):
@@ -189,6 +170,7 @@ class BookingFastSerializer(serializers.ModelSerializer):
     theme = serializers.CharField(required=False)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
     room_type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
 
     class Meta:
         model = Booking
@@ -213,7 +195,7 @@ class BookingFastSerializer(serializers.ModelSerializer):
                 continue
             else:
                 tables.remove(table)
-        return self.Meta.model.objects.save_or_merge(
+        return self.Meta.model.objects.create(
             date_to=date_to,
             date_from=date_from,
             table=tables[0],
@@ -221,6 +203,7 @@ class BookingFastSerializer(serializers.ModelSerializer):
         )
 
 
+# Not needed in Django version
 class BookingMobileSerializer(serializers.ModelSerializer):
     # It's hard to explain, but this shit is for create multiply booking on one table
     # You send some datetime intervals and then book table on this values
@@ -243,6 +226,8 @@ class BookingMobileSerializer(serializers.ModelSerializer):
         table = validated_data.pop('table')
         response = []
         # booking_allowed_to_create = []
+        # Cycle for checking overflowing on datetimes in slots and booking if not
+        # Creating response for view
         for slot in validated_data['slots']:
             date_from = slot.get('date_from')
             date_to = slot.get('date_to')
@@ -268,6 +253,7 @@ class BookingMobileSerializer(serializers.ModelSerializer):
         return response
 
 
+# Not needed in Django version
 class BookingFastMultiplySerializer(serializers.ModelSerializer):
     slots = SlotsSerializer(many=True, required=True)
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=False)
