@@ -117,7 +117,10 @@ class Account(models.Model):
         ('undefined', 'undefined')
     )
 
-    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='accounts')
+    user = models.OneToOneField('User', on_delete=models.CASCADE)
+
+    # account_type = models.CharField(max_length=128, default)  # TODO
+
     description = models.TextField(default='', blank=True)
     birth_date = models.DateField(null=True, blank=True)
     gender = models.CharField(choices=GENDERS, max_length=32, default='undefined')
@@ -131,5 +134,5 @@ class Account(models.Model):
     district_string = models.CharField(default='', max_length=64, blank=True)  # TODO
     photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)  # todo
     updated_at = models.DateTimeField(null=False, auto_now=True)
-    # account_type = models.CharField(max_length=128, default)  # TODO
+
 # Add validators

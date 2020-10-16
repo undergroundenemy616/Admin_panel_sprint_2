@@ -1,13 +1,9 @@
 import uuid
-
 from django.core.validators import MinValueValidator
 from django.db import models
 from floors.models import Floor
 from files.models import File
 from room_types.models import RoomType
-
-
-# from django.utils.functional import cached_property
 
 
 class Room(models.Model):

@@ -13,7 +13,7 @@ import datetime
 import os
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='booking_api_django_new/environments/' + (os.environ.get('BRANCH') or 'yokohola') + '.env')
+load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH') + '.env')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'tables',
     'room_types',
+    'bookings',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -192,8 +193,8 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME'),
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': '2.59.41.133',
-        'PORT': '5432',
+        'HOST': os.environ.get('HOST') or '2.59.41.133',
+        'PORT': os.environ.get('PORT') or '5432',
     }
 }
 

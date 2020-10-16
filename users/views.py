@@ -1,7 +1,7 @@
 from django.contrib.auth import user_logged_in
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from users.backends import jwt_encode_handler, jwt_payload_handler
@@ -19,7 +19,7 @@ def create_auth_data(user):
 
 class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
     queryset = User.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = LoginOrRegisterSerializer
 
     def post(self, request):

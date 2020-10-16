@@ -54,10 +54,14 @@ urlpatterns = [
     path('groups/', include('groups.urls')),
     path('files/', include('files.urls')),
     path('tables/', include('tables.urls')),
-    path('rooms/', include('rooms.urls')),
+    path('room/', include('rooms.urls')),
+    path('rooms/', include('rooms.urls_detail')),
     path('floors/', include('floors.urls')),
     path('offices/', include('offices.urls')),
-    path('room_types/', include('room_types.urls'))
+    path('room_types/', include('room_types.urls')),
+    path('book/', include('bookings.urls')),
+    path('books/', include('bookings.urls_detail')),
+    path('book_operator/', include('bookings.urls_operator')),
     # path('groups/', include('groups.urls'))
 ]
 
