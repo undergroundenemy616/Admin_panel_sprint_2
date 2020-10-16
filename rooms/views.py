@@ -1,10 +1,11 @@
 from typing import Dict, Optional
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, DestroyModelMixin
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from core.pagination import DefaultPagination
 from core.mixins import FilterListMixin
-from rooms.models import Room
+from rooms.models import Room, RoomMarker
 from rooms.serializers import RoomSerializer, FilterRoomSerializer
 
 
@@ -14,6 +15,7 @@ class ListCreateRoomsView(FilterListMixin,
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
+
     # permission_classes = (IsAdminUser,)
 
     @staticmethod
@@ -59,6 +61,18 @@ class RetrieveUpdateRoomsView(RetrieveModelMixin,
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
+
+class RoomMarkerView(CreateModelMixin,
+                     DestroyModelMixin,
+                     GenericAPIView):
+    queryset = RoomMarker.objects.all()
+    permission_classes = (AllowAny,)  # fixme
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
 #     mapped = self.get_mapped_query(request)
 #     print(mapped)
