@@ -11,7 +11,7 @@ from tables.serializers import TableSerializer
 class RoomSerializer(serializers.ModelSerializer):
     tables = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
-    room_type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
 
     class Meta:
         model = Room
@@ -48,7 +48,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data = super(CreateRoomSerializer, self).to_representation(instance)
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
-        data['room_type'] = RoomTypeSerializer(instance=instance.room_type).data
+        data['type'] = RoomTypeSerializer(instance=instance.type).data
 
         return data
 

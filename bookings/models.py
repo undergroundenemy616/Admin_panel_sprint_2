@@ -32,12 +32,16 @@ class BookingManager(models.Manager):
             obj.save()
             return obj
 
+    def active_only(self):
+        return self.get_queryset().filter(is_active=True)
+
 
 class Booking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date_from = models.DateTimeField(default=datetime.utcnow)
     date_to = models.DateTimeField()
     date_activate_until = models.DateTimeField(null=True)
+    # TODO: Why it is not a property ?
     is_active = models.BooleanField(default=False)
     is_over = models.BooleanField(default=False)
     user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
@@ -47,7 +51,6 @@ class Booking(models.Model):
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
-        # if not self.pk:
         self.date_activate_until = self.calculate_date_activate_until()
         super(self.__class__, self).save(*args, **kwargs)
 

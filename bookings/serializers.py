@@ -1,14 +1,17 @@
-from datetime import datetime
-
 from rest_framework import serializers, status
-from backends.handlers import ResponseException
+from core.handlers import ResponseException
 from bookings.models import Booking, Table
 from bookings.validator import BookingTimeValidator
+from core.pagination import DefaultPagination
 from floors.models import Floor
+from floors.serializers import FloorSerializer
+from offices.serializers import OfficeSerializer
 from rooms.models import Room
 import random
 
+from rooms.serializers import RoomSerializer
 from users.models import User
+from users.serializers import AccountSerializer
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -17,6 +20,7 @@ class BookingSerializer(serializers.ModelSerializer):
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
     theme = serializers.CharField(max_length=200, default="Без темы")
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+    pagination_class = DefaultPagination
 
     class Meta:
         model = Booking
@@ -40,31 +44,15 @@ class BookingSerializer(serializers.ModelSerializer):
             user=validated_data['user']
         )
 
-    def to_representation(self, instance: Booking):
-        # response = super(BookingSerializer, self).to_representation(instance)
-        data = {
-            "id": instance.id,
-            "code": instance.code,
-            "is_over": False if instance.date_to >= datetime.utcnow() else True,
-            "active": instance.is_active,
-            "date_from": instance.date_from,
-            "date_to": instance.date_to,
-            "date_activate_until": instance.date_activate_until,
-            "table": {
-                # TODO: Create TableSerializer.to_short_representation
-                "id": instance.table.id,
-                "title": instance.table.title
-            },
-            "user": {
-                # TODO: Create UserSerializer.to_representation
-                "id": instance.user.id
-            }
+    def to_representation(self, instance):
+        instance: Booking
+        response = super(BookingSerializer, self).to_representation(instance)
+        response['table'] = {
+            "id": instance.table.id,
+            "title": instance.table.title
         }
-        # data = super(FloorMapSerializer, self).to_representation(instance)
-        # data['image'] = FileSerializer(instance=instance.image).data
-        # data['floor'] = BaseFloorSerializer(instance=instance.floor).data
-        # return data
-        pass
+        response['user'] = AccountSerializer(instance=instance.user.account).data
+        return response
 
 
 class SlotsSerializer(serializers.Serializer):
@@ -129,6 +117,23 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
                     slot_response['available'] = False
                     break
             response.append(slot_response)
+        return response
+
+
+class BookingListSerializer(BookingSerializer):
+    """Serialize booking list"""
+
+    class Meta:
+        model = Booking
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        instance: Booking
+        response = super(BookingSerializer, self).to_representation(instance)
+        # TODO: Does it provoke more resource to consume ?
+        response["room"] = RoomSerializer(instance=instance.table.room).data
+        response["floor"] = FloorSerializer(instance=instance.table.room.floor).data
+        response["office"] = OfficeSerializer(instance=instance.table.room.floor.office).data
         return response
 
 

@@ -169,6 +169,6 @@ class NestedOfficeSerializer(OfficeSerializer):
 
         response['floors_numbers'] = instance.floors.count()
         response['occupied_meeting'] = RoomType.objects.filter(title='Переговорная', office_id=instance.id).count()
-        response['capacity_tables'] = Table.objects.filter(room__room_type__office_id=instance.id).count()
+        response['capacity_tables'] = Table.objects.filter(room__type__office_id=instance.id).count()
 
         return response
