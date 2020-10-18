@@ -18,5 +18,5 @@ pipelines:
             - docker push $DOCKER_REG/simple-office/backend:latest
             - ssh -o StrictHostKeyChecking=no $USER@$SERVER "echo $DOCKER_PASSWORD | docker login --username=$DOCKER_USERNAME --password-stdin $DOCKER_REG
               && cd /home/simpleoffice
-              && docker-compose pull
-              && docker-compose down && docker-compose up -d"
+              && docker-compose -p django pull
+              && docker-compose -p django down && docker-compose -p django up -d"
