@@ -4,12 +4,12 @@ from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelM
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, AllowAny
-from backends.pagination import DefaultPagination
+from core.pagination import DefaultPagination
 from bookings.models import Booking
 from bookings.serializers import BookingSerializer, \
     BookingSlotsSerializer, \
     BookingActivateActionSerializer, \
-    BookingDeactivateActionSerializer, BookingFastSerializer
+    BookingDeactivateActionSerializer, BookingFastSerializer, BookingListSerializer, BookingListTablesSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -29,16 +29,16 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     pagination_class = DefaultPagination
 
     def post(self, request, *args, **kwargs):
-        # Get information about user,
-        # made for reuse one serializer in admin booking, where field user requested
-        request.data['user'] = request.user.id
+        # TODO: Waiting for auth
+        # request.data['user'] = request.user.id
+        request.data['user'] = '05f0c55c-f890-4833-8f95-7a3054e7edcb'
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request, *args, **kwargs):
+        # TODO: Add addition not required "?id=" parameter for user id
         return self.list(request, *args, **kwargs)
 
 
@@ -53,8 +53,25 @@ class BookingsAdminView(BookingsView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.instance, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BookingsActiveListView(BookingsView):
+    queryset = Booking.objects.active_only().all()
+    serializer_class = BookingListSerializer
+
+    def get(self, request, *args, **kwargs):
+        # TODO: Waiting for auth
+        # request.data['user'] = request.user.id
+        request.data['user'] = '05f0c55c-f890-4833-8f95-7a3054e7edcb'
+        return self.list(request, *args, **kwargs)
+
+
+class BookingsUserListView(BookingsAdminView):
+    serializer_class = BookingListSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class ActionCheckAvailableSlotsView(GenericAPIView):
@@ -62,11 +79,12 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
     queryset = Booking.objects.all()
 
     def post(self, request, *args, **kwargs):
-        # request.data['user'] = request.user
+        # request.data['user'] = request.user.id
+        request.data['user'] = '05f0c55c-f890-4833-8f95-7a3054e7edcb'
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
-        return Response(serializer.instance, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ActionActivateBookingsView(GenericAPIView):
@@ -158,17 +176,29 @@ class FastBookingAdminView(CreateFastBookingsView):
         return Response(serializer.instance, status=status.HTTP_201_CREATED, headers=headers)
 
 
-class BookingListTablesView(GenericAPIView):
+class BookingListTablesView(GenericAPIView, ListModelMixin):
     """
     All User route. Show booking history of any requested table.
     Can be filtered by date_from-date_to.
     """
-    pass
+    serializer_class = BookingListTablesSerializer
+    queryset = Booking.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        queryset = self.queryset.filter(table=request.data.get('table'), date_from=request.data.get('date_from'),
+                                        date_to=request.data.get('date_to'))
+        return self.list(request, *args, **kwargs)
 
 
-class BookingListPersonalView(GenericAPIView):
+class BookingListPersonalView(GenericAPIView, ListModelMixin):
     """
     All User route. Shows all bookings that User have.
     Can be filtered by: date,
     """
-    pass
+    serializer_class = BookingSerializer
+    queryset = Booking.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)

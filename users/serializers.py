@@ -23,6 +23,12 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
         fields = '__all__'
 
+    def to_representation(self, instance):
+        instance: Account
+        response = super(AccountSerializer, self).to_representation(instance)
+        response['email'] = instance.user.email
+        return response
+
 
 class LoginOrRegisterSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=True, min_length=11, max_length=12)

@@ -1,13 +1,18 @@
 from datetime import datetime, timezone
 from rest_framework import serializers, status
-from backends.handlers import ResponseException
+from core.handlers import ResponseException
 from bookings.models import Booking, Table
 from bookings.validators import BookingTimeValidator
+from core.pagination import DefaultPagination
 from floors.models import Floor
+from floors.serializers import FloorSerializer
 from offices.models import Office
+from offices.serializers import OfficeSerializer
 from room_types.models import RoomType
 from rooms.models import Room
+from rooms.serializers import RoomSerializer
 from users.models import User
+from users.serializers import AccountSerializer
 
 
 class BaseBookingSerializer(serializers.ModelSerializer):
@@ -23,6 +28,7 @@ class BookingSerializer(serializers.ModelSerializer):
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
     theme = serializers.CharField(max_length=200, default="Без темы")
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+    pagination_class = DefaultPagination
 
     class Meta:
         model = Booking
@@ -56,6 +62,16 @@ class BookingSerializer(serializers.ModelSerializer):
             table=validated_data['table'],
             user=validated_data['user']
         )
+
+    # def to_representation(self, instance):
+    #     instance: Booking
+    #     response = super(BookingSerializer, self).to_representation(instance)
+    #     response['table'] = {
+    #         "id": instance.table.id,
+    #         "title": instance.table.title
+    #     }
+    #     response['user'] = AccountSerializer(instance=instance.user.account).data
+    #     return response
 
 
 class SlotsSerializer(serializers.Serializer):
@@ -145,6 +161,27 @@ class BookingActivateActionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Activation time have passed')
         validated_data['is_active'] = True
         return super(BookingActivateActionSerializer, self).update(instance, validated_data)
+
+
+class BookingListSerializer(BookingSerializer):
+    """Serialize booking list"""
+
+    class Meta:
+        model = Booking
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        instance: Booking
+        response = super(BookingSerializer, self).to_representation(instance)
+        # TODO: Does it provoke more resource to consume ?
+        response["room"] = RoomSerializer(instance=instance.table.room).data
+        response["floor"] = FloorSerializer(instance=instance.table.room.floor).data
+        response["office"] = OfficeSerializer(instance=instance.table.room.floor.office).data
+        return response
+
+
+class BookingActionSerializer(serializers.ModelSerializer):
+    booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
 
 
 class BookingDeactivateActionSerializer(serializers.ModelSerializer):
@@ -266,3 +303,18 @@ class BookingFastMultiplySerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['slots', 'room', 'floor', 'table', 'theme', 'tags', 'sms_report']
+
+
+class BookingListTablesSerializer(serializers.ModelSerializer):
+    date_from = serializers.DateTimeField(required=True)
+    date_to = serializers.DateTimeField(required=True)
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
+
+    class Meta:
+        model = Booking
+        fields = ['date_from', 'date_to', 'table']
+
+    def validate(self, attrs):
+        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+
+
