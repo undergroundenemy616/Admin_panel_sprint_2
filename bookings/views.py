@@ -43,6 +43,10 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
 
 
 class BookingsAdminView(BookingsView):
+    """
+    Admin route. Create Booking for any user.
+    """
+
     # permission_classes = (IsAdminUser, )
 
     def post(self, request, *args, **kwargs):
@@ -66,6 +70,9 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
 
 
 class ActionActivateBookingsView(GenericAPIView):
+    """
+    Authenticated User route. Change status of booking.
+    """
     serializer_class = BookingActivateActionSerializer
     queryset = Booking.objects.all()
 
@@ -81,7 +88,7 @@ class ActionActivateBookingsView(GenericAPIView):
 
 class ActionDeactivateBookingsView(GenericAPIView):
     """
-    G
+    Admin route. Deactivates any booking
     """
     serializer_class = BookingDeactivateActionSerializer
     queryset = Booking.objects.all()
@@ -96,14 +103,39 @@ class ActionDeactivateBookingsView(GenericAPIView):
 
 
 class ActionEndBookingsView(GenericAPIView):
-    pass
+    """
+    User route. Deactivate booking only connected with User
+    """
+    serializer_class = BookingDeactivateActionSerializer
+    queryset = Booking.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
+        if existing_booking.user.id != request.user.id:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(data=request.data, instance=existing_booking)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
-class ActionCancelBookingsView(GenericAPIView):
-    pass
+class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
+    """
+    User route. Delete booking object from DB
+    """
+    queryset = Booking.objects.all()
+
+    def delete(self, pk, request, *args, **kwargs):
+        existing_booking = get_object_or_404(Booking, pk=pk)
+        if existing_booking.user.id != request.user.id:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return self.destroy(request, *args, **kwargs)
 
 
 class CreateFastBookingsView(GenericAPIView):
+    """
+    Admin route. Fast booking for any user.
+    """
     serializer_class = BookingFastSerializer
     queryset = Booking.objects.all()
 
@@ -124,3 +156,19 @@ class FastBookingAdminView(CreateFastBookingsView):
         serializer.save()
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.instance, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class BookingListTablesView(GenericAPIView):
+    """
+    All User route. Show booking history of any requested table.
+    Can be filtered by date_from-date_to.
+    """
+    pass
+
+
+class BookingListPersonalView(GenericAPIView):
+    """
+    All User route. Shows all bookings that User have.
+    Can be filtered by: date,
+    """
+    pass

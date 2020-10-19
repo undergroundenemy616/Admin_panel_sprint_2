@@ -6,7 +6,7 @@ from rest_framework_jwt.settings import api_settings
 from users.serializers import TokenSerializer
 
 
-def jwt_response_payload_handler(token, user, request):  # TODO function is not used
+def jwt_response_payload_handler(token, user, request):  # fixme function is not used
     """Function only for token obtain and token refresh api view. There are no need for a while."""
     return {
         'user': TokenSerializer(user, context={'request': request}).data,
