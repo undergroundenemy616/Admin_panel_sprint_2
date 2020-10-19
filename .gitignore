@@ -7,3 +7,4 @@
 *.xml
 *.pyc
 __pycache__
+drop_db.py

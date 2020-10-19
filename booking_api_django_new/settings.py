@@ -13,7 +13,7 @@ import datetime
 import os
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH', default='master') + '.env')
+load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH', default='yokohola') + '.env')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,7 +44,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'core.authorization.BookingAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
@@ -57,8 +57,8 @@ SMSC = {
     'SMSC_HTTPS': False,  # использовать HTTPS протокол
     'SMSC_CHARSET': 'utf-8',  # кодировка сообщения (windows-1251 или koi8-r), по умолчанию используется utf-8
     'SMSC_DEBUG': True,  # флаг отладки
-    'SMSC_SEND_URL': 'https://smsc.ru/sys/send.php',
-    # 'SMSC_COST_URL': 'https://smsc.ru/sys/send.php?cost=1 '
+    'SMSC_SEND_URL': 'https://smsc.ru/sys/send.php'
+    # 'SMSC_COST_URL': 'https://smsc.ru/sys/send.php?cost=1'
 }
 
 JWT_AUTH = {
@@ -80,7 +80,7 @@ JWT_AUTH = {
         'users.backends.jwt_response_payload_handler',
 
     'JWT_PAYLOAD_GET_USERNAME_HANDLER':
-        'users.backends.jwt_get_phone_from_payload_handler',
+        'users.backends.jwt_get_username_from_payload',
 
     'JWT_SECRET_KEY': SECRET_KEY,
     'JWT_GET_USER_SECRET_KEY': None,

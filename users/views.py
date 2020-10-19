@@ -1,13 +1,17 @@
-from django.contrib.auth import user_logged_in
+from django.contrib.auth import user_logged_in, authenticate
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import User, Account
 from users.registration import send_code, confirm_code
-from users.serializers import LoginOrRegisterSerializer, UserSerializer, AccountSerializer
+from users.serializers import (
+    LoginOrRegisterSerializer,
+    UserSerializer,
+    AccountSerializer,
+    LoginOrRegisterStaffSerializer
+)
 
 
 def create_auth_data(user):
@@ -19,7 +23,6 @@ def create_auth_data(user):
 
 class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
     queryset = User.objects.all()
-    # permission_classes = (IsAuthenticated,)
     serializer_class = LoginOrRegisterSerializer
 
     def post(self, request):
@@ -56,5 +59,36 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class LoginOrRegisterEmployee(GenericAPIView):
-    pass
+def authenticate_staff(request=None, **fields):
+    """Returns tuple of (user, None) if authentication credentials correct, otherwise returns (None, message)."""
+    try:
+        user = User.objects.get(email=fields.get('email'))
+    except (User.DoesNotExist, KeyError, TypeError):
+        return None, 'Incorrect email'
+
+    is_correct = user.check_password(fields.get('password'))
+    if not is_correct:
+        return None, 'Incorrect password'
+
+    if not user.is_staff or not user.is_active:
+        return None, 'User is not a staff or has been blocked.'
+
+    return user, None
+
+
+class LoginStaff(GenericAPIView):
+    serializer_class = LoginOrRegisterStaffSerializer
+    queryset = User.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user, message = authenticate_staff(request, **serializer.validated_data)
+        if not user:
+            return Response({'detail': message}, status=400)
+
+        data = dict()
+        data['auth'] = create_auth_data(user)
+        data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
+        return Response(data, status=200)

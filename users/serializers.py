@@ -31,11 +31,27 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 class LoginOrRegisterSerializer(serializers.Serializer):
+    """Log in through phone"""
     phone_number = serializers.CharField(required=True, min_length=11, max_length=12)
     sms_code = serializers.IntegerField(required=False)
 
     class Meta:
         model = User
+
+    def save(self, **kwargs):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+
+class LoginOrRegisterStaffSerializer(serializers.Serializer):
+    """Log in through email and password"""
+    email = serializers.EmailField(required=True, min_length=0, max_length=128)
+    password = serializers.CharField(required=True, min_length=0, max_length=128)
 
     def save(self, **kwargs):
         pass
