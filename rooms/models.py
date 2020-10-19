@@ -10,8 +10,7 @@ class Room(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=256, null=False, blank=False)
     description = models.CharField(max_length=256, null=True, blank=True)
-    room_type = models.ForeignKey('room_types.RoomType', on_delete=models.SET_NULL, related_name='rooms',
-                                  null=True, blank=False)
+    type = models.ForeignKey('room_types.RoomType', on_delete=models.SET_NULL, related_name='rooms', null=True, blank=False)
     images = models.ManyToManyField(File, related_name='rooms', blank=True)
     floor = models.ForeignKey(Floor, related_name='rooms', null=True, blank=True, on_delete=models.CASCADE)
     seats_available = models.IntegerField(default=1, null=False, blank=False)

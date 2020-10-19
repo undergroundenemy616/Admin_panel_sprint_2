@@ -132,7 +132,7 @@ class Account(models.Model):
     district_integer = models.IntegerField(null=True, blank=True)  # TODO
     region_string = models.CharField(default='', max_length=64, blank=True)  # TODO
     district_string = models.CharField(default='', max_length=64, blank=True)  # TODO
-    photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)  # todo
+    # photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)  # todo
     updated_at = models.DateTimeField(null=False, auto_now=True)
 
 # Add validators

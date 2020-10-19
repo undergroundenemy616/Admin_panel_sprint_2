@@ -19,7 +19,7 @@ def create_auth_data(user):
 
 class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
     queryset = User.objects.all()
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     serializer_class = LoginOrRegisterSerializer
 
     def post(self, request):
