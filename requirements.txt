@@ -4,6 +4,7 @@ chardet==3.0.4
 coreapi==2.3.3
 coreschema==0.0.4
 Django==3.0.8
+django-cors-headers==3.5.0
 django-redis==4.12.1
 djangorestframework==3.11.1
 djangorestframework-jwt==1.11.0
@@ -14,6 +15,7 @@ itypes==1.2.0
 Jinja2==2.11.2
 MarkupSafe==1.1.1
 packaging==20.4
+pkg-resources==0.0.0
 psycopg2==2.8.5
 PyJWT==1.7.1
 pyparsing==2.4.7
