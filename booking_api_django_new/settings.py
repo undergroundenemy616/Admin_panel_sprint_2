@@ -35,11 +35,6 @@ ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'users.User'
 
-CORS_ORIGIN_ALLOW_ALL = True
-
-CORS_ALLOW_CREDENTIALS = True
-
-
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -100,7 +95,6 @@ JWT_AUTH = {
 INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'groups.apps.GroupsConfig',
-    'corsheaders'
     'files',
     'floors',
     'licenses',
@@ -152,6 +146,7 @@ LOGGING = {
 }
 
 MIDDLEWARE = [
+    'core.middlewares.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
