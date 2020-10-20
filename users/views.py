@@ -88,7 +88,7 @@ class LoginStaff(GenericAPIView):
         if not user:
             return Response({'detail': message}, status=400)
 
-        data = dict()
+        # data = dict()
         auth_dict = create_auth_data(user)
         # data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
         return Response(auth_dict, status=200)

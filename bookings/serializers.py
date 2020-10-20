@@ -152,8 +152,6 @@ class BookingActivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        if validated_data['user'] != instance.user:
-            raise serializers.ValidationError('Access denied')
         if validated_data['table'] != instance.table:
             raise serializers.ValidationError('Wrong data')
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
@@ -226,18 +224,20 @@ class BookingFastSerializer(serializers.ModelSerializer):
         date_from = validated_data['date_from']
         date_to = validated_data['date_to']
         office = validated_data.pop('office')
-        tables = list(Table.objects.filter(room__floor__office_id=office, room___id=validated_data['room_type']))
+        tables = list(Table.objects.filter(room__floor__office_id=office, room__type__id=validated_data['room_type']))
         for table in tables[:]:
             if not self.Meta.model.objects.is_overflowed(table, date_from, date_to):
                 continue
             else:
                 tables.remove(table)
-        return self.Meta.model.objects.create(
-            date_to=date_to,
-            date_from=date_from,
-            table=tables[0],
-            user=validated_data['user']
-        )
+        if len(tables) != 0:
+            return self.Meta.model.objects.create(
+                date_to=date_to,
+                date_from=date_from,
+                table=tables[0],
+                user=validated_data['user']
+            )
+        raise serializers.ValidationError('No table found for fast booking')
 
 
 # Not needed in Django version
@@ -297,12 +297,11 @@ class BookingFastMultiplySerializer(serializers.ModelSerializer):
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=False)
     theme = serializers.CharField(max_length=200, required=False)
-    # tags =
     sms_report = serializers.BooleanField(default=False, required=False)
 
     class Meta:
         model = Booking
-        fields = ['slots', 'room', 'floor', 'table', 'theme', 'tags', 'sms_report']
+        fields = ['slots', 'room', 'floor', 'table', 'theme', 'sms_report']
 
 
 class BookingListTablesSerializer(serializers.ModelSerializer):
@@ -316,5 +315,3 @@ class BookingListTablesSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
-
-

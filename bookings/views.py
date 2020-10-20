@@ -96,12 +96,13 @@ class ActionActivateBookingsView(GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         # request.data['user'] = request.user
-        get_id = get_object_or_404(Booking, pk=request.data.get('booking'))
-        booking = Booking.objects.filter(id=get_id.id).first()
-        serializer = self.serializer_class(data=request.data, instance=booking)
+        existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
+        if existing_booking.user.id != request.user.id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
-        return Response(serializer.to_representation(booking), status=status.HTTP_200_OK)
+        return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
 class ActionDeactivateBookingsView(GenericAPIView):
@@ -112,12 +113,11 @@ class ActionDeactivateBookingsView(GenericAPIView):
     queryset = Booking.objects.all()
 
     def post(self, request, *args, **kwargs):
-        get_id = get_object_or_404(Booking, pk=request.data.get('booking'))
-        booking = Booking.objects.filter(id=get_id.id).first()
-        serializer = self.serializer_class(data=request.data, instance=booking)
+        existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
+        serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
-        return Response(serializer.to_representation(booking), status=status.HTTP_200_OK)
+        return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
 class ActionEndBookingsView(GenericAPIView):
