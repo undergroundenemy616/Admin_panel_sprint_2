@@ -27,7 +27,7 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomType
-        fields = '__all__'
+        exclude = ['is_deletable']
 
     def to_representation(self, instance):
         if isinstance(instance, list):
@@ -50,6 +50,9 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
                 types_to_create.append(RoomType(title=title, office=office))
             RoomType.objects.bulk_create(types_to_create)
             return types_to_create
+        type_exist = RoomType.objects.filter(title=titles[0], office=office)
+        if type_exist:
+            raise serializers.ValidationError('Type already exist')
         return RoomType.objects.create(title=titles[0], office=office, icon=validated_data['icon'],
                                        color=validated_data['color'], bookable=validated_data['bookable'],
                                        work_interval_days=validated_data['work_interval_days'],
