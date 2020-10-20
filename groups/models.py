@@ -10,8 +10,10 @@ ALLOWED_GROUPS = (
     # ('superuser', 'superuser'),  # access 0
 )
 
-MAP_ACCESS = tuple((val, name[0]) for val, name in enumerate(reversed(ALLOWED_GROUPS)))
-print(MAP_ACCESS)
+SUPERUSER_ACCESS = 0
+OWNER_ACCESS = 1
+ADMIN_ACCESS = 2
+CLIENT_ACCESS = 4
 
 
 def integer_validator(value):
@@ -35,7 +37,11 @@ class Group(models.Model):
 
     def clean(self):
         # Custom groups (created by user) can be any.
-        if (self.title, self.title) in ALLOWED_GROUPS and (self.access, self.title) not in MAP_ACCESS:
+        if (self.title, self.title) in ALLOWED_GROUPS and self.access not in (
+                OWNER_ACCESS,
+                ADMIN_ACCESS,
+                CLIENT_ACCESS
+        ):
             msg = 'Access and title cannot be mapped!'
             raise ValidationError(msg)
 

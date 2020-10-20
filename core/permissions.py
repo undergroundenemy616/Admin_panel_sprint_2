@@ -1,4 +1,5 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
+from groups.models import OWNER_ACCESS, ADMIN_ACCESS
 
 
 class IsAuthenticated(BasePermission):
@@ -9,10 +10,11 @@ class IsAuthenticated(BasePermission):
 
 
 class IsOwner(BasePermission):
-    access = 1
+    access = OWNER_ACCESS
 
     def has_permission(self, request, view):
-        return bool(request.user and request.user.groups.access <= self.access)
+        access = bool(getattr(request.user.groups, 'access', None))
+        return bool(request.user and access <= self.access)
 
 
 class IsStaff(BasePermission):
@@ -21,10 +23,11 @@ class IsStaff(BasePermission):
 
 
 class IsAdmin(BasePermission):
-    access = 2
+    access = ADMIN_ACCESS  # fixme change to ACCESS from settings
 
     def has_permission(self, request, view):
-        if bool(request.user and request.user.groups.access <= self.access):
+        access = bool(getattr(request.user.groups, 'access', None))
+        if bool(request.user and access <= self.access):
             return True
         return False
 

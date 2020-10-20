@@ -1,8 +1,10 @@
 from django.contrib.auth import user_logged_in, authenticate
 from rest_framework import mixins, status
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
+
+from core.permissions import IsOwner
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import User, Account
 from users.registration import send_code, confirm_code
@@ -10,7 +12,7 @@ from users.serializers import (
     LoginOrRegisterSerializer,
     UserSerializer,
     AccountSerializer,
-    LoginOrRegisterStaffSerializer
+    LoginOrRegisterStaffSerializer, RegisterStaffSerializer
 )
 
 
@@ -92,3 +94,9 @@ class LoginStaff(GenericAPIView):
         data['auth'] = create_auth_data(user)
         data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
         return Response(data, status=200)
+
+
+class RegisterStaff(CreateAPIView):
+    serializer_class = RegisterStaffSerializer
+    queryset = User.objects.all()
+    permission_classes = (IsOwner,)

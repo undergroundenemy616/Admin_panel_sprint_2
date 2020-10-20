@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from groups.models import Group, CLIENT_ACCESS, OWNER_ACCESS
 from users.models import User, Account
 
 
@@ -61,3 +63,27 @@ class LoginOrRegisterStaffSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class RegisterStaffSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='email', required=True)
+    password = serializers.CharField(required=True, write_only=True)
+    groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=True)  # fixme change to group
+
+    class Meta:
+        model = User
+        fields = '__all__'
+
+    def create(self, validated_data):
+        validated_data.setdefault('is_staff', True)
+        password = validated_data.pop('password')
+        group = validated_data.get('groups')
+        is_exists = User.objects.filter(email=validated_data.get('email')).exists()
+        if is_exists:
+            raise ValidationError('Admin already exists.')
+        if not (OWNER_ACCESS < group.access < CLIENT_ACCESS):
+            raise ValidationError(f'Group access must be in range from {OWNER_ACCESS} to {CLIENT_ACCESS}')
+        instance = super(RegisterStaffSerializer, self).create(validated_data)
+        instance.set_password(password)
+        instance.save()
+        return instance
