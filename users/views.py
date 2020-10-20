@@ -18,7 +18,7 @@ def create_auth_data(user):
     """Creates and returns a full auth dict with `token`, `prefix`."""
     payload = jwt_payload_handler(user)
     token = jwt_encode_handler(payload)
-    return {'prefix': api_settings.JWT_AUTH_HEADER_PREFIX, 'token': token}
+    return {'refresh_token': api_settings.JWT_AUTH_HEADER_PREFIX, 'access_token': token}
 
 
 class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
@@ -89,6 +89,6 @@ class LoginStaff(GenericAPIView):
             return Response({'detail': message}, status=400)
 
         data = dict()
-        data['auth'] = create_auth_data(user)
-        data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
-        return Response(data, status=200)
+        auth_dict = create_auth_data(user)
+        # data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
+        return Response(auth_dict, status=200)
