@@ -67,7 +67,7 @@ def jwt_payload_handler(user):
     return payload
 
 
-def jwt_get_phone_from_payload_handler(payload):
+def jwt_get_username_from_payload(payload):
     """Get user `phone_number` for authorization instead of `username`."""
-    return payload.get('phone_number')
+    return payload.get('user_id')
 

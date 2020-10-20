@@ -28,6 +28,8 @@ class DetailTableView(RetrieveModelMixin,
                       UpdateModelMixin,
                       DestroyModelMixin,
                       GenericAPIView):
+    serializer_class = TableSerializer
+    queryset = Table.objects.all()
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)

@@ -6,6 +6,11 @@ from django.db import models
 from groups.models import Group
 
 
+def activated_code():
+    """Returns random 4 integers."""
+    return random.randint(1000, 9999)
+
+
 class BookingUserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -13,45 +18,35 @@ class BookingUserManager(BaseUserManager):
         """
         Create and save a user with the given phone, email, and password.
         """
-        if not phone_number:
-            raise ValueError('The given phone must be set')
+        if phone_number is not None:
+            phone_number = self.model.normalize_phone(phone_number=phone_number)
         if email is not None:
             email = self.normalize_email(email)
-        phone_number = self.model.normalize_phone(phone_number=phone_number)
         user = self.model(phone_number=phone_number, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_user(self, phone_number, email=None, password=None, **extra_fields):
-        extra_fields.setdefault('is_superuser', False)
+    def create_user(self, phone_number=None, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', False)
         return self._create_user(phone_number, email, password, **extra_fields)
 
-    def create_superuser(self, phone_number, email=None, password=None, **extra_fields):
-        extra_fields.setdefault('is_superuser', True)
+    def create_superuser(self, phone_number=None, email=None, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
-
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
-
         return self._create_user(phone_number, email, password, **extra_fields)
-
-
-def activated_code():
-    """Returns random 4 integers."""
-    return random.randint(1000, 9999)
 
 
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    phone_number: str = models.CharField(unique=True, max_length=16)
-    username = models.CharField(unique=True, max_length=64, null=True, blank=True)
-    email = models.EmailField(unique=True, max_length=128, null=True, blank=True)
+    phone_number: str = models.CharField(unique=True, default='', max_length=16, null=True, blank=True)
+    email = models.EmailField(unique=True, default='', max_length=128, null=True, blank=True)
     password = models.CharField(max_length=512, blank=True, null=True)
-    last_code = models.IntegerField(blank=True, null=True, default=activated_code)
-    groups = models.ForeignKey('groups.Group', default="e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99", related_name='users',
+    last_code = models.IntegerField(blank=True, null=True, default=activated_code)  # is this work?
+    groups = models.ForeignKey('groups.Group',
+                               default="e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99",
+                               related_name='users',
                                on_delete=models.CASCADE)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -62,7 +57,7 @@ class User(AbstractBaseUser):
 
     REQUIRED_FIELDS = []
     EMAIL_FIELD = 'email'
-    USERNAME_FIELD = 'phone_number'
+    USERNAME_FIELD = 'id'
 
     @classmethod
     def normalize_phone(cls, phone_number):
@@ -92,8 +87,18 @@ class User(AbstractBaseUser):
     def clean(self):
         try:
             self.normalize_phone(self.phone_number)
+            self.check_pre_save()
         except ValueError as error:
             raise ValidationError(str(error))
+
+    def check_pre_save(self):
+        """Check admin user before saving"""
+        if self.is_staff and not bool(self.email and self.password):
+            raise ValueError('Employee must have `email` and `password` fields')
+        elif not self.phone_number:
+            raise ValueError('Client must have `phone_number` field')
+        else:
+            raise ValueError('Invalid data before saving.')
 
     def check_sms_code(self, sms_code):
         """Method compare inputted sms_code and user`s code.

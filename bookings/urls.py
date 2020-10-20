@@ -7,10 +7,5 @@ urlpatterns = [
     path('activate', views.ActionActivateBookingsView.as_view()),
     path('deactivate', views.ActionDeactivateBookingsView.as_view()),
     path('end', views.ActionEndBookingsView.as_view()),
-    path('<uuid:pk>/', views.ActionCancelBookingsView.as_view()),
     path('fast', views.CreateFastBookingsView.as_view()),
-
-    # path('int:pk/'),
-    # path('mobile'),
-    # path('fast/mobile'),
 ]

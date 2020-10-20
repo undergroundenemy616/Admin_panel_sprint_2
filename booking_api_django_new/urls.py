@@ -49,19 +49,20 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Current urls
-    path('admin/', admin.site.urls),
-    path('users/', include('users.urls')),
-    path('files/', include('files.urls')),
-    path('tables/', include('tables.urls')),
-    path('room/', include('rooms.urls')),
-    path('rooms/', include('rooms.urls_detail')),
-    path('floors/', include('floors.urls')),
-    path('offices/', include('offices.urls')),
-    path('room_types/', include('room_types.urls')),
-    path('book/', include('bookings.urls')),
-    path('books/', include('bookings.urls_detail')),
-    path('book_operator/', include('bookings.urls_operator')),
-    path('book_list/', include('bookings.urls_list'))
+    path('admin', admin.site.urls),
+    path('users', include('users.urls')),
+    path('groups', include('groups.urls')),
+    path('files', include('files.urls')),
+    path('tables', include('tables.urls')),
+    path('room', include('rooms.urls')),
+    path('rooms', include('rooms.urls_detail')),
+    path('floors', include('floors.urls')),
+    path('offices', include('offices.urls')),
+    path('room_types', include('room_types.urls')),
+    path('book', include('bookings.urls')),
+    path('books', include('bookings.urls_detail')),
+    path('book_operator', include('bookings.urls_operator')),
+    path('book_list', include('bookings.urls_list'))
     # path('groups/', include('groups.urls'))
 ]
 
