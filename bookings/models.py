@@ -45,7 +45,6 @@ class Booking(models.Model):
     is_active = models.BooleanField(default=False)
     is_over = models.BooleanField(default=False)
     user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
-    code = models.IntegerField(default=6593)
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
     objects = BookingManager()

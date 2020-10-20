@@ -50,7 +50,7 @@ class LoginOrRegisterSerializer(serializers.Serializer):
 
 class LoginOrRegisterStaffSerializer(serializers.Serializer):
     """Log in through email and password"""
-    email = serializers.EmailField(required=True, min_length=0, max_length=128)
+    username = serializers.EmailField(required=True, min_length=0, max_length=128)
     password = serializers.CharField(required=True, min_length=0, max_length=128)
 
     def save(self, **kwargs):

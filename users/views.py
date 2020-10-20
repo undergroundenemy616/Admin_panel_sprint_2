@@ -62,7 +62,7 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
 def authenticate_staff(request=None, **fields):
     """Returns tuple of (user, None) if authentication credentials correct, otherwise returns (None, message)."""
     try:
-        user = User.objects.get(email=fields.get('email'))
+        user = User.objects.get(email=fields.get('username'))
     except (User.DoesNotExist, KeyError, TypeError):
         return None, 'Incorrect email'
 
