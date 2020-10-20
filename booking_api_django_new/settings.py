@@ -95,7 +95,6 @@ JWT_AUTH = {
 INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'groups.apps.GroupsConfig',
-    'corsheaders',
     'files',
     'floors',
     'licenses',
