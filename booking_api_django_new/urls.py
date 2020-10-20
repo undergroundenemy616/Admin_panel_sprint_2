@@ -20,6 +20,7 @@ from django.urls import path, include
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from users import views
 
 
 def get_swagger() -> Any:
@@ -50,7 +51,8 @@ urlpatterns = [
 
     # Current urls
     path('admin', admin.site.urls),
-    path('users', include('users.urls')),
+    path('auth', views.LoginOrRegisterUser.as_view()),
+    path('auth_employee', views.LoginStaff.as_view()),
     path('groups', include('groups.urls')),
     path('files', include('files.urls')),
     path('tables', include('tables.urls')),
