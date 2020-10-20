@@ -29,10 +29,7 @@ DEBUG = True
 
 KEY_EXPIRATION = 60 * 3  # 3 minutes
 
-if DEBUG is True:
-    ALLOWED_HOSTS = ['*']
-else:
-    ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
