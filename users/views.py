@@ -44,18 +44,16 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
                 confirm_code(phone_number, sms_code)
                 user_logged_in.send(sender=user.__class__, user=user, request=request)
 
-                # Create an account
-                account = Account.objects.create(user_id=user.id)
-                account.save()
-
                 # Creating data for response
-                data['auth'] = create_auth_data(user)
-                data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
-                data['account'] = AccountSerializer(instance=account).data
+                data = {
+                    'message': "OK",
+                    'new_code_in': 180,
+                    'expires_in': 180,
+                }
             else:
                 raise ValueError('Invalid data!')
         except ValueError as error:
-            data = {'message': str(error), 'status': 'ERROR'}
+            return Response({'detail': str(error), 'message': 'ERROR'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(data, status=status.HTTP_200_OK)
 
 

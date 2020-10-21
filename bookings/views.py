@@ -71,6 +71,7 @@ class BookingsUserListView(BookingsAdminView):
     serializer_class = BookingListSerializer
 
     def get(self, request, *args, **kwargs):
+        # request.data['user'] = request.user.id
         return self.list(request, *args, **kwargs)
 
 
