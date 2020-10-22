@@ -1,6 +1,6 @@
 from django.contrib.auth import user_logged_in, authenticate
 from rest_framework import mixins, status
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from users.backends import jwt_encode_handler, jwt_payload_handler
@@ -90,3 +90,18 @@ class LoginStaff(GenericAPIView):
         auth_dict = create_auth_data(user)
         # data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
         return Response(auth_dict, status=200)
+
+
+class AccountView(GenericAPIView):
+    serializer_class = AccountSerializer
+    queryset = Account.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.query_params.get('id')
+        if not user_id:
+            user_id = request.user.id
+            account_instance = get_object_or_404(Account, user=user_id)
+        else:
+            account_instance = get_object_or_404(Account, pk=user_id)
+        serializer = self.serializer_class(instance=account_instance)
+        return Response(serializer.to_representation(instance=account_instance), status=status.HTTP_200_OK)

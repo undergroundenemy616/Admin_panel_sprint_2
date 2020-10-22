@@ -53,6 +53,7 @@ urlpatterns = [
     path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUser.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
+    path('account', views.AccountView.as_view()),
     path('groups', include('groups.urls')),
     path('files', include('files.urls')),
     path('tables', include('tables.urls')),
