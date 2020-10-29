@@ -40,18 +40,14 @@ class BookingUserManager(BaseUserManager):
 
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    phone_number: str = models.CharField(unique=True, default='', max_length=16, null=True, blank=True)
-    email = models.EmailField(unique=True, default='', max_length=128, null=True, blank=True)
+    phone_number: str = models.CharField(unique=True, default=None, max_length=16, null=True, blank=True)
+    email = models.EmailField(unique=True, default=None, max_length=128, null=True, blank=True)
     password = models.CharField(max_length=512, blank=True, null=True)
     last_code = models.IntegerField(blank=True, null=True, default=activated_code)  # is this work?
-    groups = models.ForeignKey('groups.Group',
-                               default="e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99",
-                               related_name='users',
-                               on_delete=models.CASCADE)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(null=False, auto_now_add=True, editable=False)
-    updated_at = models.DateTimeField(null=False, auto_now=True)
+    created_at = models.DateTimeField(null=True, auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(null=True, auto_now=True)
 
     objects = BookingUserManager()
 
@@ -124,20 +120,27 @@ class Account(models.Model):
 
     user = models.OneToOneField('User', on_delete=models.CASCADE)
 
-    # account_type = models.CharField(max_length=128, default)  # TODO
-
     description = models.TextField(default='', blank=True)
     birth_date = models.DateField(null=True, blank=True)
     gender = models.CharField(choices=GENDERS, max_length=32, default='undefined')
-    city = models.CharField(default='', max_length=64, blank=True)  # TODO
-    first_name = models.CharField(default='', max_length=64, blank=True)  # TODO
-    last_name = models.CharField(default='', max_length=64, blank=True)  # TODO
-    middle_name = models.CharField(default='', max_length=64, blank=True)  # TODO
-    region_integer = models.IntegerField(null=True, blank=True)  # TODO
-    district_integer = models.IntegerField(null=True, blank=True)  # TODO
-    region_string = models.CharField(default='', max_length=64, blank=True)  # TODO
-    district_string = models.CharField(default='', max_length=64, blank=True)  # TODO
-    # photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)  # todo
+    first_name = models.CharField(default='', max_length=64, blank=True)
+    last_name = models.CharField(default='', max_length=64, blank=True)
+    middle_name = models.CharField(default='', max_length=64, blank=True)
+    photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)
+
+    city = models.IntegerField(null=True, default=None)
+    region_integer = models.IntegerField(null=True, blank=True)
+    district_integer = models.IntegerField(null=True, blank=True)
+    region_string = models.CharField(default='', max_length=64, blank=True)
+    district_string = models.CharField(default='', max_length=64, blank=True)
+
+    account_type = models.CharField(max_length=120, default='user')
+    groups = models.ManyToManyField('groups.Group',
+                                    default="e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99",
+                                    related_name='accounts')
+    email = models.EmailField(unique=True, default=None, max_length=128, null=True, blank=True)
+    phone_number = models.CharField(unique=True, default=None, max_length=16, null=True, blank=True)
+
     updated_at = models.DateTimeField(null=False, auto_now=True)
 
 # Add validators

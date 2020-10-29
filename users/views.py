@@ -1,10 +1,13 @@
 from django.contrib.auth import user_logged_in, authenticate
+from django.db.models import Q
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404, CreateAPIView
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 
-from core.permissions import IsOwner
+from core.pagination import DefaultPagination
+from core.permissions import IsOwner, IsAdmin
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import User, Account
 from users.registration import send_code, confirm_code
@@ -12,8 +15,9 @@ from users.serializers import (
     LoginOrRegisterSerializer,
     UserSerializer,
     AccountSerializer,
-    LoginOrRegisterStaffSerializer, RegisterStaffSerializer
+    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer
 )
+from groups.models import Group
 
 
 def create_auth_data(user):
@@ -35,6 +39,10 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
         phone_number = serializer.data.get('phone_number', None)
         sms_code = serializer.data.pop('sms_code', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
+        account, account_created = Account.objects.get_or_create(user=user)
+        if account_created:
+            user_group = Group.objects.get(access=4)
+            account.groups.add(user_group)
 
         try:
             data = {}
@@ -98,17 +106,71 @@ class AccountView(GenericAPIView):
     queryset = Account.objects.all()
 
     def get(self, request, *args, **kwargs):
-        user_id = request.query_params.get('id')
-        if not user_id:
+        account_id = request.query_params.get('id')
+        if not account_id:
             user_id = request.user.id
             account_instance = get_object_or_404(Account, user=user_id)
         else:
-            account_instance = get_object_or_404(Account, pk=user_id)
+            account_instance = get_object_or_404(Account, pk=account_id)
         serializer = self.serializer_class(instance=account_instance)
         return Response(serializer.to_representation(instance=account_instance), status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        account = get_object_or_404(Account, pk=request.query_params.get('id'))
+        self.serializer_class = AccountUpdateSerializer
+        serializer = self.serializer_class(data=request.data, instance=account)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 
 class RegisterStaff(CreateAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()
-    permission_classes = (IsOwner,)
+    permission_classes = (AllowAny,)
+
+
+class AccountListView(GenericAPIView, mixins.ListModelMixin):
+    serializer_class = AccountSerializer
+    queryset = Account.objects.all()
+    permission_classes = (AllowAny,)
+    pagination_class = DefaultPagination
+
+    def get(self, request, *args, **kwargs):
+        if request.query_params.get('start'):
+            search = request.query_params.get('search')
+            if search:
+                search = search.split(" ")
+            if search and len(search) > 1:
+                # Search by two words maybe: firstname and lastname
+                self.queryset = Account.objects.filter(
+                    Q(first_name__icontains=str(search[0]), last_name__icontains=str(search[1]))
+                    | Q(first_name__icontains=str(search[1]), last_name__icontains=str(search[0]))
+                )
+            elif search:
+                # Search in firstname, lastname, middlename, phone_number, email
+                self.queryset = Account.objects.filter(
+                    Q(first_name__icontains=search[0])
+                    | Q(last_name__icontains=search[0])
+                    | Q(middle_name__icontains=search[0])
+                    | Q(user__phone_number__icontains=search[0])
+                    | Q(user__email__icontains=search[0])
+                )
+            else:
+                # Get all account to response
+                self.queryset = Account.objects.all()
+            account_type = request.query_params.get('account_type')
+            if account_type != 'user':
+                # Added because of needs to handle kiosk account_type in future
+                pass
+            activated_flag = request.query_params.get('include_not_activated')
+            if activated_flag == 'false':
+                # Here we handle exclude of not activated accounts
+                self.queryset = self.queryset.filter(user__is_active=True)
+            return self.list(self, request, *args, **kwargs)
+        else:
+            self.pagination_class = None
+            all_accounts = self.list(self, request, *args, **kwargs)
+            response = dict()
+            response['results'] = all_accounts.data
+            return Response(data=response, status=status.HTTP_200_OK)

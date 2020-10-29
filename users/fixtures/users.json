@@ -4,7 +4,6 @@
     "pk": "fe87620c-5e80-4a1c-9c30-c4681387483a",
     "fields": {
       "email": "antohe@liis.su",
-      "groups": "5c26647a-4016-46c5-ae02-e386c67dfb11",
       "password": "123ads",
       "is_staff": true,
       "is_active": true
