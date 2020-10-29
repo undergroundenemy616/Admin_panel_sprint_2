@@ -13,7 +13,7 @@ class IsOwner(BasePermission):
     access = OWNER_ACCESS
 
     def has_permission(self, request, view):
-        access = bool(getattr(request.user.groups, 'access', None))
+        access = bool(getattr(request.user.account.groups, 'access', None))
         return bool(request.user and access <= self.access)
 
 
@@ -26,7 +26,7 @@ class IsAdmin(BasePermission):
     access = ADMIN_ACCESS  # fixme change to ACCESS from settings
 
     def has_permission(self, request, view):
-        access = bool(getattr(request.user.groups, 'access', None))
+        access = bool(getattr(request.user.account.groups, 'access', None))
         if bool(request.user and access <= self.access):
             return True
         return False

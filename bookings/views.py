@@ -29,9 +29,7 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     pagination_class = DefaultPagination
 
     def post(self, request, *args, **kwargs):
-        # TODO: Waiting for auth
-        # request.data['user'] = request.user.id
-        request.data['user'] = '05f0c55c-f890-4833-8f95-7a3054e7edcb'
+        request.data['user'] = request.user.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -61,9 +59,7 @@ class BookingsActiveListView(BookingsView):
     serializer_class = BookingListSerializer
 
     def get(self, request, *args, **kwargs):
-        # TODO: Waiting for auth
-        # request.data['user'] = request.user.id
-        request.data['user'] = '05f0c55c-f890-4833-8f95-7a3054e7edcb'
+        request.data['user'] = request.user.id
         return self.list(request, *args, **kwargs)
 
 
@@ -80,8 +76,7 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
     queryset = Booking.objects.all()
 
     def post(self, request, *args, **kwargs):
-        # request.data['user'] = request.user.id
-        request.data['user'] = '05f0c55c-f890-4833-8f95-7a3054e7edcb'
+        request.data['user'] = request.user.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
