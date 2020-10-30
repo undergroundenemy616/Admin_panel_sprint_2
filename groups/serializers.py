@@ -33,7 +33,7 @@ class GroupSerializer(serializers.ModelSerializer):
             response['global_read'] = True
             response['global_service'] = False
             response['global_write'] = False
-        users_in_group = User.objects.filter(groups=response['id'])
+        users_in_group = User.objects.filter(account__groups=response['id'])
         response['count'] = len(users_in_group)
         response['users'] = [user.id for user in users_in_group]
         return response

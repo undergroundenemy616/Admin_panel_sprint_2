@@ -3,10 +3,27 @@
     "model": "users.User",
     "pk": "fe87620c-5e80-4a1c-9c30-c4681387483a",
     "fields": {
-      "email": "antohe@liis.su",
-      "password": "123ads",
+      "email": "test@liis.su",
+      "password": "pbkdf2_sha256$180000$hv8UjgeR90dg$Vk40Y5Rt4p59oLV0+pD9C2d2BSSafMWrOPspTxBf4Yc=",
       "is_staff": true,
       "is_active": true
+    }
+  },
+  {
+    "model": "users.Account",
+    "pk": "7689fea5-32e6-4b36-a353-e152e8eb814d",
+    "fields": {
+      "user": "fe87620c-5e80-4a1c-9c30-c4681387483a",
+      "groups": ["5c26647a-4016-46c5-ae02-e386c67dfb11"],
+      "account_type": "user",
+      "description": "Тестовый Аккаунт",
+      "gender": "undefined",
+      "first_name": "Тестовый",
+      "last_name": "Робот",
+      "middle_name": "ЛИИС",
+      "region_string": "лиис",
+      "district_string": "лиис",
+      "updated_at": "2020-10-29 11:12:48.367658"
     }
   }
 ]

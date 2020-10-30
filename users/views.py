@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 
 from core.pagination import DefaultPagination
-from core.permissions import IsOwner, IsAdmin
+from core.permissions import IsOwner, IsAdmin, IsAuthenticated
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import User, Account
 from users.registration import send_code, confirm_code
@@ -104,6 +104,7 @@ class LoginStaff(GenericAPIView):
 class AccountView(GenericAPIView):
     serializer_class = AccountSerializer
     queryset = Account.objects.all()
+    permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
         account_id = request.query_params.get('id')
@@ -127,13 +128,13 @@ class AccountView(GenericAPIView):
 class RegisterStaff(CreateAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsOwner,)
 
 
 class AccountListView(GenericAPIView, mixins.ListModelMixin):
     serializer_class = AccountSerializer
     queryset = Account.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAdmin,)
     pagination_class = DefaultPagination
 
     def get(self, request, *args, **kwargs):
