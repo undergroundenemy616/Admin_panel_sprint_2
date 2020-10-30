@@ -1,7 +1,7 @@
 """Drop all tables in current DB."""
 import os
 
-os.environ.setdefault('BRANCH', 'crowiant')
+os.environ.setdefault('BRANCH', 'master')
 
 from django.core.exceptions import ImproperlyConfigured
 from booking_api_django_new.settings import DATABASES

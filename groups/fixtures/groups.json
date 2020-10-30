@@ -10,6 +10,15 @@
   },
   {
     "model": "groups.Group",
+    "pk": "c8512169-24d0-4d1a-887e-1284ec79395e",
+    "fields": {
+      "title": "Сотрудник",
+      "access": 3,
+      "is_deletable": false
+    }
+  },
+  {
+    "model": "groups.Group",
     "pk": "c6392169-24d0-4d1a-887e-5725ec79395e",
     "fields": {
       "title": "Администратор",
