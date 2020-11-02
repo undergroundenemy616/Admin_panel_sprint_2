@@ -64,7 +64,6 @@ urlpatterns = [
     path('rooms', include('rooms.urls_detail')),
     path('floors', include('floors.urls')),
     path('office', include('offices.urls')),
-    path('type', include('room_types.urls')),
     path('book', include('bookings.urls')),
     path('books', include('bookings.urls_detail')),
     path('book_operator', include('bookings.urls_operator')),
