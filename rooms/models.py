@@ -24,7 +24,7 @@ class Room(models.Model):
 
 
 class RoomMarker(models.Model):  # todo added by cybertatar
-    room = models.OneToOneField(Room, null=False, blank=False, on_delete=models.CASCADE)
+    room = models.OneToOneField(Room, related_name='room_marker', null=False, blank=False, on_delete=models.CASCADE)
     icon = models.CharField(max_length=64, null=False, blank=False)
     x = models.DecimalField(
         max_digits=4,

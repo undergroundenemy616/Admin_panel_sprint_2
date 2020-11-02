@@ -3,7 +3,7 @@ from rest_framework import serializers
 from offices.models import Office
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
-from rooms.models import Room
+from rooms.models import Room, RoomMarker
 from floors.models import Floor
 from files.models import File
 from tables.serializers import TableSerializer
@@ -14,6 +14,8 @@ class BaseRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
         fields = '__all__'
+        depth = 1
+
 
 class RoomSerializer(serializers.ModelSerializer):
     tables = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
@@ -26,6 +28,11 @@ class RoomSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = BaseRoomSerializer(instance=instance).data
+        room_type = response.pop('type')
+        response['type'] = room_type['title']
+        response['tables'] = [table.id for table in instance.tables.all()]
+        response['capacity'] = instance.tables.count()
+        response['marker'] = instance.room_marker if hasattr(instance, 'room_marker') else None
         return response
 
 
