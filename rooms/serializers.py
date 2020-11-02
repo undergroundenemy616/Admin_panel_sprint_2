@@ -1,5 +1,6 @@
 from rest_framework import serializers
 # TODO: from zones.models import Zone
+from offices.models import Office
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room
@@ -8,6 +9,12 @@ from files.models import File
 from tables.serializers import TableSerializer
 
 
+class BaseRoomSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Room
+        fields = '__all__'
+
 class RoomSerializer(serializers.ModelSerializer):
     tables = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
@@ -15,7 +22,11 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = '__all__'
+        fields = ['tables', 'images', 'type']
+
+    def to_representation(self, instance):
+        response = BaseRoomSerializer(instance=instance).data
+        return response
 
 
 class NestedRoomSerializer(RoomSerializer):
@@ -58,10 +69,11 @@ class CreateRoomSerializer(serializers.ModelSerializer):
 
 class FilterRoomSerializer(serializers.ModelSerializer):
     """Only for filtering given query string."""
-    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=True)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
     type = serializers.CharField(max_length=256, required=False)  # Todo fields will be deleted
     tags = serializers.ListField(required=False)
 
     class Meta:
         model = Room
-        fields = ['floor', 'type', 'tags']
+        fields = ['floor', 'type', 'tags', 'office']

@@ -25,6 +25,7 @@ class RoomsView(FilterListMixin,
         serializer.is_valid(raise_exception=True)
         query_params = serializer.data
         mapped = {"floor_id": query_params.get('floor'),
+                  "floor__office_id": query_params.get('office'),
                   "type": query_params.get('type'),
                   "tables__tags__title__in": query_params.get('tags')}
         items = []
