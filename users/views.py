@@ -104,7 +104,7 @@ class LoginStaff(GenericAPIView):
 class AccountView(GenericAPIView):
     serializer_class = AccountSerializer
     queryset = Account.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (AllowAny, )
 
     def get(self, request, *args, **kwargs):
         account_id = request.query_params.get('id')

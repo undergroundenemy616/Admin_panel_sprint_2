@@ -167,8 +167,9 @@ class NestedOfficeSerializer(OfficeSerializer):
         # data['occupied_tables'] = Table.objects.overflowed()  # todo set is_overflowed
         # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???
 
-        response['floors_numbers'] = instance.floors.count()
+        response['floors_number'] = instance.floors.count()
+        response['capacity'] = Table.objects.filter(room__type__office_id=instance.id).count()
         response['occupied_meeting'] = RoomType.objects.filter(title='Переговорная', office_id=instance.id).count()
         response['capacity_tables'] = Table.objects.filter(room__type__office_id=instance.id).count()
-
+        response['license'] = instance.license
         return response
