@@ -30,7 +30,7 @@ class RoomSerializer(serializers.ModelSerializer):
         response = BaseRoomSerializer(instance=instance).data
         room_type = response.pop('type')
         response['type'] = room_type['title']
-        response['tables'] = [table.id for table in instance.tables.all()]
+        response['tables'] = [TableSerializer(instance=table).data for table in instance.tables.all()]
         response['capacity'] = instance.tables.count()
         response['marker'] = instance.room_marker if hasattr(instance, 'room_marker') else None
         return response
