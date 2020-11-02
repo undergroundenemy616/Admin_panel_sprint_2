@@ -10,6 +10,7 @@ from files.models import File
 from floors.serializers import FloorSerializer
 from room_types.models import RoomType
 from tables.models import Table
+from licenses.serializers import LicenseSerializer
 
 
 class OfficeZoneSerializer(serializers.ModelSerializer):
@@ -171,5 +172,5 @@ class NestedOfficeSerializer(OfficeSerializer):
         response['capacity'] = Table.objects.filter(room__type__office_id=instance.id).count()
         response['occupied_meeting'] = RoomType.objects.filter(title='Переговорная', office_id=instance.id).count()
         response['capacity_tables'] = Table.objects.filter(room__type__office_id=instance.id).count()
-        response['license'] = instance.license
+        response['license'] = LicenseSerializer(instance=instance.license).data
         return response
