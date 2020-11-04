@@ -55,6 +55,7 @@ class Booking(models.Model):
 
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
+        self.create_oncoming_notification()
         super(self.__class__, self).save(*args, **kwargs)
 
     def get_consecutive_booking(self):

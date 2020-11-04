@@ -4,7 +4,7 @@ from groups.models import OWNER_ACCESS, ADMIN_ACCESS
 
 class IsAuthenticatedOnPost(BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and view.action in ['create', 'post']
+        return request.user and request.user.is_authenticated and request.method == 'POST'
 
 
 class IsAuthenticated(BasePermission):

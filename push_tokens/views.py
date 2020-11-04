@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, \
     ListModelMixin
 from rest_framework.permissions import AllowAny
@@ -12,6 +12,8 @@ from push_tokens.serializers import PushTokenSerializer, PushSendSingleSerialize
 from tables.models import Table, TableTag
 from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer
 from rest_framework.viewsets import ModelViewSet
+
+from users.models import Account
 
 
 class PushTokenView(ListModelMixin,
@@ -37,7 +39,7 @@ class PushTokenSendSingleView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        account = serializer.data.get('account')
+        account = get_object_or_404(Account, id=serializer.data.get('account'))
         expo_data = serializer.data.get('expo')
         response = {}
         for token in [push_object.token for push_object in account.push_tokens.all()]:
@@ -60,7 +62,7 @@ class PushTokenSendBroadcastView(PushTokenSendSingleView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        accounts = serializer.data.get('accounts')
+        accounts = [get_object_or_404(Account, id=account_id) for account_id in serializer.data.get('accounts')]
         expo_data = serializer.data.get('expo')
         response = {}
         for account in accounts:
