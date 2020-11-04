@@ -4,11 +4,14 @@ chardet==3.0.4
 coreapi==2.3.3
 coreschema==0.0.4
 Django==3.0.8
+django-compile==0.0.5
 django-cors-headers==3.5.0
+django-pyc==1.1.0
 django-redis==4.12.1
 djangorestframework==3.11.1
 djangorestframework-jwt==1.11.0
 drf-yasg==1.17.1
+exponent-server-sdk==0.3.1
 idna==2.10
 inflection==0.5.1
 itypes==1.2.0

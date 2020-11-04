@@ -42,7 +42,6 @@ def get_swagger() -> Any:
 
 schema_view = get_swagger()
 
-
 urlpatterns = [
     # Swagger tools
     url(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
@@ -67,8 +66,9 @@ urlpatterns = [
     path('book', include('bookings.urls')),
     path('books', include('bookings.urls_detail')),
     path('book_operator', include('bookings.urls_operator')),
-    path('book_list', include('bookings.urls_list'))
-    # path('groups/', include('groups.urls'))
+    path('book_list', include('bookings.urls_list')),
+    path('tokens', include('push_tokens.urls')),
+    path('send_', include('push_tokens.urls_send')),
 ]
 
 '''
