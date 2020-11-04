@@ -52,7 +52,7 @@ urlpatterns = [
     path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUser.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
-    path('register_employee', views.RegisterStaff.as_view()),
+    path('register_employee', views.RegisterStaffView.as_view()),
     path('account', views.AccountView.as_view()),
     path('accounts_list', views.AccountListView.as_view()),
     path('group', include('groups.urls_detail')),

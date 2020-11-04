@@ -14,7 +14,7 @@ from users.registration import send_code, confirm_code
 from users.serializers import (
     LoginOrRegisterSerializer,
     AccountSerializer,
-    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer
+    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer, UserSerializer
 )
 from groups.models import Group
 
@@ -48,17 +48,24 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
             if not sms_code:  # Register or login user
                 send_code(user, created)
                 data['status'], data['phone_number'] = 'DONE', user.phone_number
-            elif sms_code and not created:  # Confirm code
-                # Confirmation code
-                confirm_code(phone_number, sms_code)
-                user_logged_in.send(sender=user.__class__, user=user, request=request)
-
                 # Creating data for response
                 data = {
                     'message': "OK",
                     'new_code_in': 180,
                     'expires_in': 180,
                 }
+            elif sms_code and not created:  # Confirm code
+                # Confirmation code
+                confirm_code(phone_number, sms_code)
+                user_logged_in.send(sender=user.__class__, user=user, request=request)
+
+                # Creating data for response
+                auth_data = create_auth_data(user)
+                data["user"] = UserSerializer(instance=user).data
+                data["access_token"] = auth_data.get('access_token')
+                data["refresh_token"] = data["access_token"]
+                data["account"] = account.id
+                data["activated"] = True
             else:
                 raise ValueError('Invalid data!')
         except ValueError as error:
@@ -124,10 +131,10 @@ class AccountView(GenericAPIView):
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 
-class RegisterStaff(GenericAPIView):
+class RegisterStaffView(GenericAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()
-    # permission_classes = (IsOwner,)
+    permission_classes = (IsOwner,)
 
     def post(self, request, *args, **kwargs):
         request.data['host_domain'] = request.build_absolute_uri('/')
