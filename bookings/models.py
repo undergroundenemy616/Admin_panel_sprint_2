@@ -1,6 +1,10 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 from django.db import models
+
+from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS
+from core.scheduler import scheduler
+from push_tokens.send_interface import send_push_message
 from tables.models import Table
 from users.models import User
 from django.db.models import Q
@@ -78,3 +82,31 @@ class Booking(models.Model):
             return date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
         else:
             return self.date_to
+
+    def notify_about_oncoming_booking(self):
+        """Send PUSH-notification about oncoming booking to every user devices"""
+        if not self.is_over \
+                and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_PUSH_NOTIFY_UNTIL_MINS + 5 \
+                and self.user.account and self.user.account.push_tokens.all():
+            expo_data = {
+                "title": "Уведомление о предстоящем бронировании",
+                "body": f"Ваше бронирование начнется через 15 минут. Не забудьте подтвердить.",
+                "data": {
+                    "go_booking": True
+                }
+            }
+            for token in [push_object.token for push_object in self.user.account.push_tokens.all()]:
+                send_push_message(token, expo_data)
+
+    def create_oncoming_notification(self):
+        """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
+        date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
+            scheduler.add_job(
+                self.notify_about_oncoming_booking,
+                "date",
+                run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
+                # args=[self],
+                misfire_grace_time=900,
+                id="notify_about_oncoming_booking_" + str(self.id)
+            )

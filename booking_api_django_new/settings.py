@@ -29,6 +29,8 @@ DEBUG = True
 
 KEY_EXPIRATION = 60 * 3  # 3 minutes
 
+BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
+
 ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -100,11 +102,12 @@ INSTALLED_APPS = [
     'licenses',
     'offices',
     'rooms',
-    'drf_yasg',
     'tables',
     'room_types',
     'bookings',
     'rest_framework',
+    'drf_yasg',
+    'django_apscheduler',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -196,6 +199,16 @@ DATABASES = {
         'PORT': os.environ.get('PORT') or '5432',
     }
 }
+
+SCHEDULER_CONFIG = {
+    "apscheduler.jobstores.default": {
+        "class": "django_apscheduler.jobstores:DjangoJobStore"
+    },
+    'apscheduler.executors.processpool': {
+        "type": "threadpool"
+    },
+}
+SCHEDULER_AUTOSTART = True
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
