@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from push_tokens.models import PushToken
+from users.models import Account
 
 
 class PushMessageSerializer(serializers.Serializer):
@@ -22,7 +23,7 @@ class PushSendSingleSerializer(serializers.ModelSerializer):
 
 
 class PushSendBroadcastSerializer(serializers.ModelSerializer):
-    accounts = serializers.PrimaryKeyRelatedField(required=True, many=True)
+    accounts = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True, many=True)
     expo = PushMessageSerializer(required=True)
 
     class Meta:

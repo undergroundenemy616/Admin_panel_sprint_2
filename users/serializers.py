@@ -1,3 +1,5 @@
+import random
+
 from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -5,6 +7,7 @@ from rest_framework.exceptions import ValidationError
 from core.pagination import DefaultPagination
 from files.models import File
 from groups.models import Group, CLIENT_ACCESS, OWNER_ACCESS
+from mail import send_html_email_message
 from users.models import User, Account
 
 
@@ -71,8 +74,7 @@ class LoginOrRegisterStaffSerializer(serializers.Serializer):
 
 class RegisterStaffSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='email', required=True)
-    password = serializers.CharField(required=True, write_only=True)
-    groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=True)  # fixme change to group
+    host_domain = serializers.CharField(required=False, default='')
 
     class Meta:
         model = User
@@ -84,16 +86,27 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.setdefault('is_staff', True)
-        password = validated_data.pop('password')
-        group = validated_data.pop('groups')
-        is_exists = User.objects.filter(email=validated_data.get('email')).exists()
+        password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+        group = Group.objects.filter(access=2, is_deletable=False).first()
+        if not group:
+            raise ValidationError('Unable to find admin group')
+        email = validated_data.get('email')
+        host_domain = validated_data.pop('host_domain', '')
+        is_exists = User.objects.filter(email=email).exists()
         if is_exists:
             raise ValidationError('Admin already exists.')
-        if not (OWNER_ACCESS < group.access < CLIENT_ACCESS):
-            raise ValidationError(f'Group access must be in range from {OWNER_ACCESS} to {CLIENT_ACCESS}')
         instance = super(RegisterStaffSerializer, self).create(validated_data)
         instance.set_password(password)
         instance.save()
+        send_html_email_message(
+            to=email,
+            subject="Добро пожаловать в Газпром!",
+            template_args={
+                'host': host_domain,
+                'username': email,
+                'password': password
+            }
+        )
         account = Account.objects.get_or_create(user=instance)
         account[0].groups.add(group)
         return instance
