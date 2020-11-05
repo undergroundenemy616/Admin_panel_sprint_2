@@ -21,6 +21,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from users import views
+from tables import views as TableView
 
 
 def get_swagger() -> Any:
@@ -59,6 +60,9 @@ urlpatterns = [
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
     path('files', include('files.urls')),
+    path('/table_tag', TableView.TableTagView.as_view({
+        'get': 'list',
+        'post': 'create'})),
     path('tables', include('tables.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
