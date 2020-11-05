@@ -1,21 +1,20 @@
-from django.contrib.auth import user_logged_in, authenticate
+from django.contrib.auth import user_logged_in
 from django.db.models import Q
 from rest_framework import mixins, status
-from rest_framework.generics import GenericAPIView, get_object_or_404, CreateAPIView
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 
 from core.pagination import DefaultPagination
-from core.permissions import IsOwner, IsAdmin, IsAuthenticated
+from core.permissions import IsOwner, IsAdmin
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import User, Account
 from users.registration import send_code, confirm_code
 from users.serializers import (
     LoginOrRegisterSerializer,
-    UserSerializer,
     AccountSerializer,
-    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer
+    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer, UserSerializer
 )
 from groups.models import Group
 
@@ -49,17 +48,24 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
             if not sms_code:  # Register or login user
                 send_code(user, created)
                 data['status'], data['phone_number'] = 'DONE', user.phone_number
-            elif sms_code and not created:  # Confirm code
-                # Confirmation code
-                confirm_code(phone_number, sms_code)
-                user_logged_in.send(sender=user.__class__, user=user, request=request)
-
                 # Creating data for response
                 data = {
                     'message': "OK",
                     'new_code_in': 180,
                     'expires_in': 180,
                 }
+            elif sms_code and not created:  # Confirm code
+                # Confirmation code
+                confirm_code(phone_number, sms_code)
+                user_logged_in.send(sender=user.__class__, user=user, request=request)
+
+                # Creating data for response
+                auth_data = create_auth_data(user)
+                data["user"] = UserSerializer(instance=user).data
+                data["access_token"] = auth_data.get('access_token')
+                data["refresh_token"] = data["access_token"]
+                data["account"] = account.id
+                data["activated"] = True
             else:
                 raise ValueError('Invalid data!')
         except ValueError as error:
@@ -104,7 +110,7 @@ class LoginStaff(GenericAPIView):
 class AccountView(GenericAPIView):
     serializer_class = AccountSerializer
     queryset = Account.objects.all()
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
     def get(self, request, *args, **kwargs):
         account_id = request.query_params.get('id')
@@ -125,10 +131,17 @@ class AccountView(GenericAPIView):
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 
-class RegisterStaff(CreateAPIView):
+class RegisterStaffView(GenericAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()
     permission_classes = (IsOwner,)
+
+    def post(self, request, *args, **kwargs):
+        request.data['host_domain'] = request.build_absolute_uri('/')
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class AccountListView(GenericAPIView, mixins.ListModelMixin):

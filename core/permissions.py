@@ -2,6 +2,11 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 from groups.models import OWNER_ACCESS, ADMIN_ACCESS
 
 
+class IsAuthenticatedOnPost(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.method == 'POST'
+
+
 class IsAuthenticated(BasePermission):
     def has_permission(self, request, view):
         if request.user and request.user.is_authenticated:

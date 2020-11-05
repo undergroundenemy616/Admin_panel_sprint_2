@@ -23,8 +23,6 @@ from drf_yasg import openapi
 from users import views
 from tables import views as TableViews
 from offices import views as OfficeViews
-from licenses import views as LicenseViews
-from floors import views as FloorViews
 
 
 def get_swagger() -> Any:
@@ -46,7 +44,6 @@ def get_swagger() -> Any:
 
 schema_view = get_swagger()
 
-
 urlpatterns = [
     # Swagger tools
     url(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
@@ -57,29 +54,27 @@ urlpatterns = [
     path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUser.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
+    path('register_employee', views.RegisterStaffView.as_view()),
     path('account', views.AccountView.as_view()),
     path('accounts_list', views.AccountListView.as_view()),
-    path('register/admin', views.RegisterStaff.as_view()),
-    path('group_access/<uuid:pk>', OfficeViews.ListOfficeZoneView.as_view()),
+    path('group_access', include('offices.urls_group_access')),
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
     path('files', include('files.urls')),
-    path('table_tag', TableViews.TableTagView.as_view({
-        'get': 'list',
-        'post': 'create'})),
-    path('license', LicenseViews.ListLicensesView.as_view()),
+    path('table_tag', include('tables.urls_tag')),
+    path('license', include('licenses.urls')),
     path('tables', include('tables.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
-    path('floor', FloorViews.ListCreateFloorView.as_view()),
-    path('floor/<uuid:pk>', FloorViews.RetrieveUpdateDeleteFloorView.as_view()),
-    path('floor_map', FloorViews.ListCreateDeleteFloorMapView.as_view()),
+    path('floor', include('floors.urls')),
+    path('floor_map', include('floors.urls_map')),
     path('office', include('offices.urls')),
     path('book', include('bookings.urls')),
     path('books', include('bookings.urls_detail')),
     path('book_operator', include('bookings.urls_operator')),
-    path('book_list', include('bookings.urls_list'))
-    # path('groups/', include('groups.urls'))
+    path('book_list', include('bookings.urls_list')),
+    path('tokens', include('push_tokens.urls')),
+    path('send_', include('push_tokens.urls_send')),
 ]
 
 '''

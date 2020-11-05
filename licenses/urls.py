@@ -1,4 +1,6 @@
+from licenses import views
+from django.urls import path
 
 urlpatterns = [
-    # Todo add license
+    path('', views.ListLicensesView.as_view()),
 ]
