@@ -24,6 +24,7 @@ from users import views
 from tables import views as TableViews
 from offices import views as OfficeViews
 from licenses import views as LicenseViews
+from floors import views as FloorViews
 
 
 def get_swagger() -> Any:
@@ -70,7 +71,9 @@ urlpatterns = [
     path('tables', include('tables.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
-    path('floors', include('floors.urls')),
+    path('floor', FloorViews.ListCreateFloorView.as_view()),
+    path('floor/<uuid:pk>', FloorViews.RetrieveUpdateDeleteFloorView.as_view()),
+    path('floor_map', FloorViews.ListCreateDeleteFloorMapView.as_view()),
     path('office', include('offices.urls')),
     path('book', include('bookings.urls')),
     path('books', include('bookings.urls_detail')),
