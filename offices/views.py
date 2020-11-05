@@ -1,8 +1,9 @@
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from core.pagination import DefaultPagination
-from offices.models import Office
-from offices.serializers import CreateOfficeSerializer, NestedOfficeSerializer
+from offices.models import Office, OfficeZone
+from offices.serializers import CreateOfficeSerializer, NestedOfficeSerializer, OfficeZoneSerializer
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
     UpdateModelMixin,
@@ -77,3 +78,30 @@ class RetrieveUpdateDeleteOfficeView(UpdateModelMixin,
     def delete(self, request, *args, **kwargs):  # good
         """Delete office by primary key."""
         return self.destroy(request, *args, **kwargs)
+
+
+class ListOfficeZoneView(GenericAPIView):
+    queryset = OfficeZone.objects.all()
+    permission_classes = (AllowAny,)
+
+    def get(self, request, pk=None, *args, **kwargs):
+        office_zones = OfficeZone.objects.filter(groups=pk)
+        response = []
+        if len(office_zones) != 0:
+            item = {}
+            for zone in office_zones:
+                # response.append(OfficeZoneSerializer(instance=zone).data)
+                item['id'] = zone.office.id
+                item['title'] = zone.office.title
+                item['description'] = zone.office.description
+                item['zones'] = []
+                response.append(item)
+            response = list({item['id']: item for item in response}.values())
+            for item in response:
+                filtered_zones = office_zones.filter(office=item['id'])
+                for filtered_zone in filtered_zones:
+                    item['zones'].append({
+                        'id': str(filtered_zone.id),
+                        'title': filtered_zone.title
+                    })
+        return Response(response, status=status.HTTP_200_OK)

@@ -21,7 +21,8 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from users import views
-from tables import views as TableView
+from tables import views as TableViews
+from offices import views as OfficeViews
 
 
 def get_swagger() -> Any:
@@ -57,10 +58,11 @@ urlpatterns = [
     path('account', views.AccountView.as_view()),
     path('accounts_list', views.AccountListView.as_view()),
     path('register/admin', views.RegisterStaff.as_view()),
+    path('group_access/<uuid:pk>', OfficeViews.ListOfficeZoneView.as_view()),
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
     path('files', include('files.urls')),
-    path('table_tag', TableView.TableTagView.as_view({
+    path('table_tag', TableViews.TableTagView.as_view({
         'get': 'list',
         'post': 'create'})),
     path('tables', include('tables.urls')),
