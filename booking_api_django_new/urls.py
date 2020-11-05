@@ -23,6 +23,7 @@ from drf_yasg import openapi
 from users import views
 from tables import views as TableViews
 from offices import views as OfficeViews
+from licenses import views as LicenseViews
 
 
 def get_swagger() -> Any:
@@ -65,6 +66,7 @@ urlpatterns = [
     path('table_tag', TableViews.TableTagView.as_view({
         'get': 'list',
         'post': 'create'})),
+    path('license', LicenseViews.ListLicensesView.as_view()),
     path('tables', include('tables.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
