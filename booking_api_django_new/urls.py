@@ -60,7 +60,7 @@ urlpatterns = [
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
     path('files', include('files.urls')),
-    path('/table_tag', TableView.TableTagView.as_view({
+    path('table_tag', TableView.TableTagView.as_view({
         'get': 'list',
         'post': 'create'})),
     path('tables', include('tables.urls')),
