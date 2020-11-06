@@ -64,6 +64,7 @@ urlpatterns = [
     path('table_tag', include('tables.urls_tag')),
     path('license', include('licenses.urls')),
     path('tables', include('tables.urls')),
+    path('room/type', include('room_types.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
     path('floor', include('floors.urls')),

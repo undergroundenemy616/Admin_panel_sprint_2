@@ -11,5 +11,31 @@
       "tables_infinite": true,
       "forever": true
     }
+  },
+  {
+    "model": "licenses.License",
+    "pk": "f28b1123-778a-4c89-b9e3-3999a7dc0fa6",
+    "fields": {
+      "issued_at": "2020-09-15",
+      "expires_at": "2021-09-15",
+      "support_available": true,
+      "support_expires_at": "2021-09-15",
+      "tables_available": "100",
+      "tables_infinite": true,
+      "forever": true
+    }
+  },
+  {
+    "model": "licenses.License",
+    "pk": "f28b1123-778a-4c89-b9e3-3999a7dc0fa7",
+    "fields": {
+      "issued_at": "2020-09-15",
+      "expires_at": "2021-09-15",
+      "support_available": true,
+      "support_expires_at": "2021-09-15",
+      "tables_available": "100",
+      "tables_infinite": true,
+      "forever": true
+    }
   }
 ]
