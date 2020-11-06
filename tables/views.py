@@ -4,7 +4,7 @@ from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateMo
 from rest_framework.permissions import AllowAny
 from core.pagination import DefaultPagination
 from tables.models import Table, TableTag
-from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer
+from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -32,6 +32,7 @@ class DetailTableView(RetrieveModelMixin,
     queryset = Table.objects.all()
 
     def put(self, request, *args, **kwargs):
+        self.serializer_class = UpdateTableSerializer
         return self.update(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):

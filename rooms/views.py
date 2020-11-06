@@ -6,7 +6,7 @@ from rest_framework.request import Request
 from core.pagination import DefaultPagination
 from core.mixins import FilterListMixin
 from rooms.models import Room, RoomMarker
-from rooms.serializers import RoomSerializer, FilterRoomSerializer
+from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
 
 
 class RoomsView(FilterListMixin,
@@ -40,6 +40,7 @@ class RoomsView(FilterListMixin,
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        self.serializer_class = CreateRoomSerializer
         return self.create(request, *args, **kwargs)
 
 
@@ -54,6 +55,7 @@ class DetailRoomView(RetrieveModelMixin,
     # permission_classes = (IsAdminUser,)
 
     def put(self, request, *args, **kwargs):
+        self.serializer_class = UpdateRoomSerializer
         return self.update(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):

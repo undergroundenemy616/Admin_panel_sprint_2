@@ -13,7 +13,7 @@ class Room(models.Model):
     type = models.ForeignKey('room_types.RoomType', on_delete=models.SET_NULL, related_name='rooms', null=True, blank=False)
     images = models.ManyToManyField(File, related_name='rooms', blank=True)
     floor = models.ForeignKey(Floor, related_name='rooms', null=True, blank=True, on_delete=models.CASCADE)
-    seats_available = models.IntegerField(default=1, null=False, blank=False)
+    seats_amount = models.IntegerField(default=1, null=False, blank=False)
     is_bookable = models.BooleanField(default=True, null=False, blank=False)
 
 

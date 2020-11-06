@@ -74,5 +74,27 @@ class CreateTableSerializer(serializers.ModelSerializer):
         office_id = instance.room.floor.office.id
         if tags:
             tags_queryset = TableTag.objects.filter(title__in=tags, office_id=office_id)
-            instance.tags.add(tags_queryset)
+            instance.tags.set(tags_queryset)
         return instance
+
+
+class UpdateTableSerializer(CreateTableSerializer):
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=False)
+    description = serializers.CharField(required=False)
+    title = serializers.CharField(required=False)
+    tags = serializers.ListField(child=serializers.CharField(), validators=[check_table_tags_exists], write_only=True,
+                                 allow_empty=True, required=False)
+    images = serializers.ListField(child=serializers.CharField(), write_only=True, allow_empty=True, required=False)
+
+    class Meta:
+        model = Table
+        fields = ['room', 'description', 'title', 'tags', 'images']
+        depth = 1
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop('tags')
+        office_id = instance.room.floor.office.id
+        if tags:
+            tags_queryset = TableTag.objects.filter(title__in=tags, office_id=office_id)
+            instance.tags.set(tags_queryset)
+        return super(UpdateTableSerializer, self).update(instance, validated_data)

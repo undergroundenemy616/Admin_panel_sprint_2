@@ -1,5 +1,8 @@
 from rest_framework import serializers
 # TODO: from zones.models import Zone
+from rest_framework.exceptions import ValidationError
+
+from files.serializers import FileSerializer
 from offices.models import Office
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
@@ -10,7 +13,6 @@ from tables.serializers import TableSerializer
 
 
 class BaseRoomSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Room
         fields = '__all__'
@@ -54,7 +56,9 @@ class NestedRoomSerializer(RoomSerializer):
 
 
 class CreateRoomSerializer(serializers.ModelSerializer):
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
+    type = serializers.CharField(required=True)
+    seats_amount = serializers.IntegerField(required=False, default=0)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, many=True)
 
     class Meta:
         model = Room
@@ -66,12 +70,50 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data = super(CreateRoomSerializer, self).to_representation(instance)
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
+        data['images'] = FileSerializer(instance=instance.images, many=True).data
         data['type'] = RoomTypeSerializer(instance=instance.type).data
 
         return data
 
     def create(self, validated_data):
-        pass
+        room_type = RoomType.objects.filter(title=validated_data['type'],
+                                            office_id=validated_data['floor'].office.id).first()
+        if not room_type:
+            raise ValidationError(f'RoomType {room_type} does not exists.')
+        validated_data['type'] = room_type
+        instance = self.Meta.model.objects.create(**validated_data)
+        return instance
+
+
+class UpdateRoomSerializer(serializers.ModelSerializer):
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
+    type = serializers.CharField(required=False)
+    seats_amount = serializers.IntegerField(required=False, default=0)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
+
+    class Meta:
+        model = Room
+        fields = ['title', 'description', 'images', 'floor', 'type', 'seats_amount']
+        depth = 1
+
+    def to_representation(self, instance):
+        instance: Room
+        data = super(UpdateRoomSerializer, self).to_representation(instance)
+        data['capacity'] = instance.tables.count()
+        data['occupied'] = 0
+        data['images'] = FileSerializer(instance=instance.images, many=True).data
+        data['type'] = RoomTypeSerializer(instance=instance.type).data
+
+        return data
+
+    def update(self, instance, validated_data):
+        if validated_data.get('type'):
+            room_type = RoomType.objects.filter(title=validated_data['type'],
+                                                office_id=validated_data['floor'].office.id).first()
+            if not room_type:
+                raise ValidationError(f'RoomType {room_type} does not exists.')
+            validated_data['type'] = room_type
+        return super(UpdateRoomSerializer, self).update(instance, validated_data)
 
 
 class FilterRoomSerializer(serializers.ModelSerializer):
