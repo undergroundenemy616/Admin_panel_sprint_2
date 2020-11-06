@@ -18,7 +18,7 @@ class RoomTypeSerializer(serializers.ModelSerializer):
 class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
     title = serializers.ListField(max_length=50, required=True)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
-    icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
+    icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, default="", allow_null=True)
     color = serializers.CharField(min_length=6, max_length=8, default='#0079c1')
     bookable = serializers.BooleanField(default=False, required=False)
     work_interval_days = serializers.IntegerField(default=0, required=False)
@@ -53,6 +53,8 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
         type_exist = RoomType.objects.filter(title=titles[0], office=office)
         if type_exist:
             raise serializers.ValidationError('Type already exist')
+        if validated_data['icon'] == "":
+            validated_data['icon'] = None
         return RoomType.objects.create(title=titles[0], office=office, icon=validated_data['icon'],
                                        color=validated_data['color'], bookable=validated_data['bookable'],
                                        work_interval_days=validated_data['work_interval_days'],
@@ -62,6 +64,8 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         title = validated_data.pop('title')
         validated_data['title'] = title[0]
+        if validated_data["icon"] == "":
+            validated_data.pop('icon')
         return super(CreateUpdateRoomTypeSerializer, self).update(instance, validated_data)
 
 
