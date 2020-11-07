@@ -1,3 +1,5 @@
+import os
+
 from django.contrib.auth import user_logged_in
 from django.db.models import Q
 from rest_framework import mixins, status
@@ -46,7 +48,10 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
         try:
             data = {}
             if not sms_code:  # Register or login user
-                send_code(user, created)
+                if not os.getenv('SMS_MOCK_CONFIRM'):
+                    send_code(user, created)
+                else:
+                    print('SMS service is off, any code is acceptable')
                 data['status'], data['phone_number'] = 'DONE', user.phone_number
                 # Creating data for response
                 data = {
@@ -55,8 +60,11 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
                     'expires_in': 180,
                 }
             elif sms_code and not created:  # Confirm code
-                # Confirmation code
-                confirm_code(phone_number, sms_code)
+                if not os.getenv('SMS_MOCK_CONFIRM'):
+                    # Confirmation code
+                    confirm_code(phone_number, sms_code)
+                else:
+                    print('SMS service is off, any code is acceptable')
                 user_logged_in.send(sender=user.__class__, user=user, request=request)
 
                 # Creating data for response
