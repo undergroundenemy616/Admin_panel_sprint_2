@@ -20,11 +20,18 @@ class Table(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='tables', blank=False, null=False)
     tags = models.ManyToManyField(TableTag, related_name='tables', blank=True)
     images = models.ManyToManyField('files.File', related_name='tables', blank=True)
+    is_occupied = models.BooleanField(default=False)
 
     @property
     def current_rating(self):
         queryset = self.ratings.all().aggregate(models.Avg('rating'))
         return queryset['rating__avg']
+
+    def set_table_occupied(self):
+        self.is_occupied = True
+
+    def set_table_free(self):
+        self.is_occupied = False
 
 
 class Rating(models.Model):
