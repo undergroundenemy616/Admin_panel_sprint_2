@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from core.pagination import DefaultPagination
 from offices.models import Office, OfficeZone
-from offices.serializers import CreateOfficeSerializer, NestedOfficeSerializer, OfficeZoneSerializer
+from offices.serializers import CreateOfficeSerializer, NestedOfficeSerializer, CreateUpdateOfficeZoneSerializer
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
     UpdateModelMixin,
@@ -83,6 +83,7 @@ class RetrieveUpdateDeleteOfficeView(UpdateModelMixin,
 class ListOfficeZoneView(GenericAPIView):
     queryset = OfficeZone.objects.all()
     permission_classes = (AllowAny,)
+    serializer_class = CreateUpdateOfficeZoneSerializer
 
     def get(self, request, pk=None, *args, **kwargs):
         office_zones = OfficeZone.objects.filter(groups=pk)
@@ -107,7 +108,10 @@ class ListOfficeZoneView(GenericAPIView):
         return Response(response, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        pass
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        created_type = serializer.save(data=request.data) # TODO check only create action
+        return Response(serializer.to_representation(created_type), status=status.HTTP_201_CREATED)
 
 
 class UpdateDeleteZoneView(GenericAPIView):

@@ -7,5 +7,4 @@
 *.xml
 *.pyc
 __pycache__
-migrations
 drop_db.py

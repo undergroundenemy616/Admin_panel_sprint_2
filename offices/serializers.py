@@ -11,6 +11,7 @@ from floors.serializers import FloorSerializer
 from room_types.models import RoomType
 from tables.models import Table
 from licenses.serializers import LicenseSerializer
+from groups.serializers import GroupSerializer
 
 
 class OfficeZoneSerializer(serializers.ModelSerializer):
@@ -20,6 +21,65 @@ class OfficeZoneSerializer(serializers.ModelSerializer):
         model = OfficeZone
         fields = '__all__'
         depth = 1
+
+
+class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
+    title = serializers.ListField()
+    group_whitelist_visit = serializers.ListField()
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+
+    class Meta:
+        model = OfficeZone
+        fields = ['title', 'group_whitelist_visit', 'office']
+
+    def to_representation(self, instance):
+        response = dict()
+        response['id'] = instance.id
+        response['title'] = instance.title
+        response['pre_defined'] = not instance.is_deletable
+        response['office'] = {
+            'id': instance.office.id,
+            'title': instance.office.title
+        }
+        response['groups'] = [GroupSerializer(instance=group) for group in instance.groups]
+        return response
+
+    def create(self, validated_data):
+        titles = validated_data.pop('title')
+        office = validated_data.pop('office')
+        group_whitelist = validated_data.pop('group_whitelist_visit')
+        all_existing_groups = Group.objects.all()
+        groups_id = [group.id for group in all_existing_groups]
+        if len(titles) > 1:
+            zones_to_create = []
+            for title in titles:
+                zone_exist = OfficeZone.objects.filter(title=title, office=office)
+                if zone_exist:
+                    continue
+                zones_to_create.append(OfficeZone(title=title, office=office))
+            if group_whitelist:
+                for group in group_whitelist:
+                    if group.id in groups_id:
+                        for zone in zones_to_create:
+                            zone.groups.add(group)
+                    else:
+                        continue
+            OfficeZone.objects.bulk_create(zones_to_create)
+            return zones_to_create
+        zone_exist = OfficeZone.objects.filter(title=titles[0], office=office)
+        if zone_exist:
+            raise serializers.ValidationError('Zone already exist')
+        new_zone = OfficeZone.objects.create(title=titles[0], office=office)
+        if group_whitelist:
+            for group in group_whitelist:
+                if group.id in groups_id:
+                    new_zone.groups.add(group)
+                else:
+                    continue
+        return new_zone
+
+    def update(self, instance, validated_data):
+        pass
 
 
 def working_hours_validator(value: str) -> str:
