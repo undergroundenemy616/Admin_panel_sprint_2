@@ -3,14 +3,18 @@ from rest_framework.mixins import RetrieveModelMixin, Response, status
 
 from core.permissions import IsAuthenticated, IsAdmin
 from groups.models import Group
-from groups.serializers import GroupSerializer
+from groups.serializers import GroupSerializer, CreateGroupSerializer
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
     queryset = Group.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
     serializer_class = GroupSerializer
     pagination_class = None
+
+    def post(self, request, *args, **kwargs):
+        self.serializer_class = CreateGroupSerializer
+        return self.create(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         if request.query_params.get('id'):
