@@ -3,7 +3,8 @@ from rest_framework.mixins import RetrieveModelMixin, Response, status, UpdateMo
 
 from core.permissions import IsAuthenticated, IsAdmin
 from groups.models import Group
-from groups.serializers import GroupSerializer, CreateGroupSerializer, UpdateGroupSerializer
+from groups.serializers import GroupSerializer, CreateGroupSerializer, UpdateGroupSerializer, UpdateGroupUsersSerializer
+from users.models import User, Account
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
@@ -38,3 +39,16 @@ class DetailGroupView(GenericAPIView,
     def put(self, request, *args, **kwargs):
         self.serializer_class = UpdateGroupSerializer
         return self.update(request, *args, **kwargs)
+
+
+class UpdateGroupUsersView(GenericAPIView):
+    queryset = Group.objects.all()
+    serializer_class = UpdateGroupUsersSerializer
+    permission_classes = (IsAdmin,)
+
+    def put(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        group = get_object_or_404(Group, id=serializer.data['id'])
+        group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
+        return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)

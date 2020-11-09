@@ -1,6 +1,8 @@
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
+
 from groups.models import Group
-from users.models import User
+from users.models import User, Account
 from users.serializers import UserSerializer
 
 
@@ -11,9 +13,9 @@ class GroupSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(GroupSerializer, self).to_representation(instance)
-        pre_defined = response.pop('is_deletable')
+        pre_defined = instance.is_deletable
         response['pre_defined'] = not pre_defined
-        legacy_access = Group.to_legacy_access(access=response.pop('access'))
+        legacy_access = Group.to_legacy_access(access=instance.access)
         if not legacy_access:
             raise serializers.ValidationError('Invalid group access')
         response.update(legacy_access)
@@ -51,3 +53,8 @@ class UpdateGroupSerializer(GroupSerializer):
             s=False
         )
         return super(UpdateGroupSerializer, self).update(instance, validated_data)
+
+
+class UpdateGroupUsersSerializer(serializers.Serializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=True)
+    users = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), many=True, required=True, allow_empty=True)
