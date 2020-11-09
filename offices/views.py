@@ -105,3 +105,10 @@ class ListOfficeZoneView(GenericAPIView):
                         'title': filtered_zone.title
                     })
         return Response(response, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        pass
+
+
+class UpdateDeleteZoneView(GenericAPIView):
+    pass

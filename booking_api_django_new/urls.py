@@ -70,6 +70,8 @@ urlpatterns = [
     path('floor', include('floors.urls')),
     path('floor_map', include('floors.urls_map')),
     path('office', include('offices.urls')),
+    path('zone', include('offices.urls_zone')),
+    path('zones', include('offices.urls_zones')),
     path('book', include('bookings.urls')),
     path('books', include('bookings.urls_detail')),
     path('book_operator', include('bookings.urls_operator')),
