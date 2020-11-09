@@ -1,9 +1,9 @@
-from rest_framework.generics import ListCreateAPIView, GenericAPIView, get_object_or_404
-from rest_framework.mixins import RetrieveModelMixin, Response, status
+from rest_framework.generics import ListCreateAPIView, GenericAPIView, get_object_or_404, UpdateAPIView
+from rest_framework.mixins import RetrieveModelMixin, Response, status, UpdateModelMixin, DestroyModelMixin
 
 from core.permissions import IsAuthenticated, IsAdmin
 from groups.models import Group
-from groups.serializers import GroupSerializer, CreateGroupSerializer
+from groups.serializers import GroupSerializer, CreateGroupSerializer, UpdateGroupSerializer
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
@@ -24,10 +24,17 @@ class ListCreateGroupAPIView(ListCreateAPIView):
         return self.list(self, request, *args, **kwargs)
 
 
-class RetrieveGroupView(GenericAPIView, RetrieveModelMixin):
+class DetailGroupView(GenericAPIView,
+                      UpdateModelMixin,
+                      RetrieveModelMixin,
+                      DestroyModelMixin):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = (IsAdmin,)
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        self.serializer_class = UpdateGroupSerializer
+        return self.update(request, *args, **kwargs)

@@ -35,3 +35,19 @@ class CreateGroupSerializer(GroupSerializer):
         )
         validated_data['is_deletable'] = True
         return Group.objects.create(**validated_data)
+
+
+class UpdateGroupSerializer(GroupSerializer):
+    title = serializers.CharField(required=False)
+    global_can_write = serializers.BooleanField(required=False, write_only=True)
+    global_can_manage = serializers.BooleanField(required=False, write_only=True)
+
+    def update(self, instance, validated_data):
+        instance: Group
+        legacy_rights = Group.to_legacy_access(instance.access)
+        validated_data['access'] = Group.from_legacy_access(
+            w=validated_data.pop('global_can_write', None) or legacy_rights['global_write'],
+            m=validated_data.pop('global_can_manage', None) or legacy_rights['global_manage'],
+            s=False
+        )
+        return super(UpdateGroupSerializer, self).update(instance, validated_data)

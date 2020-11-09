@@ -31,7 +31,7 @@ class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     title = models.CharField(max_length=64, unique=True, null=False, blank=False)
-    description = models.CharField(max_length=64, null=True, blank=True)
+    # description = models.CharField(max_length=64, null=True, blank=True)
     access = models.IntegerField(validators=[integer_validator], default=4, null=False, blank=False)
     is_deletable = models.BooleanField(default=True, null=False, blank=False)
 
