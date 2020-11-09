@@ -165,12 +165,21 @@ class NestedOfficeSerializer(OfficeSerializer):
         instance: Office
         response = super(NestedOfficeSerializer, self).to_representation(instance)
 
-        # data['occupied_tables'] = Table.objects.overflowed()  # todo set is_overflowed
         # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???
 
         response['floors_number'] = instance.floors.count()
-        response['capacity'] = Table.objects.filter(room__type__office_id=instance.id).count()
-        response['occupied_meeting'] = RoomType.objects.filter(title='Переговорная', office_id=instance.id).count()
-        response['capacity_tables'] = Table.objects.filter(room__type__office_id=instance.id).count()
+        response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
+        response['capacity_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id
+        ).count()
+        response['occupied_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id,
+            is_occupied=True
+        ).count()
+        response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
         response['license'] = LicenseSerializer(instance=instance.license).data
         return response

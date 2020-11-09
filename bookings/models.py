@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 from django.db import models
-
 from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS
 from core.scheduler import scheduler
 from push_tokens.send_interface import send_push_message
@@ -55,8 +54,12 @@ class Booking(models.Model):
 
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
-        self.create_oncoming_notification()
+        self.job_create_oncoming_notification()
         super(self.__class__, self).save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        self.set_booking_over()
+        super(self.__class__, self).delete(using, keep_parents)
 
     def get_consecutive_booking(self):
         """Returns previous booking if exists for merging purpose"""
@@ -99,7 +102,17 @@ class Booking(models.Model):
             for token in [push_object.token for push_object in self.user.account.push_tokens.all()]:
                 send_push_message(token, expo_data)
 
-    def create_oncoming_notification(self):
+    def set_booking_active(self):
+        self.is_active = True
+        self.is_over = False
+        self.table.set_table_occupied()
+
+    def set_booking_over(self):
+        self.is_active = False
+        self.is_over = True
+        self.table.set_table_free()
+
+    def job_create_oncoming_notification(self):
         """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
@@ -107,7 +120,23 @@ class Booking(models.Model):
                 self.notify_about_oncoming_booking,
                 "date",
                 run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
-                # args=[self],
                 misfire_grace_time=900,
                 id="notify_about_oncoming_booking_" + str(self.id)
             )
+
+    def job_create_change_states(self):
+        """Add job for occupied/free states changing"""
+        scheduler.add_job(
+            self.set_booking_active,
+            "date",
+            run_date=self.date_from,
+            misfire_grace_time=900,
+            id="set_booking_active_" + str(self.id)
+        )
+        scheduler.add_job(
+            self.set_booking_over,
+            "date",
+            run_date=self.date_to,
+            misfire_grace_time=900,
+            id="set_booking_over_" + str(self.id)
+        )
