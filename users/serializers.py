@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from core.pagination import DefaultPagination
 from files.models import File
-from groups.models import Group, CLIENT_ACCESS, OWNER_ACCESS
+from groups.models import Group, GUEST_ACCESS, OWNER_ACCESS
 from mail import send_html_email_message
 from users.models import User, Account
 
