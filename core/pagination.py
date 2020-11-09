@@ -11,7 +11,7 @@ class DefaultPagination(PageNumberPagination):
 
     def get_paginated_response(self, data, *args, **kwargs):
         data = OrderedDict([
-            # mb error due to limit and start empty
+            ('start', self.page.number),
             ('count', self.page.paginator.count),
             ('next', self.get_next_link()),
             ('previous', self.get_previous_link()),
