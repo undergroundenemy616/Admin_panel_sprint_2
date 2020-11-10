@@ -19,19 +19,38 @@ def check_table_tags_exists(tags):
 
 
 class TableTagSerializer(serializers.ModelSerializer):
-    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
-    icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
-
+    # TODO-WTF: title may be an array ??
     class Meta:
         model = TableTag
         fields = '__all__'
-        depth = 1
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
         if instance.icon:
             response['icon'] = FileSerializer(instance=instance.icon).data
         return response
+
+    def create(self, validated_data):
+        if self.Meta.model.objects.filter(office_id=validated_data['office'], title=validated_data['title']).exists():
+            raise ValidationError('Tag already exists')
+        return super(TableTagSerializer, self).create(validated_data)
+
+
+class ListTableTagSerializer(TableTagSerializer):
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
+
+    def to_representation(self, instance):
+        return super(TableTagSerializer, self).to_representation(instance)
+
+
+class UpdateTableTagSerializer(TableTagSerializer):
+    title = serializers.CharField(required=False)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
+    icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
+
+    class Meta:
+        model = TableTag
+        fields = ['title', 'office', 'icon']
 
 
 class TableSerializer(serializers.ModelSerializer):

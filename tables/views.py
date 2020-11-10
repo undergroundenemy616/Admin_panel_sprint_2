@@ -4,7 +4,8 @@ from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateMo
 from rest_framework.permissions import AllowAny
 from core.pagination import DefaultPagination
 from tables.models import Table, TableTag
-from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer
+from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer, \
+    UpdateTableTagSerializer, ListTableTagSerializer
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -42,8 +43,36 @@ class DetailTableView(RetrieveModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
-class TableTagView(ModelViewSet):
+class TableTagView(ListModelMixin,
+                   CreateModelMixin,
+                   GenericAPIView):
     serializer_class = TableTagSerializer
     queryset = TableTag.objects.all()
     pagination_class = DefaultPagination
     permission_classes = (AllowAny,)
+
+    def get(self, request, *args, **kwargs):
+        self.serializer_class = ListTableTagSerializer
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.queryset = TableTag.objects.filter(office_id=serializer.data['office'])
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class DetailTableTagView(GenericAPIView,
+                         UpdateModelMixin,
+                         DestroyModelMixin):
+    serializer_class = TableTagSerializer
+    queryset = TableTag.objects.all()
+    pagination_class = DefaultPagination
+    permission_classes = (AllowAny,)
+
+    def put(self, request, *args, **kwargs):
+        self.serializer_class = UpdateTableTagSerializer
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
