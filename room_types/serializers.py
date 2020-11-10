@@ -62,8 +62,9 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
                                        unified=validated_data['unified'])
 
     def update(self, instance, validated_data):
-        title = validated_data.pop('title')
-        validated_data['title'] = title[0]
+        if validated_data.get('title'):
+            title = validated_data.pop('title')
+            validated_data['title'] = title[0]
         if validated_data["icon"] == "":
             validated_data.pop('icon')
         return super(CreateUpdateRoomTypeSerializer, self).update(instance, validated_data)

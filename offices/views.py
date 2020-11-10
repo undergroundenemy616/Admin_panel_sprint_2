@@ -98,6 +98,8 @@ class ListOfficeZoneView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         if request.data['title'] and not isinstance(request.data['title'], list):
             request.data['title'] = [request.data['title']]
+        elif isinstance(request.data['title'], list):
+            request.data['group_whitelist_visit'] = []
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         created_type = serializer.save(data=request.data)

@@ -41,14 +41,16 @@ class UpdateDestroyRoomTypesView(GenericAPIView,
 
     def put(self, request, pk=None, *args, **kwargs):
         instance = get_object_or_404(RoomType, pk=pk)
+        if not instance.is_deletable:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         office = Office.objects.filter(id=instance.office.id).first()
         request.data['office'] = office.id
         # Made because i don't want to implement another serializer
         if not request.data.get('title'):
-            request.data['title'] = [instance.title, ]
+            request.data['title'] = [instance.title]
         else:
             title = request.data.pop('title')
-            request.data['title'] = [title, ]
+            request.data['title'] = [title]
         serializer = self.serializer_class(data=request.data, instance=instance)
         serializer.is_valid(raise_exception=True)
         serializer.save()
