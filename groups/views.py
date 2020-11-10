@@ -40,8 +40,11 @@ class DetailGroupView(GenericAPIView,
         self.serializer_class = UpdateGroupSerializer
         return self.update(request, *args, **kwargs)
 
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
-class UpdateGroupUsersView(GenericAPIView):
+
+class UpdateUsersGroupView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = UpdateGroupUsersSerializer
     permission_classes = (IsAdmin,)
