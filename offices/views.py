@@ -100,12 +100,34 @@ class ListOfficeZoneView(GenericAPIView):
             request.data['title'] = [request.data['title']]
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        created_type = serializer.save(data=request.data) # TODO check only create action
+        created_type = serializer.save(data=request.data)
         return Response(serializer.to_representation(created_type), status=status.HTTP_201_CREATED)
 
 
-class UpdateDeleteZoneView(GenericAPIView):
-    pass
+class UpdateDeleteZoneView(GenericAPIView, DestroyModelMixin):
+    queryset = OfficeZone.objects.all()
+    serializer_class = CreateUpdateOfficeZoneSerializer
+    permission_classes = (AllowAny, )
+
+    def put(self, request, pk=None, *args, **kwargs):
+        instance = get_object_or_404(OfficeZone, pk=pk)
+        if not instance.is_deletable:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if request.data['title'] and not isinstance(request.data['title'], list):
+            request.data['title'] = [request.data['title']]
+            request.data['office'] = instance.office.id
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=request.data, instance=instance)
+        serializer.is_valid(raise_exception=True)
+        created_type = serializer.save()
+        return Response(serializer.to_representation(created_type), status=status.HTTP_200_OK)
+
+    def delete(self, request, pk=None, *args, **kwargs):
+        instance = get_object_or_404(OfficeZone, pk=pk)
+        if not instance.is_deletable:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return self.destroy(request, *args, **kwargs)
 
 
 class GroupAccessView(GenericAPIView):

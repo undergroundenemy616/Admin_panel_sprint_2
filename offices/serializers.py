@@ -95,7 +95,11 @@ class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
         return new_zone
 
     def update(self, instance, validated_data):
-        pass
+        title = validated_data.pop('title')
+        validated_data['title'] = title[0]
+        groups = validated_data.pop('group_whitelist_visit')
+        validated_data['groups'] = groups
+        return super(CreateUpdateOfficeZoneSerializer, self).update(instance,validated_data)
 
 
 def working_hours_validator(value: str) -> str:
