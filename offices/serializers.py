@@ -50,7 +50,7 @@ class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = dict()
-        if len(instance) > 1:
+        if isinstance(instance, list):
             result = []
             for zone in instance:
                 response['id'] = zone.id
