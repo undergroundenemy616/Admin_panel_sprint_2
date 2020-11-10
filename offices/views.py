@@ -2,9 +2,15 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from core.pagination import DefaultPagination
+from core.permissions import IsAuthenticated
 from offices.models import Office, OfficeZone
-from offices.serializers import CreateOfficeSerializer, NestedOfficeSerializer, CreateUpdateOfficeZoneSerializer
-from rest_framework.generics import GenericAPIView
+from offices.serializers import (
+    CreateOfficeSerializer,
+    NestedOfficeSerializer,
+    CreateUpdateOfficeZoneSerializer,
+    OfficeZoneSerializer
+)
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (
     UpdateModelMixin,
     CreateModelMixin,
@@ -85,6 +91,27 @@ class ListOfficeZoneView(GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = CreateUpdateOfficeZoneSerializer
 
+    def get(self, request, *args, **kwargs):
+        requested_zone = get_object_or_404(OfficeZone, pk=request.query_params.get('id'))
+        return Response(OfficeZoneSerializer(instance=requested_zone).data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        if request.data['title'] and not isinstance(request.data['title'], list):
+            request.data['title'] = [request.data['title']]
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        created_type = serializer.save(data=request.data) # TODO check only create action
+        return Response(serializer.to_representation(created_type), status=status.HTTP_201_CREATED)
+
+
+class UpdateDeleteZoneView(GenericAPIView):
+    pass
+
+
+class GroupAccessView(GenericAPIView):
+    queryset = OfficeZone.objects.all()
+    permission_classes = (IsAuthenticated,)
+
     def get(self, request, pk=None, *args, **kwargs):
         office_zones = OfficeZone.objects.filter(groups=pk)
         response = []
@@ -106,13 +133,3 @@ class ListOfficeZoneView(GenericAPIView):
                         'title': filtered_zone.title
                     })
         return Response(response, status=status.HTTP_200_OK)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        created_type = serializer.save(data=request.data) # TODO check only create action
-        return Response(serializer.to_representation(created_type), status=status.HTTP_201_CREATED)
-
-
-class UpdateDeleteZoneView(GenericAPIView):
-    pass

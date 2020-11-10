@@ -22,11 +22,27 @@ class OfficeZoneSerializer(serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
 
+    def to_representation(self, instance):
+        response = dict()
+        response['id'] = instance.id
+        response['title'] = instance.title
+        response['pre_defined'] = not instance.is_deletable
+        response['office'] = {
+            'id': instance.office.id,
+            'title': instance.office.title
+        }
+        if instance.groups:
+            response['groups'] = [GroupSerializer(instance=group).data for group in instance.groups.all()]
+        else:
+            response['groups'] = []
+        return response
+
 
 class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
-    title = serializers.ListField()
-    group_whitelist_visit = serializers.ListField()
-    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+    title = serializers.ListField(child=serializers.CharField(max_length=140), required=True)
+    group_whitelist_visit = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Group.objects.all()), required=False)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
 
     class Meta:
         model = OfficeZone
@@ -41,7 +57,7 @@ class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
             'id': instance.office.id,
             'title': instance.office.title
         }
-        response['groups'] = [GroupSerializer(instance=group) for group in instance.groups]
+        response['groups'] = [GroupSerializer(instance=group).data for group in instance.groups.all()]
         return response
 
     def create(self, validated_data):
