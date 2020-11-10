@@ -50,6 +50,19 @@ class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = dict()
+        if len(instance) > 1:
+            result = []
+            for zone in instance:
+                response['id'] = zone.id
+                response['title'] = zone.title
+                response['pre_defined'] = not zone.is_deletable
+                response['office'] = {
+                    'id': zone.office.id,
+                    'title': zone.office.title
+                }
+                response['groups'] = []
+                result.append(response)
+            return result
         response['id'] = instance.id
         response['title'] = instance.title
         response['pre_defined'] = not instance.is_deletable
@@ -73,7 +86,7 @@ class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
                 if zone_exist:
                     continue
                 zones_to_create.append(OfficeZone(title=title, office=office))
-            if group_whitelist:
+            if group_whitelist and len(group_whitelist) > 0:
                 for group in group_whitelist:
                     if group.id in groups_id:
                         for zone in zones_to_create:
