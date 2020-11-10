@@ -8,12 +8,6 @@ from rooms.serializers import RoomSerializer
 from tables.models import Table
 
 
-class EditFloorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Floor
-        fields = ['title', ]
-
-
 class FilterFloorSerializer(serializers.ModelSerializer):
     type = serializers.CharField(max_length=256, required=False)
     tags = serializers.ListField(required=False)
@@ -36,7 +30,6 @@ class FloorSerializer(serializers.ModelSerializer):
 
 class DetailFloorSerializer(FloorSerializer):
     rooms = RoomSerializer(many=True, read_only=True)
-    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
 
     def to_representation(self, instance):
         data = super(DetailFloorSerializer, self).to_representation(instance)
@@ -50,6 +43,15 @@ class DetailFloorSerializer(FloorSerializer):
         ).count()
         data['capacity_tables'] = Table.objects.filter(room__floor_id=instance.id).count()
         data['occupied_tables'] = Table.objects.filter(room__floor_id=instance.id, is_occupied=True).count()
+        return data
+
+
+class EditFloorSerializer(DetailFloorSerializer):
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
+
+    class Meta:
+        model = Floor
+        fields = '__all__'
 
 
 class NestedFloorSerializer(FloorSerializer):

@@ -4,7 +4,7 @@ from rest_framework.generics import GenericAPIView
 from floors.models import Floor, FloorMap
 from floors.serializers import (
     NestedFloorSerializer,
-    FloorMapSerializer, FloorSerializer, DetailFloorSerializer
+    FloorMapSerializer, FloorSerializer, DetailFloorSerializer, EditFloorSerializer
 )
 from rest_framework.mixins import (
     ListModelMixin,
@@ -43,6 +43,7 @@ class RetrieveUpdateDeleteFloorView(UpdateModelMixin,
     serializer_class = DetailFloorSerializer
 
     def put(self, request, *args, **kwargs):
+        self.serializer_class = EditFloorSerializer
         return self.update(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
