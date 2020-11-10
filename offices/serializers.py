@@ -53,15 +53,7 @@ class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
         if isinstance(instance, list):
             result = []
             for zone in instance:
-                response['id'] = zone.id
-                response['title'] = zone.title
-                response['pre_defined'] = not zone.is_deletable
-                response['office'] = {
-                    'id': zone.office.id,
-                    'title': zone.office.title
-                }
-                response['groups'] = []
-                result.append(response)
+                result.append(OfficeZoneSerializer(zone).data)
             return result
         response['id'] = instance.id
         response['title'] = instance.title
