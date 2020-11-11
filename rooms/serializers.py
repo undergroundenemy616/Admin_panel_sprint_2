@@ -72,6 +72,8 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data = super(CreateRoomSerializer, self).to_representation(instance)
         data['id'] = instance.id
         from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
+        from floors.serializers import FloorSerializer
+        data['floor'] = FloorSerializer(instance=instance.floor).data
         data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
