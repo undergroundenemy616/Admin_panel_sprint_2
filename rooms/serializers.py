@@ -1,12 +1,11 @@
 from rest_framework import serializers
-# TODO: from zones.models import Zone
 from rest_framework.exceptions import ValidationError
 
 from files.serializers import FileSerializer
-from offices.models import Office
+from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
-from rooms.models import Room, RoomMarker
+from rooms.models import Room
 from floors.models import Floor
 from files.models import File
 from tables.serializers import TableSerializer
@@ -56,18 +55,23 @@ class NestedRoomSerializer(RoomSerializer):
 
 
 class CreateRoomSerializer(serializers.ModelSerializer):
-    type = serializers.CharField(required=True)
-    seats_amount = serializers.IntegerField(required=False, default=0)
+    description = serializers.CharField(max_length=280, allow_blank=True)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=True)
+    title = serializers.CharField(max_length=140)
+    zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), required=True)
+    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=True)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, many=True)
 
     class Meta:
         model = Room
-        fields = '__all__'
+        fields = ['description', 'floor', 'title', 'zone', 'type', 'images']
         depth = 1
 
     def to_representation(self, instance):
         instance: Room
         data = super(CreateRoomSerializer, self).to_representation(instance)
+        from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
+        data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
         data['images'] = FileSerializer(instance=instance.images, many=True).data
@@ -76,12 +80,16 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        room_type = RoomType.objects.filter(title=validated_data['type'],
-                                            office_id=validated_data['floor'].office.id).first()
-        if not room_type:
-            raise ValidationError(f'RoomType {room_type} does not exists.')
-        validated_data['type'] = room_type
+        # room_type = RoomType.objects.filter(title=validated_data['type'],
+        #                                     office_id=validated_data['floor'].office.id).first()
+        # if not room_type:
+        #     raise ValidationError(f'RoomType {room_type} does not exists.')
+        # validated_data['type'] = room_type
+        images = validated_data.pop('images')
         instance = self.Meta.model.objects.create(**validated_data)
+        if len(images) != 0:
+            for image in images:
+                instance.images.add(image)
         return instance
 
 

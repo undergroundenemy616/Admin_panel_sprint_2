@@ -21,8 +21,6 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from users import views
-from tables import views as TableViews
-from offices import views as OfficeViews
 
 
 def get_swagger() -> Any:

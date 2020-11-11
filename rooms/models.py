@@ -11,6 +11,7 @@ class Room(models.Model):
     title = models.CharField(max_length=256, null=False, blank=False)
     description = models.CharField(max_length=256, null=True, blank=True)
     type = models.ForeignKey('room_types.RoomType', on_delete=models.SET_NULL, related_name='rooms', null=True, blank=False)
+    zone = models.ForeignKey('offices.OfficeZone', on_delete=models.SET_NULL, related_name='zones', null=True, blank=False)
     images = models.ManyToManyField(File, related_name='rooms', blank=True)
     floor = models.ForeignKey(Floor, related_name='rooms', null=True, blank=True, on_delete=models.CASCADE)
     seats_amount = models.IntegerField(default=1, null=False, blank=False)
