@@ -8,6 +8,7 @@ from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room
 from floors.models import Floor
 from files.models import File
+from tables.models import Table
 from tables.serializers import TableSerializer
 
 
@@ -73,6 +74,11 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data['id'] = instance.id
         from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
         from floors.serializers import FloorSerializer
+        data['seats_amount'] = instance.seats_amount
+        data['is_bookable'] = instance.is_bookable
+        data['marker'] = None
+        tables_nested = Table.objects.filter(room=instance.id)
+        data['tables'] = [TableSerializer(instance=table).data for table in tables_nested]
         data['floor'] = FloorSerializer(instance=instance.floor).data
         data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
