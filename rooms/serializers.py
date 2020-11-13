@@ -104,9 +104,9 @@ class CreateRoomSerializer(serializers.ModelSerializer):
 
 class UpdateRoomSerializer(serializers.ModelSerializer):
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
-    type = serializers.CharField(required=False)
+    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
     seats_amount = serializers.IntegerField(required=False, default=0)
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, many=True, allow_empty=True)
 
     class Meta:
         model = Room
@@ -123,14 +123,14 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
 
         return data
 
-    def update(self, instance, validated_data):
-        if validated_data.get('type'):
-            room_type = RoomType.objects.filter(title=validated_data['type'],
-                                                office_id=validated_data['floor'].office.id).first()
-            if not room_type:
-                raise ValidationError(f'RoomType {room_type} does not exists.')
-            validated_data['type'] = room_type
-        return super(UpdateRoomSerializer, self).update(instance, validated_data)
+    # def update(self, instance, validated_data):
+    #     if validated_data.get('type'):
+    #         room_type = RoomType.objects.filter(title=validated_data['type'],
+    #                                             office_id=validated_data['floor'].office.id).first()
+    #         if not room_type:
+    #             raise ValidationError(f'RoomType {room_type} does not exists.')
+    #         validated_data['type'] = room_type
+    #     return super(UpdateRoomSerializer, self).update(instance, validated_data)
 
 
 class FilterRoomSerializer(serializers.ModelSerializer):
