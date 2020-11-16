@@ -116,6 +116,16 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         instance: Room
         data = super(UpdateRoomSerializer, self).to_representation(instance)
+        data['id'] = instance.id
+        from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
+        from floors.serializers import FloorSerializer
+        data['seats_amount'] = instance.seats_amount
+        data['is_bookable'] = instance.is_bookable
+        data['marker'] = None
+        tables_nested = Table.objects.filter(room=instance.id)
+        data['tables'] = [TableSerializer(instance=table).data for table in tables_nested]
+        data['floor'] = FloorSerializer(instance=instance.floor).data
+        data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
         data['images'] = FileSerializer(instance=instance.images, many=True).data
