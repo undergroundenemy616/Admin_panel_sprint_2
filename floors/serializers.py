@@ -27,6 +27,15 @@ class FloorSerializer(serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
 
+    def to_representation(self, instance):
+        response = super(FloorSerializer, self).to_representation(instance)
+        floor_map = FloorMap.objects.filter(floor=instance.id)
+        if floor_map:
+            response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
+        else:
+            response['floor_map'] = None
+        return response
+
 
 class DetailFloorSerializer(FloorSerializer):
     rooms = RoomSerializer(many=True, read_only=True)
@@ -73,3 +82,11 @@ class FloorMapSerializer(serializers.ModelSerializer):
         data['image'] = FileSerializer(instance=instance.image).data
         data['floor'] = FloorSerializer(instance=instance.floor).data
         return data
+
+
+class BaseFloorMapSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = FloorMap
+        fields = '__all__'
+        depth = 1

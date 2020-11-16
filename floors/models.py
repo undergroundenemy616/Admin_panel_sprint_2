@@ -26,7 +26,7 @@ class FloorMap(models.Model):
     )
     height = models.CharField(max_length=12, null=True, blank=False)
     width = models.CharField(max_length=12, null=True, blank=False)
-    floor = models.OneToOneField(Floor, on_delete=models.CASCADE, blank=False, null=False)
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, blank=False, null=True)
 
     def __str__(self):
         return f'{self.id}: {self.width}x{self.height}'
