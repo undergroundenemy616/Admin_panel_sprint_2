@@ -55,6 +55,11 @@ class ListCreateUpdateOfficeView(ListModelMixin,
 
     def get(self, request, *args, **kwargs):
         """Get list of all offices."""
+        if request.query_params.get('id'):
+            self.pagination_class = None
+            one_office = get_object_or_404(Office, pk=request.query_params.get('id'))
+            serializer = self.serializer_class(instance=one_office)
+            return Response(serializer.to_representation(instance=one_office), status=status.HTTP_200_OK)
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
