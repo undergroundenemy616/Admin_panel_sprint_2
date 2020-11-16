@@ -21,7 +21,7 @@ class ListCreateFloorView(ListModelMixin,
     """Floors API View."""
     queryset = Floor.objects.all()
     permission_classes = (AllowAny,)
-    pagination_class = DefaultPagination
+    pagination_class = None
     serializer_class = NestedFloorSerializer
 
     def post(self, request, *args, **kwargs):

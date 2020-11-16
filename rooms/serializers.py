@@ -129,7 +129,7 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
         data['images'] = FileSerializer(instance=instance.images, many=True).data
-        data['type'] = RoomTypeSerializer(instance=instance.type).data
+        data['type'] = instance.type.title
 
         return data
 
