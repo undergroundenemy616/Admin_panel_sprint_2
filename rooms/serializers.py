@@ -105,7 +105,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
 class UpdateRoomSerializer(serializers.ModelSerializer):
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
     type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
-    seats_amount = serializers.IntegerField(required=False, default=0)
+    # seats_amount = serializers.IntegerField(required=False, default=0)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, many=True, allow_empty=True)
 
     class Meta:
