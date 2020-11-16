@@ -7,6 +7,7 @@ from licenses.models import License
 from licenses.serializers import LicenseSerializer
 from offices.models import Office, OfficeZone
 from files.models import File
+from files.serializers import FileSerializer
 from floors.serializers import FloorSerializer
 from room_types.models import RoomType
 from tables.models import Table
@@ -170,6 +171,11 @@ class OfficeSerializer(serializers.ModelSerializer):
         model = Office
         fields = '__all__'
         depth = 3
+
+    def to_representation(self, instance):
+        response = super(OfficeSerializer, self).to_representation(instance)
+        response['images'] = [FileSerializer(instance=image).data for image in instance.images.all()]
+        return response
 
 
 class CreateOfficeSerializer(OfficeSerializer):

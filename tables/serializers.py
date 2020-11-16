@@ -70,7 +70,8 @@ class CreateTableSerializer(serializers.ModelSerializer):
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=True)
     tags = serializers.ListField(child=serializers.CharField(), validators=[check_table_tags_exists], write_only=True,
                                  allow_empty=True, required=False, allow_null=True)
-    images = serializers.ListField(child=serializers.CharField(), write_only=True, allow_empty=True, required=False)
+    images = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=File.objects.all()),
+                                   write_only=True, allow_empty=True, required=False)
 
     class Meta:
         model = Table
