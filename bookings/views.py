@@ -146,7 +146,7 @@ class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
 
     def delete(self, request, pk=None, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=pk)
-        if existing_booking.user.id != request.user.id:
+        if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return self.destroy(request, *args, **kwargs)
 
