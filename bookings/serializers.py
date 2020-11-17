@@ -204,12 +204,12 @@ class BookingFastSerializer(serializers.ModelSerializer):
     date_to = serializers.DateTimeField(required=True)
     theme = serializers.CharField(required=False)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
-    room_type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'office', 'room_type', 'theme']
+        fields = ['date_from', 'date_to', 'office', 'type', 'theme', 'user']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
@@ -224,7 +224,7 @@ class BookingFastSerializer(serializers.ModelSerializer):
         date_from = validated_data['date_from']
         date_to = validated_data['date_to']
         office = validated_data.pop('office')
-        tables = list(Table.objects.filter(room__floor__office_id=office, room__type__id=validated_data['room_type']))
+        tables = list(Table.objects.filter(room__floor__office_id=office, room__type__id=validated_data['type']))
         for table in tables[:]:
             if not self.Meta.model.objects.is_overflowed(table, date_from, date_to):
                 continue
