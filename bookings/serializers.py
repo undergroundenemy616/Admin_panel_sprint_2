@@ -27,7 +27,7 @@ class BookingSerializer(serializers.ModelSerializer):
     date_to = serializers.DateTimeField(required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
     theme = serializers.CharField(max_length=200, default="Без темы")
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
     pagination_class = DefaultPagination
 
     class Meta:

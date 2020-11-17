@@ -31,7 +31,7 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
-        request.data['user'] = request.user.id
+        request.data['user'] = request.user.account.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -97,11 +97,11 @@ class ActionActivateBookingsView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         # request.data['user'] = request.user
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
-        if existing_booking.user.id != request.user.id:
+        if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        serializer.save(user=request.user.account)
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
@@ -116,7 +116,7 @@ class ActionDeactivateBookingsView(GenericAPIView):
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        serializer.save(user=request.user.account)
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
@@ -130,7 +130,7 @@ class ActionEndBookingsView(GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
-        if existing_booking.user.id != request.user.id:
+        if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
