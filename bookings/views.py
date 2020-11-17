@@ -174,7 +174,7 @@ class FastBookingAdminView(CreateFastBookingsView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.instance, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class BookingListTablesView(GenericAPIView, ListModelMixin):
