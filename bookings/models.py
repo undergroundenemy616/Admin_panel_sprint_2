@@ -5,7 +5,7 @@ from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS
 from core.scheduler import scheduler
 from push_tokens.send_interface import send_push_message
 from tables.models import Table
-from users.models import User
+from users.models import User, Account
 from django.db.models import Q
 
 MINUTES_TO_ACTIVATE = 15
@@ -47,7 +47,7 @@ class Booking(models.Model):
     # TODO: Why it is not a property ?
     is_active = models.BooleanField(default=False)
     is_over = models.BooleanField(default=False)
-    user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
+    user = models.ForeignKey(Account, null=False, on_delete=models.CASCADE)
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
     objects = BookingManager()
@@ -91,7 +91,7 @@ class Booking(models.Model):
         """Send PUSH-notification about oncoming booking to every user devices"""
         if not self.is_over \
                 and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_PUSH_NOTIFY_UNTIL_MINS + 5 \
-                and self.user.account and self.user.account.push_tokens.all():
+                and self.user and self.user.push_tokens.all():
             expo_data = {
                 "title": "Уведомление о предстоящем бронировании",
                 "body": f"Ваше бронирование начнется через 15 минут. Не забудьте подтвердить.",
@@ -99,7 +99,7 @@ class Booking(models.Model):
                     "go_booking": True
                 }
             }
-            for token in [push_object.token for push_object in self.user.account.push_tokens.all()]:
+            for token in [push_object.token for push_object in self.user.push_tokens.all()]:
                 send_push_message(token, expo_data)
 
     def set_booking_active(self):
