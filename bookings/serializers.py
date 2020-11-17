@@ -11,7 +11,7 @@ from offices.serializers import OfficeSerializer
 from room_types.models import RoomType
 from rooms.models import Room
 from rooms.serializers import RoomSerializer
-from users.models import User
+from users.models import User, Account
 from users.serializers import AccountSerializer
 
 
@@ -205,7 +205,7 @@ class BookingFastSerializer(serializers.ModelSerializer):
     theme = serializers.CharField(required=False)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
     type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
 
     class Meta:
         model = Booking
