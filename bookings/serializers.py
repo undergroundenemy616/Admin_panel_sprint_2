@@ -224,7 +224,7 @@ class BookingFastSerializer(serializers.ModelSerializer):
         date_from = validated_data['date_from']
         date_to = validated_data['date_to']
         office = validated_data.pop('office')
-        tables = list(Table.objects.filter(room__floor__office_id=office, room__type__id=validated_data['type']))
+        tables = list(Table.objects.filter(room__floor__office_id=office.id, room__type__id=validated_data['type'].id))
         for table in tables[:]:
             if not self.Meta.model.objects.is_overflowed(table, date_from, date_to):
                 continue
