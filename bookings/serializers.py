@@ -216,8 +216,12 @@ class BookingFastSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = BaseBookingSerializer(instance).data
-        response['room'] = instance.table.room.id
-        response['floor'] = instance.table.room.floor.id
+        response['room'] = {"id": instance.table.room.id,
+                            "title": instance.table.room.title}
+        response['floor'] = {"id": instance.table.room.floor.id,
+                             "title": instance.table.room.floor.title}
+        response['office'] = {"id": instance.table.room.floor.office.id,
+                              "title": instance.table.room.floor.office.title}
         return response
 
     def create(self, validated_data, *args, **kwargs):
