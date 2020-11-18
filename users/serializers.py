@@ -117,7 +117,7 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
     firstname = serializers.CharField(source='first_name', required=False)
     lastname = serializers.CharField(source='last_name', required=False)
     middlename = serializers.CharField(source='middle_name', required=False)
-    description = serializers.CharField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False)
     phone_number = serializers.CharField(required=False)
     photo = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
