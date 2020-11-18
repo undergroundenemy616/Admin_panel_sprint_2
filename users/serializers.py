@@ -47,6 +47,7 @@ class LoginOrRegisterSerializer(serializers.Serializer):
     """Log in through phone"""
     phone_number = serializers.CharField(required=True, min_length=11, max_length=12)
     sms_code = serializers.IntegerField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -120,7 +121,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
 class AccountUpdateSerializer(serializers.ModelSerializer):
     firstname = serializers.CharField(source='first_name', required=False)
     lastname = serializers.CharField(source='last_name', required=False)
-    middlename = serializers.CharField(source='middle_name', required=False)
+    middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False)
     phone_number = serializers.CharField(required=False)

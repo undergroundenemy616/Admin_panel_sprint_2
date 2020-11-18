@@ -40,7 +40,8 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
         phone_number = serializer.data.get('phone_number', None)
         sms_code = serializer.data.pop('sms_code', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
-        account, account_created = Account.objects.get_or_create(user=user)
+        account, account_created = Account.objects.get_or_create(user=user,
+                                                                 description=serializer.data.get('description'))
         if account_created:
             user_group = Group.objects.get(access=4)
             account.groups.add(user_group)

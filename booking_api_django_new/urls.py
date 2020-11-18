@@ -52,6 +52,7 @@ urlpatterns = [
     path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUser.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
+    path('register_user', views.LoginOrRegisterUser.as_view()),
     path('register_employee', views.RegisterStaffView.as_view()),
     path('account', views.AccountView.as_view()),
     path('accounts/<uuid:pk>', views.SingleAccountView.as_view()),
