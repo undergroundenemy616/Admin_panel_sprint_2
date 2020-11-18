@@ -35,6 +35,10 @@ class AccountSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         instance: Account
         response = super(AccountSerializer, self).to_representation(instance)
+        response['firstname'] = response.pop('first_name')
+        response['lastname'] = response.pop('last_name')
+        response['middlename'] = response.pop('middle_name')
+        response['birthday'] = response.pop('birth_date')
         response['email'] = instance.user.email
         return response
 
