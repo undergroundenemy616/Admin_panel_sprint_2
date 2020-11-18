@@ -130,9 +130,14 @@ class AccountView(GenericAPIView):
         serializer = self.serializer_class(instance=account_instance)
         return Response(serializer.to_representation(instance=account_instance), status=status.HTTP_200_OK)
 
-    def put(self, request, *args, **kwargs):
-        account = get_object_or_404(Account, pk=request.query_params.get('id'))
-        self.serializer_class = AccountUpdateSerializer
+
+class SingleAccountView(GenericAPIView):
+    serializer_class = AccountUpdateSerializer
+    queryset = Account.objects.all()
+    permission_classes = (AllowAny, )
+
+    def put(self, request, pk=None, *args, **kwargs):
+        account = get_object_or_404(Account, pk=pk)
         serializer = self.serializer_class(data=request.data, instance=account)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()

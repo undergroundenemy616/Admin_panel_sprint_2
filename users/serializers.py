@@ -82,6 +82,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = UserSerializer(instance).data
+        response['account'] = instance.account.id
         return response
 
     def create(self, validated_data):
