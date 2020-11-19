@@ -31,7 +31,11 @@ class ListCreateFloorView(ListModelMixin,
     def get(self, request, *args, **kwargs):
         """Returns list of floors."""
         if request.query_params.get('office'):
-            pass
+            floors_by_office = Floor.objects.filter(office=request.query_params.get('office'))
+            if request.query_params.get("type"):
+                floors_by_office = Floor.objects.filter(office=request.query_params.get('office'),
+                                                        rooms__type__title=request.query_params.get('type'))
+            self.queryset = floors_by_office
         return self.list(request, *args, **kwargs)
 
 
