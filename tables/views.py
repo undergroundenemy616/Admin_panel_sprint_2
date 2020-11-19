@@ -53,7 +53,7 @@ class TableTagView(ListModelMixin,
 
     def get(self, request, *args, **kwargs):
         self.serializer_class = ListTableTagSerializer
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.query_params.get('office'))
         serializer.is_valid(raise_exception=True)
         self.queryset = TableTag.objects.filter(office_id=serializer.data['office'])
         return self.list(request, *args, **kwargs)
