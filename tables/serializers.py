@@ -28,6 +28,7 @@ class TableTagSerializer(serializers.ModelSerializer):
         response = super().to_representation(instance)
         if instance.icon:
             response['icon'] = FileSerializer(instance=instance.icon).data
+        response = [response, ]
         return response
 
     def create(self, validated_data):
