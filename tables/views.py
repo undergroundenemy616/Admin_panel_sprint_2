@@ -1,8 +1,9 @@
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, \
     ListModelMixin
 from rest_framework.permissions import AllowAny
 from core.pagination import DefaultPagination
+from offices.models import Office
 from tables.models import Table, TableTag
 from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer, \
     UpdateTableTagSerializer, ListTableTagSerializer
@@ -52,10 +53,11 @@ class TableTagView(ListModelMixin,
     permission_classes = (AllowAny,)
 
     def get(self, request, *args, **kwargs):
-        self.serializer_class = ListTableTagSerializer
-        serializer = self.serializer_class(data={'office': request.query_params.get('office')})
-        serializer.is_valid(raise_exception=True)
-        self.queryset = TableTag.objects.filter(office_id=serializer.data['office'])
+        # self.serializer_class = ListTableTagSerializer
+        # serializer = self.serializer_class(data={'office': request.query_params.get('office')})
+        # serializer.is_valid(raise_exception=True)
+        self.queryset = TableTag.objects.filter(office_id=get_object_or_404(Office,
+                                                                            pk=request.query_params.get('office')))
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
