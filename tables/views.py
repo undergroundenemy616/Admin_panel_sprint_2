@@ -49,7 +49,7 @@ class TableTagView(ListModelMixin,
                    GenericAPIView):
     serializer_class = TableTagSerializer
     queryset = TableTag.objects.all()
-    pagination_class = DefaultPagination
+    pagination_class = None
     permission_classes = (AllowAny,)
 
     def get(self, request, *args, **kwargs):
