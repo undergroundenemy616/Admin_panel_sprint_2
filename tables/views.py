@@ -1,6 +1,6 @@
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, \
-    ListModelMixin
+    ListModelMixin, Response, status
 from rest_framework.permissions import AllowAny
 from core.pagination import DefaultPagination
 from offices.models import Office
@@ -61,7 +61,11 @@ class TableTagView(ListModelMixin,
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        response = [serializer.data, ]
+        return Response(response, status=status.HTTP_201_CREATED)
 
 
 class DetailTableTagView(GenericAPIView,
