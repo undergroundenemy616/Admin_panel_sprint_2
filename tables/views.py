@@ -61,11 +61,13 @@ class TableTagView(ListModelMixin,
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        if isinstance(request.data['title'], str):
+            request.data['title'] = [request.data['title']]
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        response = [serializer.data, ]
-        return Response(response, status=status.HTTP_201_CREATED)
+        created_tag = serializer.save()
+        return Response(serializer.to_representation(instance=created_tag),
+                        status=status.HTTP_201_CREATED)
 
 
 class DetailTableTagView(GenericAPIView,

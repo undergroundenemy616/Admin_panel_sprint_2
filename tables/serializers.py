@@ -18,22 +18,50 @@ def check_table_tags_exists(tags):
             raise ValidationError(f'Table_tag {elem} does not exists.')
 
 
+class BaseTableTagSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TableTag
+        fields = '__all__'
+
+
 class TableTagSerializer(serializers.ModelSerializer):
-    # TODO-WTF: title may be an array ??
+    title = serializers.ListField(child=serializers.CharField(), required=False)
+
     class Meta:
         model = TableTag
         fields = '__all__'
 
     def to_representation(self, instance):
-        response = super().to_representation(instance)
-        if instance.icon:
-            response['icon'] = FileSerializer(instance=instance.icon).data
-        return response
+        if isinstance(instance, list):
+            response = []
+            for table_tag in instance:
+                response.append(BaseTableTagSerializer(table_tag).data)
+            return response
+        else:
+            response = BaseTableTagSerializer(instance=instance).data
+            if instance.icon:
+                response['icon'] = FileSerializer(instance=instance.icon).data
+            response = [response]
+            return response
 
     def create(self, validated_data):
-        if self.Meta.model.objects.filter(office_id=validated_data['office'], title=validated_data['title']).exists():
-            raise ValidationError('Tag already exists')
-        return super(TableTagSerializer, self).create(validated_data)
+        if len(validated_data['title']) > 1:
+            titles = validated_data['title']
+            table_tags_to_create = []
+            for title in titles:
+                if self.Meta.model.objects.filter(office_id=validated_data['office'],
+                                                  title=title).exists():
+                    raise ValidationError('Tag already exists')
+                table_tags_to_create.append(TableTag(office=validated_data['office'], title=title))
+            instance = TableTag.objects.bulk_create(table_tags_to_create)
+            return instance
+        else:
+            validated_data['title'] = validated_data['title'][0]
+            if self.Meta.model.objects.filter(office_id=validated_data['office'],
+                                              title=validated_data['title']).exists():
+                raise ValidationError('Tag already exists')
+            return super(TableTagSerializer, self).create(validated_data)
 
 
 class ListTableTagSerializer(TableTagSerializer):
