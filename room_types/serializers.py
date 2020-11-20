@@ -14,6 +14,11 @@ class RoomTypeSerializer(serializers.ModelSerializer):
         model = RoomType
         fields = '__all__'
 
+    def to_representation(self, instance):
+        response = super(RoomTypeSerializer, self).to_representation(instance)
+        response['pre_defined'] = not instance.is_deletable
+        return response
+
 
 class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
     title = serializers.ListField(max_length=50, required=True)
