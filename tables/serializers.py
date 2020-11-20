@@ -74,7 +74,7 @@ class ListTableTagSerializer(TableTagSerializer):
 class UpdateTableTagSerializer(TableTagSerializer):
     title = serializers.CharField(required=False)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
-    icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
+    icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = TableTag
