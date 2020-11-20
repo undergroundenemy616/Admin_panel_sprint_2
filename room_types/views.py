@@ -16,7 +16,7 @@ from offices.models import Office
 class ListCreateRoomTypesView(GenericAPIView, CreateModelMixin, ListModelMixin):
     serializer_class = CreateUpdateRoomTypeSerializer
     queryset = RoomType.objects.all()
-    pagination_class = DefaultPagination
+    pagination_class = None
     # permission_classes = (IsAdminUser,)
 
     def post(self, request, *args, **kwargs):
