@@ -6,7 +6,7 @@ from core.pagination import DefaultPagination
 from offices.models import Office
 from tables.models import Table, TableTag
 from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer, \
-    UpdateTableTagSerializer, ListTableTagSerializer
+    UpdateTableTagSerializer, BaseTableTagSerializer
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -56,6 +56,7 @@ class TableTagView(ListModelMixin,
         # self.serializer_class = ListTableTagSerializer
         # serializer = self.serializer_class(data={'office': request.query_params.get('office')})
         # serializer.is_valid(raise_exception=True)
+        self.serializer_class = BaseTableTagSerializer
         self.queryset = TableTag.objects.filter(office_id=get_object_or_404(Office,
                                                                             pk=request.query_params.get('office')))
         return self.list(request, *args, **kwargs)
