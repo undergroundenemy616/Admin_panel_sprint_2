@@ -40,7 +40,7 @@ class AccountSerializer(serializers.ModelSerializer):
         response['lastname'] = response.pop('last_name')
         response['middlename'] = response.pop('middle_name')
         response['birthday'] = response.pop('birth_date')
-        response['email'] = instance.user.email
+        response['email'] = instance.user.email if instance.user.email else instance.email
         return response
 
 
