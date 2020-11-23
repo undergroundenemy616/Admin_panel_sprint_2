@@ -40,8 +40,12 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
         phone_number = serializer.data.get('phone_number', None)
         sms_code = serializer.data.pop('sms_code', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
-        account, account_created = Account.objects.get_or_create(user=user,
-                                                                 description=serializer.data.get('description'))
+        if serializer.data.get('description'):
+            account, account_created = Account.objects.get_or_create(user=user,
+                                                                     description=serializer.data.get('description'))
+        else:
+            account, account_created = Account.objects.get_or_create(user=user)
+
         if account_created:
             user_group = Group.objects.get(access=4)
             account.groups.add(user_group)
@@ -135,7 +139,7 @@ class AccountView(GenericAPIView):
 class SingleAccountView(GenericAPIView):
     serializer_class = AccountUpdateSerializer
     queryset = Account.objects.all()
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
     def put(self, request, pk=None, *args, **kwargs):
         account = get_object_or_404(Account, pk=pk)
