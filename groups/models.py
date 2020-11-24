@@ -55,8 +55,6 @@ class Group(models.Model):
                     return OWNER_ACCESS
                 return ADMIN_ACCESS
             return EMPLOYEE_ACCESS
-        # TODO: Compare legacy access rights on production
-        # return GUEST_ACCESS
         return EMPLOYEE_ACCESS
 
     @staticmethod

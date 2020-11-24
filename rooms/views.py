@@ -69,24 +69,10 @@ class RoomMarkerView(CreateModelMixin,
                      DestroyModelMixin,
                      GenericAPIView):
     queryset = RoomMarker.objects.all()
-    permission_classes = (AllowAny,)  # fixme
+    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
-
-#     mapped = self.get_mapped_query(request)
-#     print(mapped)
-#     print('Subquery')
-#     # counts = Count(Table.objects.filter(is_occupied=True))
-#     tables_count = Table.objects.filter(is_occupied=True).annotate(c=Count('*')).values('c')
-#     records = Room.objects.annotate(occupied=Subquery(tables_count))
-#     # records = Room.objects.annotate(occupied=Count('*', Table.objects.filter(is_occupied=True).count()))
-#     print(records)
-
-# mapped = self.get_mapped_query(request)
-# is_exists = Floor.objects.filter(pk=mapped['floor_id'])
-# rooms = Room.objects.all().filter(floor_id=1)
-# tables = Table.objects.all().filter(room_id__in=[r.id for r in rooms])

@@ -44,7 +44,6 @@ class Booking(models.Model):
     date_from = models.DateTimeField(default=datetime.utcnow)
     date_to = models.DateTimeField()
     date_activate_until = models.DateTimeField(null=True)
-    # TODO: Why it is not a property ?
     is_active = models.BooleanField(default=False)
     is_over = models.BooleanField(default=False)
     user = models.ForeignKey(Account, null=False, on_delete=models.CASCADE)

@@ -136,10 +136,10 @@ class AccountView(GenericAPIView):
         return Response(serializer.to_representation(instance=account_instance), status=status.HTTP_200_OK)
 
 
-class SingleAccountView(GenericAPIView):
+class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
     serializer_class = AccountUpdateSerializer
     queryset = Account.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAdmin,)
 
     def put(self, request, pk=None, *args, **kwargs):
         account = get_object_or_404(Account, pk=pk)
@@ -147,6 +147,18 @@ class SingleAccountView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
+
+    def delete(self, request, pk=None, *args, **kwargs):
+        instance = get_object_or_404(Account, pk=pk)
+        if instance.id == request.user.account.id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        flag = 0
+        for group in instance.groups.all():
+            if group.access <= 2:
+                flag += 1
+        if flag != 0:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return self.destroy(self, request, *args, **kwargs)
 
 
 class RegisterStaffView(GenericAPIView):

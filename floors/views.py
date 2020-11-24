@@ -77,37 +77,3 @@ class ListCreateDeleteFloorMapView(ListModelMixin,
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
-
-
-# class ListHandler(ListAPIView):
-#     # permission_classes = [IsAdminUser]
-#     serializer_class = BaseFloorSerializer
-#     queryset = Floor.objects.all()
-#
-#     def get(self, request, *args, **kwargs):
-#         """
-#         Get filtered floors
-#
-#         """
-#         serializer = FilterFloorSerializer(data=request.query_params)
-#         if serializer.is_valid():
-#             filter_dict = {
-#                 "rooms__type": serializer.data.get('type'),
-#                 "rooms__tables__tags__title__in": serializer.data.get('tags')
-#             }
-#             floors = Floor.objects.filter(
-#                 **{key: val for key, val in filter_dict.items() if val is not None}).distinct()
-#         else:
-#             floors = self.get_queryset()
-#         limit = serializer.data.get('limit') or 20
-#         start = serializer.data.get('start') or 1
-#         paged_offices = Paginator(floors, limit)
-#         results = [BaseFloorSerializer(floor).data for floor in paged_offices.get_page(start)]
-#         return Response({
-#             "start": start,
-#             "limit": limit,
-#             "count": len(results),
-#             "next": "",
-#             "previous": "",
-#             "results": results
-#         })
