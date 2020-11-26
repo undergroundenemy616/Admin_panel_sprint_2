@@ -13,7 +13,7 @@ class BaseFloorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Floor
         fields = '__all__'
-        depth = 1
+
 
 class FilterFloorSerializer(serializers.ModelSerializer):
     type = serializers.CharField(max_length=256, required=False)
@@ -33,10 +33,12 @@ class FloorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Floor
         fields = '__all__'
+        depth = 1
 
     def to_representation(self, instance):
         if not isinstance(instance, list):
             response = BaseFloorSerializer(instance=instance).data
+            response['rooms'] = []
             floor_map = FloorMap.objects.filter(floor=instance.id)
             if floor_map:
                 response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
