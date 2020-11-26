@@ -24,10 +24,12 @@ class RoomsView(FilterListMixin,
         serializer = FilterRoomSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         query_params = serializer.data
-        mapped = {"floor_id": query_params.get('floor'),
+        mapped = {"floor_id__in": query_params.get('floor'),
                   "floor__office_id": query_params.get('office'),
-                  "type": query_params.get('type'),
-                  "tables__tags__title__in": query_params.get('tags')}
+                  "type__title__in": query_params.get('type'),
+                  "tables__tags__title__in": query_params.get('tags'),
+                  "zone_id__in": query_params.get('zone')
+                  }
         items = []
         for field in mapped.keys():
             if not mapped[field]:

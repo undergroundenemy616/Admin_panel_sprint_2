@@ -12,5 +12,3 @@ class File(models.Model):
 
 # width = models.IntegerField(null=False, blank=False, validators=[MinValueValidator(0)])
 # height = models.IntegerField(null=False, blank=False, validators=[MinValueValidator(0)])
-
-# todo ля чо за нх, size в str и впринципе в бд... Чзнх
