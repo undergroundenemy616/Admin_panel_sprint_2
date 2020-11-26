@@ -23,7 +23,7 @@ class Office(models.Model):
 class OfficeZone(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    title = models.CharField(max_length=256, null=False, blank=False)
+    title = models.CharField(max_length=256, null=False, blank=False, default='Зона коворкинга')
     office = models.ForeignKey(Office, on_delete=models.CASCADE, blank=False, null=False, related_name='zones')
     groups = models.ManyToManyField(Group, related_name='groups')
     is_deletable = models.BooleanField(default=True, blank=False, null=False)
