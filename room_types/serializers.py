@@ -25,10 +25,10 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
     icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, default="", allow_null=True)
     color = serializers.CharField(min_length=6, max_length=8, default='#0079c1', required=False)
-    bookable = serializers.BooleanField(default=False, required=False)
-    work_interval_days = serializers.IntegerField(default=0, allow_null=True, required=False)
-    work_interval_hours = serializers.IntegerField(default=0, allow_null=True, required=False)
-    unified = serializers.BooleanField(default=False, required=False)
+    bookable = serializers.BooleanField(required=False)
+    work_interval_days = serializers.IntegerField(allow_null=True, required=False)
+    work_interval_hours = serializers.IntegerField(allow_null=True, required=False)
+    unified = serializers.BooleanField(required=False)
 
     class Meta:
         model = RoomType
