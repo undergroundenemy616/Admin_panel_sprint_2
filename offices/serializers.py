@@ -160,8 +160,7 @@ class OfficeSerializer(serializers.ModelSerializer):
                                                 many=True)
     license = serializers.PrimaryKeyRelatedField(queryset=License.objects.all(),
                                                  required=True,
-                                                 write_only=True,
-                                                 validators=[validate_license])
+                                                 write_only=True)  # validators=[validate_license]
     working_hours = serializers.CharField(max_length=128,
                                           required=False,
                                           validators=[working_hours_validator],
