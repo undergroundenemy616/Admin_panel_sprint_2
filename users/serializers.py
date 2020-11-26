@@ -126,8 +126,8 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False)
     phone_number = serializers.CharField(required=False)
-    photo = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False)
-    city = serializers.IntegerField(required=False)
+    photo = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, allow_null=True)
+    city = serializers.IntegerField(required=False, allow_null=True)
     birthday = serializers.CharField(source='birth_date', required=False)
     gender = serializers.CharField(required=False)
 

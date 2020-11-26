@@ -240,7 +240,7 @@ class ServiceEmailView(GenericAPIView):
             )
         return Response({'message': 'OK'}, status=status.HTTP_201_CREATED)
 
-
+# TODO FIX FIX FIX FIX
 class UserAccessView(GenericAPIView):
     permission_classes = [AllowAny, ]
 
@@ -259,7 +259,7 @@ class UserAccessView(GenericAPIView):
                 response.append(item)
             return Response(response, status=status.HTTP_200_OK)
 
-
+# TODO FIX FIX FIX FIX
 class OperatorPromotionView(GenericAPIView):
     permission_classes = [AllowAny, ]
 
