@@ -8,6 +8,13 @@ from rooms.serializers import RoomSerializer
 from tables.models import Table
 
 
+class BaseFloorSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Floor
+        fields = '__all__'
+        depth = 1
+
 class FilterFloorSerializer(serializers.ModelSerializer):
     type = serializers.CharField(max_length=256, required=False)
     tags = serializers.ListField(required=False)
@@ -21,6 +28,7 @@ class FilterFloorSerializer(serializers.ModelSerializer):
 
 class FloorSerializer(serializers.ModelSerializer):
     office = serializers.PrimaryKeyRelatedField(read_only=True)
+    title = serializers.ListField(child=serializers.CharField(), required=True)
 
     class Meta:
         model = Floor
@@ -28,13 +36,31 @@ class FloorSerializer(serializers.ModelSerializer):
         depth = 1
 
     def to_representation(self, instance):
-        response = super(FloorSerializer, self).to_representation(instance)
-        floor_map = FloorMap.objects.filter(floor=instance.id)
-        if floor_map:
-            response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
+        if not isinstance(instance, list):
+            response = BaseFloorSerializer(instance=instance).data
+            floor_map = FloorMap.objects.filter(floor=instance.id)
+            if floor_map:
+                response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
+            else:
+                response['floor_map'] = None
+            return response
         else:
-            response['floor_map'] = None
-        return response
+            response = []
+            for floor in instance:
+                response.append(BaseFloorSerializer(instance=floor).data)
+            return response
+
+    def create(self, validated_data):
+        titles = validated_data.pop('title')
+        if len(titles) > 1:
+            floor_to_create = []
+            for title in titles:
+                floor_to_create.append(Floor(title=title, office=validated_data['office']))
+            instance = Floor.objects.bulk_create(floor_to_create)
+            return instance
+        else:
+            validated_data['title'] = titles[0]
+            return super(FloorSerializer, self).create(validated_data)
 
 
 class DetailFloorSerializer(FloorSerializer):

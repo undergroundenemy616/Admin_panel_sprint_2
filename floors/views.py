@@ -11,7 +11,7 @@ from rest_framework.mixins import (
     CreateModelMixin,
     UpdateModelMixin,
     RetrieveModelMixin,
-    DestroyModelMixin
+    DestroyModelMixin, Response, status
 )
 
 
@@ -26,7 +26,12 @@ class ListCreateFloorView(ListModelMixin,
 
     def post(self, request, *args, **kwargs):
         """Create new floor."""
-        return self.create(request, *args, **kwargs)
+        if not isinstance(request.data['title'], list):
+            request.data['title'] = [request.data['title']]
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        floors = serializer.save()
+        return Response(serializer.to_representation(floors), status=status.HTTP_201_CREATED)
 
     def get(self, request, *args, **kwargs):
         """Returns list of floors."""

@@ -238,4 +238,4 @@ class ServiceEmailView(GenericAPIView):
                 subject=request.data['title'],
                 message='\n'.join(request.data['body']),
             )
-        return Response({'detail': 'OK'}, status=status.HTTP_201_CREATED)
+        return Response({'message': 'OK'}, status=status.HTTP_201_CREATED)
