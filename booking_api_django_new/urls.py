@@ -59,6 +59,7 @@ urlpatterns = [
     path('accounts_list', views.AccountListView.as_view()),
     path('service_email', views.ServiceEmailView.as_view()),
     path('user_access/<uuid:pk>', views.UserAccessView.as_view()),
+    path('operator_promotion', views.OperatorPromotionView.as_view()),
     path('group_access', include('offices.urls_group_access')),
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
