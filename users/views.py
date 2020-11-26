@@ -239,3 +239,23 @@ class ServiceEmailView(GenericAPIView):
                 message='\n'.join(request.data['body']),
             )
         return Response({'message': 'OK'}, status=status.HTTP_201_CREATED)
+
+
+class UserAccessView(GenericAPIView):
+    permission_classes = [AllowAny, ]
+
+    def get(self, request, pk=None, *args, **kwargs):
+        account = get_object_or_404(Account, pk=pk)
+        if len(account.groups.all()) == 0:
+            return Response([], status=status.HTTP_200_OK)
+        else:
+            response = []
+            for group in account.groups.all():
+                item = {
+                    'id': group.id,
+                    'title': group.title,
+                    'offices': group.title  # Need to fix
+                }
+                response.append(item)
+            return Response(response, status=status.HTTP_200_OK)
+
