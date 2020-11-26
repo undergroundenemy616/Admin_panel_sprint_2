@@ -1,5 +1,8 @@
 import os
 
+from django.conf.global_settings import EMAIL_HOST_USER
+from django.core.mail import send_mail
+
 from django.contrib.auth import user_logged_in
 from django.db.models import Q
 from rest_framework import mixins, status
@@ -218,3 +221,21 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             response = dict()
             response['results'] = all_accounts.data
             return Response(data=response, status=status.HTTP_200_OK)
+
+
+class ServiceEmailView(GenericAPIView):
+    queryset = Account.objects.all()
+    permission_classes = [AllowAny, ]
+
+    def post(self, request, *args, **kwargs):
+        account_exist = get_object_or_404(Account, pk=request.data['account'])
+        if not account_exist.email:
+            return Response({'detail': 'Account has no email specified'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data['body'] and request.data['title']:
+            send_mail(
+                recipient_list=[account_exist.email],
+                from_email=EMAIL_HOST_USER,
+                subject=request.data['title'],
+                message='\n'.join(request.data['body']),
+            )
+        return Response({'detail': 'OK'}, status=status.HTTP_201_CREATED)

@@ -57,6 +57,7 @@ urlpatterns = [
     path('account', views.AccountView.as_view()),
     path('accounts/<uuid:pk>', views.SingleAccountView.as_view()),
     path('accounts_list', views.AccountListView.as_view()),
+    path('service_email', views.ServiceEmailView.as_view()),
     path('group_access', include('offices.urls_group_access')),
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
