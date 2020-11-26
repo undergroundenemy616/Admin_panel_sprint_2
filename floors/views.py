@@ -54,6 +54,7 @@ class RetrieveUpdateDeleteFloorView(UpdateModelMixin,
     serializer_class = DetailFloorSerializer
 
     def put(self, request, *args, **kwargs):
+        request.data['title'] = [request.data['title']]
         self.serializer_class = EditFloorSerializer
         return self.update(request, *args, **kwargs)
 

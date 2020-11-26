@@ -63,6 +63,11 @@ class FloorSerializer(serializers.ModelSerializer):
             validated_data['title'] = titles[0]
             return super(FloorSerializer, self).create(validated_data)
 
+    def update(self, instance, validated_data):
+        title = validated_data.pop('title')
+        validated_data['title'] = title[0]
+        return super(FloorSerializer, self).update(instance, validated_data)
+
 
 class DetailFloorSerializer(FloorSerializer):
     rooms = RoomSerializer(many=True, read_only=True)
