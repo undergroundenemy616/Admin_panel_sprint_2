@@ -35,7 +35,7 @@ class AccountSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         instance: Account
         response = super(AccountSerializer, self).to_representation(instance)
-        response['phone_number'] = instance.user.phone_number
+        response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
         response['firstname'] = response.pop('first_name')
         response['lastname'] = response.pop('last_name')
         response['middlename'] = response.pop('middle_name')
