@@ -33,7 +33,6 @@ class FloorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Floor
         fields = '__all__'
-        depth = 1
 
     def to_representation(self, instance):
         if not isinstance(instance, list):
