@@ -1,4 +1,6 @@
 from typing import Dict, Optional
+
+from django.db.models import Q
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.permissions import AllowAny
@@ -28,7 +30,7 @@ class RoomsView(FilterListMixin,
                   "floor__office_id": query_params.get('office'),
                   "type__title__in": query_params.get('type'),
                   "tables__tags__title__in": query_params.get('tags'),
-                  "zone_id__in": query_params.get('zone')
+                  "zone_id__in": query_params.get('zone'),
                   }
         items = []
         for field in mapped.keys():
@@ -39,6 +41,9 @@ class RoomsView(FilterListMixin,
         return mapped
 
     def get(self, request, *args, **kwargs):
+        self.queryset = Room.objects.filter(Q(title__icontains=request.query_params.get('search'))
+                                            | Q(type__title__icontains=request.query_params.get('search'))
+                                            | Q(description__icontains=request.query_params.get('search')))
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):

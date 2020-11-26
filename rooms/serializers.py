@@ -149,10 +149,12 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
 class FilterRoomSerializer(serializers.ModelSerializer):
     """Only for filtering given query string."""
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
-    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), many=True, required=False)
     type = serializers.CharField(max_length=256, required=False)  # Todo fields will be deleted
     tags = serializers.ListField(required=False)
+    search = serializers.CharField(required=False)
+    zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), many=True, required=False)
 
     class Meta:
         model = Room
-        fields = ['floor', 'type', 'tags', 'office']
+        fields = ['floor', 'type', 'tags', 'office', 'search', 'zone']
