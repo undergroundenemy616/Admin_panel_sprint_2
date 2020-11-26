@@ -21,13 +21,13 @@ class RoomTypeSerializer(serializers.ModelSerializer):
 
 
 class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
-    title = serializers.ListField(max_length=50, required=True)
-    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
+    title = serializers.ListField(max_length=50, required=False)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
     icon = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, default="", allow_null=True)
-    color = serializers.CharField(min_length=6, max_length=8, default='#0079c1')
+    color = serializers.CharField(min_length=6, max_length=8, default='#0079c1', required=False)
     bookable = serializers.BooleanField(default=False, required=False)
-    work_interval_days = serializers.IntegerField(default=0, required=False)
-    work_interval_hours = serializers.IntegerField(default=0, required=False)
+    work_interval_days = serializers.IntegerField(default=0, allow_null=True, required=False)
+    work_interval_hours = serializers.IntegerField(default=0, allow_null=True, required=False)
     unified = serializers.BooleanField(default=False, required=False)
 
     class Meta:
