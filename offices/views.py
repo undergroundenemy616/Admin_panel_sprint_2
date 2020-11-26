@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -35,6 +36,9 @@ class ListCreateUpdateOfficeView(ListModelMixin,
             one_office = get_object_or_404(Office, pk=request.query_params.get('id'))
             serializer = self.serializer_class(instance=one_office)
             return Response(serializer.to_representation(instance=one_office), status=status.HTTP_200_OK)
+        if request.query_params.get('search'):
+            self.queryset = Office.objects.filter(Q(title__icontains=request.query_params.get('search'))
+                                                  | Q(description__icontains=request.query_params.get('search')))
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
