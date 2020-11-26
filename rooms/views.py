@@ -41,9 +41,10 @@ class RoomsView(FilterListMixin,
         return mapped
 
     def get(self, request, *args, **kwargs):
-        self.queryset = Room.objects.filter(Q(title__icontains=request.query_params.get('search'))
-                                            | Q(type__title__icontains=request.query_params.get('search'))
-                                            | Q(description__icontains=request.query_params.get('search')))
+        if request.query_params.get('search'):
+            self.queryset = Room.objects.filter(Q(title__icontains=request.query_params.get('search'))
+                                                | Q(type__title__icontains=request.query_params.get('search'))
+                                                | Q(description__icontains=request.query_params.get('search')))
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
