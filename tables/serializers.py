@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from files.models import File
-from files.serializers import FileSerializer
+from files.serializers import FileSerializer, BaseFileSerializer
 from offices.models import Office
 from rooms.models import Room
 from tables.models import Table, TableTag
@@ -92,6 +92,11 @@ class TableSerializer(serializers.ModelSerializer):
         fields = '__all__'
         lookup_field = 'title'
         depth = 1
+
+    def to_representation(self, instance):
+        response = super(TableSerializer, self).to_representation(instance)
+        response['images'] = [BaseFileSerializer(instance=image).data for image in instance.images.all()]
+        return response
 
 
 class CreateTableSerializer(serializers.ModelSerializer):
