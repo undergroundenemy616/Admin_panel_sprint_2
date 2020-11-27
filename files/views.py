@@ -7,14 +7,15 @@ from files.serializers import FileSerializer
 
 
 class ListCreateFilesView(ListCreateAPIView):
-	serializer_class = FileSerializer
-	queryset = File.objects.all()
-	permission_classes = [AllowAny, ]
+    serializer_class = FileSerializer
+    queryset = File.objects.all()
+    permission_classes = [AllowAny, ]
 
-	def post(self, request, *args, **kwargs):
-		serializer = self.serializer_class(data=request.FILES)
-		serializer.is_valid(raise_exception=True)
-		serializer.save()
-		return Response(status=status.HTTP_201_CREATED)
-
-
+    def post(self, request, *args, **kwargs):
+        site = request.build_absolute_uri('/')[:-1]
+        request.FILES['site'] = site
+        serializer = self.serializer_class(data=request.FILES)
+        serializer.is_valid(raise_exception=True)
+        saved_file = serializer.save()
+        return Response(serializer.to_representation(instance=saved_file),
+                        status=status.HTTP_201_CREATED)

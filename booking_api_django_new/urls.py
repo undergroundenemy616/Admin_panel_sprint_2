@@ -21,6 +21,8 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from users import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 def get_swagger() -> Any:
@@ -84,7 +86,7 @@ urlpatterns = [
     path('book_list', include('bookings.urls_list')),
     path('tokens', include('push_tokens.urls')),
     path('send_', include('push_tokens.urls_send')),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 '''
 __AUTH__
