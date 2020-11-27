@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from core.pagination import DefaultPagination
 from files.models import File
+from files.serializers import BaseFileSerializer
 from groups.models import Group, GUEST_ACCESS, OWNER_ACCESS
 from mail import send_html_email_message
 from users.models import User, Account
@@ -41,6 +42,8 @@ class AccountSerializer(serializers.ModelSerializer):
         response['middlename'] = response.pop('middle_name')
         response['birthday'] = response.pop('birth_date')
         response['email'] = instance.user.email if instance.user.email else instance.email
+        if instance.photo:
+            response['photo'] = BaseFileSerializer(instance=instance.photo).data
         return response
 
 

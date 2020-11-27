@@ -17,6 +17,13 @@ def create_new_folder(local_dir):
     return newpath
 
 
+class BaseFileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = File
+        fields = '__all__'
+
+
 class FileSerializer(serializers.ModelSerializer):
     file = serializers.ImageField()
 
