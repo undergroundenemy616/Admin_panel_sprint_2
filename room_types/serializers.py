@@ -46,6 +46,10 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         titles = validated_data.pop('title')
         office = validated_data.pop('office')
+        bookable = validated_data['bookable'] if validated_data.get('bookable') else False
+        days = validated_data['work_interval_days'] if validated_data.get('work_interval_days') else 0
+        hours = validated_data['work_interval_hours'] if validated_data.get('work_interval_hours') else 0
+        unified = validated_data['unified'] if validated_data.get('unified') else False
         if len(titles) > 1:
             types_to_create = []
             for title in titles:
@@ -61,10 +65,10 @@ class CreateUpdateRoomTypeSerializer(serializers.ModelSerializer):
         if validated_data['icon'] == "":
             validated_data['icon'] = None
         return RoomType.objects.create(title=titles[0], office=office, icon=validated_data['icon'],
-                                       color=validated_data['color'], bookable=validated_data['bookable'],
-                                       work_interval_days=validated_data['work_interval_days'],
-                                       work_interval_hours=validated_data['work_interval_hours'],
-                                       unified=validated_data['unified'])
+                                       color=validated_data['color'], bookable=bookable,
+                                       work_interval_days=days,
+                                       work_interval_hours=hours,
+                                       unified=unified)
 
     def update(self, instance, validated_data):
         if validated_data.get('title'):
