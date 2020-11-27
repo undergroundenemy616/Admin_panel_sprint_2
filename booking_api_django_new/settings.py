@@ -258,3 +258,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload/')
 MEDIA_URL = '/media/'
+FILES_USERNAME = os.environ.get('FILES_USERNAME')
+FILES_PASSWORD = os.environ.get('FILES_PASSWORD')
+FILES_HOST = os.environ.get('FILES_HOST')

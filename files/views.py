@@ -12,8 +12,6 @@ class ListCreateFilesView(ListCreateAPIView):
     permission_classes = [AllowAny, ]
 
     def post(self, request, *args, **kwargs):
-        site = request.build_absolute_uri('/')[:-1]
-        request.FILES['site'] = site
         serializer = self.serializer_class(data=request.FILES)
         serializer.is_valid(raise_exception=True)
         saved_file = serializer.save()
