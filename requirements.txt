@@ -34,4 +34,4 @@ sqlparse==0.3.1
 tzlocal==2.1
 uritemplate==3.0.1
 urllib3==1.25.10
-pillow-8.0.1
+pillow==8.0.1
