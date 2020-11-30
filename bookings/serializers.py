@@ -313,8 +313,8 @@ class BookingFastMultiplySerializer(serializers.ModelSerializer):
 
 
 class BookingListTablesSerializer(serializers.ModelSerializer):
-    date_from = serializers.DateTimeField(required=True)
-    date_to = serializers.DateTimeField(required=True)
+    date_from = serializers.DateTimeField(required=False)
+    date_to = serializers.DateTimeField(required=False)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
 
     class Meta:
@@ -323,3 +323,11 @@ class BookingListTablesSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+
+
+class TableSerializer(serializers.ModelSerializer):
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
+
+    class Meta:
+        model = Booking
+        fields = ['table', ]

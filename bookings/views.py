@@ -9,7 +9,8 @@ from bookings.models import Booking
 from bookings.serializers import BookingSerializer, \
     BookingSlotsSerializer, \
     BookingActivateActionSerializer, \
-    BookingDeactivateActionSerializer, BookingFastSerializer, BookingListSerializer, BookingListTablesSerializer
+    BookingDeactivateActionSerializer, BookingFastSerializer, \
+    BookingListSerializer, BookingListTablesSerializer, TableSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -27,7 +28,7 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
     pagination_class = DefaultPagination
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
         request.data['user'] = request.user.account.id
@@ -45,7 +46,7 @@ class BookingsAdminView(BookingsView):
     """
     Admin route. Create Booking for any user.
     """
-    permission_classes = (IsAdmin, )
+    permission_classes = (IsAdmin,)
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
@@ -57,7 +58,7 @@ class BookingsAdminView(BookingsView):
 class BookingsActiveListView(BookingsView):
     queryset = Booking.objects.active_only().all()
     serializer_class = BookingListSerializer
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
@@ -75,7 +76,7 @@ class BookingsUserListView(BookingsAdminView):
 class ActionCheckAvailableSlotsView(GenericAPIView):
     serializer_class = BookingSlotsSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
@@ -91,7 +92,7 @@ class ActionActivateBookingsView(GenericAPIView):
     """
     serializer_class = BookingActivateActionSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
         # request.data['user'] = request.user
@@ -125,7 +126,7 @@ class ActionEndBookingsView(GenericAPIView):
     """
     serializer_class = BookingDeactivateActionSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
@@ -156,7 +157,7 @@ class CreateFastBookingsView(GenericAPIView):
     """
     serializer_class = BookingFastSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
@@ -167,7 +168,7 @@ class CreateFastBookingsView(GenericAPIView):
 
 
 class FastBookingAdminView(CreateFastBookingsView):
-    permission_classes = (IsAdmin, )
+    permission_classes = (IsAdmin,)
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
@@ -183,13 +184,19 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     """
     serializer_class = BookingListTablesSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        queryset = self.queryset.filter(table=request.data.get('table'), date_from=request.data.get('date_from'),
-                                        date_to=request.data.get('date_to'))
+        if request.query_params.get('date_from') and request.query_params.get('date_to'):
+            serializer = self.serializer_class(data=request.query_params)
+            serializer.is_valid(raise_exception=True)
+            queryset = self.queryset.filter(table=request.query_params.get('table'), date_from=request.query_params.get('date_from'),
+                                            date_to=request.query_params.get('date_to'))
+        else:
+            self.serializer_class = TableSerializer
+            serializer = self.serializer_class(data=request.query_params)
+            serializer.is_valid(raise_exception=True)
+            queryset = self.queryset.filter(table=serializer.data['table'])
         return self.list(request, *args, **kwargs)
 
 
@@ -200,7 +207,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
     """
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
