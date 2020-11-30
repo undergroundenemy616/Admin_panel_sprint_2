@@ -1,6 +1,6 @@
 from rest_framework.permissions import AllowAny
 from core.pagination import DefaultPagination
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from floors.models import Floor, FloorMap
 from floors.serializers import (
     NestedFloorSerializer,
@@ -82,4 +82,9 @@ class ListCreateDeleteFloorMapView(ListModelMixin,
         return self.create(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        floormap_instance = FloorMap.objects.filter(floor=request.data['floor']).first()
+        floormap_instance.delete()
+        floor_instance = get_object_or_404(Floor, pk=request.data['floor'])
+        self.serializer_class = FloorSerializer
+        serializer = self.serializer_class(instance=floor_instance)
+        return Response(serializer.to_representation(floor_instance), status=status.HTTP_200_OK)
