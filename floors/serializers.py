@@ -39,7 +39,7 @@ class FloorSerializer(serializers.ModelSerializer):
         if not isinstance(instance, list):
             response = BaseFloorSerializer(instance=instance).data
             response['rooms'] = []
-            floor_map = FloorMap.objects.filter(floor=instance.id)
+            floor_map = FloorMap.objects.filter(floor=instance.id).first()
             if floor_map:
                 response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
             else:
