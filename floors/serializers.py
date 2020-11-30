@@ -3,8 +3,7 @@ from files.models import File
 from files.serializers import FileSerializer
 from floors.models import Floor, FloorMap
 from offices.models import Office
-from room_types.models import RoomType
-from rooms.serializers import RoomSerializer
+from rooms.serializers import RoomSerializer, BaseRoomSerializer
 from tables.models import Table
 
 
@@ -38,7 +37,7 @@ class FloorSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         if not isinstance(instance, list):
             response = BaseFloorSerializer(instance=instance).data
-            response['rooms'] = []
+            response['rooms'] = [BaseRoomSerializer(instance=room).data for room in instance.rooms.all()]
             floor_map = FloorMap.objects.filter(floor=instance.id).first()
             if floor_map:
                 response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
