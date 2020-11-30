@@ -8,7 +8,8 @@ from rest_framework.request import Request
 from core.pagination import DefaultPagination
 from core.mixins import FilterListMixin
 from rooms.models import Room, RoomMarker
-from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
+from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
+    RoomMarkerSerializer
 
 
 class RoomsView(FilterListMixin,
@@ -77,6 +78,7 @@ class RoomMarkerView(CreateModelMixin,
                      DestroyModelMixin,
                      GenericAPIView):
     queryset = RoomMarker.objects.all()
+    serializer_class = RoomMarkerSerializer
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):

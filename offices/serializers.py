@@ -10,6 +10,7 @@ from files.models import File
 from files.serializers import FileSerializer
 from floors.serializers import FloorSerializer
 from room_types.models import RoomType
+from rooms.serializers import RoomMarkerSerializer
 from tables.models import Table
 from licenses.serializers import LicenseSerializer
 from groups.serializers import GroupSerializer
@@ -173,6 +174,7 @@ class OfficeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(OfficeSerializer, self).to_representation(instance)
+        # response['marker'] = RoomMarkerSerializer(instance=instance.)
         response['images'] = [FileSerializer(instance=image).data for image in instance.images.all()]
         return response
 

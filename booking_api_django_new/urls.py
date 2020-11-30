@@ -71,6 +71,7 @@ urlpatterns = [
     path('license', include('licenses.urls')),
     path('table', include('tables.urls')),
     path('tables', include('tables.urls_detail')),
+    path('room_map', include('rooms.urls_map')),
     path('room/type', include('room_types.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
@@ -86,7 +87,7 @@ urlpatterns = [
     path('book_list', include('bookings.urls_list')),
     path('tokens', include('push_tokens.urls')),
     path('send_', include('push_tokens.urls_send')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
 
 '''
 __AUTH__

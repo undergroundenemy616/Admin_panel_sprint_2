@@ -5,7 +5,7 @@ from files.serializers import FileSerializer
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
-from rooms.models import Room
+from rooms.models import Room, RoomMarker
 from floors.models import Floor
 from files.models import File
 from tables.models import Table
@@ -37,7 +37,8 @@ class RoomSerializer(serializers.ModelSerializer):
         response['room_type_icon'] = [FileSerializer(instance=room_type['icon']).data]
         response['tables'] = [TableSerializer(instance=table).data for table in instance.tables.all()]
         response['capacity'] = instance.tables.count()
-        response['marker'] = instance.room_marker if hasattr(instance, 'room_marker') else None
+        response['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
+            hasattr(instance, 'room_marker') else None
         return response
 
 
@@ -158,3 +159,9 @@ class FilterRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
         fields = ['floor', 'type', 'tags', 'office', 'search', 'zone']
+
+
+class RoomMarkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoomMarker
+        fields = '__all__'
