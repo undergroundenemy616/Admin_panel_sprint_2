@@ -105,4 +105,7 @@ class RoomMarkerView(CreateModelMixin,
         room_instance = get_object_or_404(Room, pk=request.data['room'])
         instance = get_object_or_404(RoomMarker, pk=room_instance.room_marker.id)
         instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        self.serializer_class = RoomSerializer
+        room_instance = get_object_or_404(Room, pk=request.data['room'])
+        serializer = self.serializer_class(instance=room_instance)
+        return Response(serializer.to_representation(instance=room_instance), status=status.HTTP_204_NO_CONTENT)
