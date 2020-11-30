@@ -109,9 +109,9 @@ class FloorMapSerializer(serializers.ModelSerializer):
         depth = 1
 
     def to_representation(self, instance):
-        data = super(FloorMapSerializer, self).to_representation(instance)
-        data['image'] = FileSerializer(instance=instance.image).data
-        data['floor'] = FloorSerializer(instance=instance.floor).data
+        # data = super(FloorMapSerializer, self).to_representation(instance)
+        # data['image'] = FileSerializer(instance=instance.image).data
+        data = FloorSerializer(instance=instance.floor).data
         return data
 
 
