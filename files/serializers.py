@@ -38,8 +38,8 @@ class FileSerializer(serializers.ModelSerializer):
         response['title'] = instance.title
         response['path'] = instance.path
         response['thumb'] = instance.thumb
-        response['width'] = 100
-        response['height'] = 100
+        response['width'] = instance.width
+        response['height'] = instance.height
         return response
 
     def create(self, validated_data):
@@ -70,8 +70,8 @@ class FileSerializer(serializers.ModelSerializer):
             "path": FILES_HOST + str(response_dict.get("path")),
             "title": file.name,
             "size": file.size,
-            # "width": response_dict.get("width"),
-            # "height": response_dict.get("height")
+            "width": response_dict.get("width"),
+            "height": response_dict.get("height")
         }
         if response_dict.get("thumb"):
             file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
