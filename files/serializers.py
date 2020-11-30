@@ -49,8 +49,6 @@ class FileSerializer(serializers.ModelSerializer):
         new_name = f'{uuid.uuid4().hex + file.name}'
         path = MEDIA_ROOT + new_name
         image = image.save(path)  # need to store with hash not with uuid
-        data = {'title': file.name,
-                'size': file.size}
         try:
             response = requests.post(
                 FILES_HOST + "/upload",
@@ -70,8 +68,8 @@ class FileSerializer(serializers.ModelSerializer):
             "path": FILES_HOST + str(response_dict.get("path")),
             "title": file.name,
             "size": file.size,
-            "width": response_dict.get("width"),
-            "height": response_dict.get("height")
+            "width": file.image.width,
+            "height": file.image.height
         }
         if response_dict.get("thumb"):
             file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
