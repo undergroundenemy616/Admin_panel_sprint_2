@@ -83,7 +83,18 @@ class RoomMarkerView(CreateModelMixin,
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        room_instance = Room.objects.filter(id=request.data['room']).first()
+        if room_instance:
+            if hasattr(room_instance, 'room_marker'):
+                instance = RoomMarker.objects.filter(id=room_instance.room_marker.id).first()
+            else:
+                instance = None
+        else:
+            instance = None
+        if instance:
+            serializer = self.serializer_class(data=request.data, instance=instance)
+        else:
+            serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         self.serializer_class = RoomSerializer
