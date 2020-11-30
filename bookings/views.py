@@ -184,6 +184,7 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     """
     serializer_class = BookingListTablesSerializer
     queryset = Booking.objects.all()
+    pagination_class = None
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
