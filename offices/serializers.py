@@ -174,7 +174,6 @@ class OfficeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(OfficeSerializer, self).to_representation(instance)
-        # response['marker'] = RoomMarkerSerializer(instance=instance.)
         response['images'] = [FileSerializer(instance=image).data for image in instance.images.all()]
         return response
 

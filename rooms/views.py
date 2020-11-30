@@ -1,8 +1,9 @@
 from typing import Dict, Optional
 
 from django.db.models import Q
-from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, DestroyModelMixin
+from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, \
+    DestroyModelMixin, Response, status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from core.pagination import DefaultPagination
@@ -82,7 +83,15 @@ class RoomMarkerView(CreateModelMixin,
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        self.serializer_class = RoomSerializer
+        serializer = self.serializer_class(instance=instance.room)
+        return Response(serializer.to_representation(instance=instance.room), status=status.HTTP_201_CREATED)
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        room_instance = get_object_or_404(Room, pk=request.data['room'])
+        instance = get_object_or_404(RoomMarker, pk=room_instance.room_marker.id)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
