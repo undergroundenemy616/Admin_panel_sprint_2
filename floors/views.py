@@ -1,6 +1,7 @@
 from rest_framework.permissions import AllowAny
 from core.pagination import DefaultPagination
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from rooms.models import RoomMarker
 from floors.models import Floor, FloorMap
 from floors.serializers import (
     NestedFloorSerializer,
@@ -86,5 +87,20 @@ class ListCreateDeleteFloorMapView(ListModelMixin,
         floormap_instance.delete()
         floor_instance = get_object_or_404(Floor, pk=request.data['floor'])
         self.serializer_class = FloorSerializer
+        serializer = self.serializer_class(instance=floor_instance)
+        return Response(serializer.to_representation(floor_instance), status=status.HTTP_200_OK)
+
+
+class CleanFloorMapView(GenericAPIView):
+    queryset = RoomMarker.objects.all()
+    serializer_class = FloorSerializer
+    permission_classes = [AllowAny, ]
+
+    def delete(self, request, *args, **kwargs):
+        room_markers = RoomMarker.objects.filter(room__floor_id=request.data['floor'])
+        if room_markers:
+            for marker in room_markers:
+                marker.delete()
+        floor_instance = get_object_or_404(Floor, pk=request.data['floor'])
         serializer = self.serializer_class(instance=floor_instance)
         return Response(serializer.to_representation(floor_instance), status=status.HTTP_200_OK)
