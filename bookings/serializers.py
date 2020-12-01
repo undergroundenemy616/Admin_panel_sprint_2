@@ -331,3 +331,6 @@ class TableSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['table', ]
+
+    def to_representation(self, instance):
+        pass
