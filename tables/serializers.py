@@ -23,6 +23,7 @@ class BaseTableTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = TableTag
         fields = '__all__'
+        depth = 1
 
 
 class TableTagSerializer(serializers.ModelSerializer):
