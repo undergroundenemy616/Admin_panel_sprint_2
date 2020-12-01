@@ -85,7 +85,8 @@ class DetailTableTagView(GenericAPIView,
         serializer = self.serializer_class(data=request.data, instance=instance)
         serializer.is_valid(raise_exception=True)
         updated = serializer.save()
-        return Response(serializer.to_representation(updated), status=status.HTTP_200_OK)
+        response = serializer.to_representation(updated)
+        return Response(response[0], status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
