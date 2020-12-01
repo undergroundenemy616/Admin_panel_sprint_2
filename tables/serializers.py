@@ -96,6 +96,7 @@ class TableSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(TableSerializer, self).to_representation(instance)
+        response['tags'] = [BaseTableTagSerializer(instance=tag).data for tag in instance.tags.all()]
         response['images'] = [BaseFileSerializer(instance=image).data for image in instance.images.all()]
         return response
 
