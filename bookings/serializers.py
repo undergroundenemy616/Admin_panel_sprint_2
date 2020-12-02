@@ -325,7 +325,7 @@ class BookingListTablesSerializer(serializers.ModelSerializer):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
 
-class TableSerializer(serializers.ModelSerializer):
+class BookListTableSerializer(serializers.ModelSerializer):
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
 
     class Meta:
