@@ -1,5 +1,8 @@
 pipelines:
   branches:
+#    compile:
+#      - step:
+#          - echo BIba
     master:
       - step:
           name: Build and load
