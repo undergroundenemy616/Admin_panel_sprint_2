@@ -190,11 +190,20 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
 
     def get(self, request, *args, **kwargs):
         if request.query_params.get('date_from') and request.query_params.get('date_to'):
+            table_instance = get_object_or_404(Table, pk=request.query_params.get('table'))
             serializer = self.serializer_class(data=request.query_params)
             serializer.is_valid(raise_exception=True)
-            queryset = self.queryset.filter(table=request.query_params.get('table'), date_from=request.query_params.get('date_from'),
-                                            date_to=request.query_params.get('date_to'))
-            return self.list(request, *args, **kwargs)
+            queryset = self.queryset.is_overflowed(table=table_instance.id,
+                                                   date_from=serializer.data['date_from'],
+                                                   date_to=serializer.data['date_to'])
+            response = {
+                'id': table_instance.id,
+                'table': TableSerializer(instance=table_instance).data,
+                'floor': table_instance.room.floor.title,
+                'room': table_instance.room.title,
+                'history': [BookingSerializer(instance=book).data for book in queryset]
+            }
+            return Response(response, status=status.HTTP_200_OK)
         else:
             table_instance = get_object_or_404(Table, pk=request.query_params.get('table'))
             queryset = self.queryset.filter(table=table_instance.id)
