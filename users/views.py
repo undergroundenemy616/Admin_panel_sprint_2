@@ -259,6 +259,7 @@ class UserAccessView(GenericAPIView):
                 response.append(item)
             return Response(response, status=status.HTTP_200_OK)
 
+
 # TODO FIX FIX FIX FIX
 class OperatorPromotionView(GenericAPIView):
     permission_classes = [AllowAny, ]
@@ -270,6 +271,12 @@ class OperatorPromotionView(GenericAPIView):
         if not account.user.email:
             return Response({'message': 'Promoted'}, status=status.HTTP_200_OK)
         else:
+            account.user.password = None
+            account.user.email = None
+            for group in account.groups.all():
+                if group.access == 3:
+                    account.groups.remove(group)
+            account.save()
             return Response({'message': 'Demoted'}, status=status.HTTP_200_OK)
 
 
