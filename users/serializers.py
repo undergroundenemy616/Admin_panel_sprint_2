@@ -118,7 +118,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
                 'password': password
             }
         )
-        account = Account.objects.get_or_create(user=instance)
+        account = Account.objects.get_or_create(user=instance, email=instance.email)
         account[0].groups.add(group)
         return instance
 
