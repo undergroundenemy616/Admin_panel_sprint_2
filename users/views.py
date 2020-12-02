@@ -277,6 +277,7 @@ class OperatorPromotionView(GenericAPIView):
             group = Group.objects.filter(access=2, is_deletable=False).first()
             account.user.set_password(password)
             account.user.save()
+            account.groups.add(group)
             send_html_email_message(
                 to=account.email,
                 subject="Добро пожаловать в Газпром!",
@@ -286,7 +287,6 @@ class OperatorPromotionView(GenericAPIView):
                     'password': password
                 }
             )
-            account.groups.add(group)
             return Response({'message': 'Promoted'}, status=status.HTTP_200_OK)
         else:
             account.user.password = None
