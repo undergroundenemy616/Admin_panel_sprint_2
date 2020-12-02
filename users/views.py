@@ -266,7 +266,7 @@ class OperatorPromotionView(GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.data['account'])
-        if not account.email:
+        if not account.user.email:
             return Response({'detail': 'User has no email specified'}, status=status.HTTP_400_BAD_REQUEST)
         if not account.user.email:
             return Response({'message': 'Promoted'}, status=status.HTTP_200_OK)
@@ -276,6 +276,7 @@ class OperatorPromotionView(GenericAPIView):
             for group in account.groups.all():
                 if group.access == 3:
                     account.groups.remove(group)
+            account.user.save()
             account.save()
             return Response({'message': 'Demoted'}, status=status.HTTP_200_OK)
 
