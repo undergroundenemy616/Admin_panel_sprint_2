@@ -1,4 +1,4 @@
-from django.conf.global_settings import EMAIL_HOST_USER
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
