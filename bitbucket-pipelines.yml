@@ -1,6 +1,6 @@
 pipelines:
   branches:
-    compile:
+    master:
       - step:
           name: Compile
           image: python:3.8
@@ -16,7 +16,7 @@ pipelines:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: "api-test.rar"
-    master:
+    compile:
       - step:
           name: Build and load
           image: python:latest
