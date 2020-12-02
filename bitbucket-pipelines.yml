@@ -5,7 +5,7 @@ pipelines:
           name: Compile
           image: python:3.8
           script:
-            - pip install --user -r /requirements.txt
+            - pip install --user -r requirements.txt
             - pip install pyarmor
             - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
             - find . -name '*.py' -type f -delete
