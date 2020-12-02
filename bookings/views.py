@@ -185,7 +185,6 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     """
     serializer_class = BookingListTablesSerializer
     queryset = Booking.objects.all()
-    pagination_class = None
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -193,9 +192,9 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
             table_instance = get_object_or_404(Table, pk=request.query_params.get('table'))
             serializer = self.serializer_class(data=request.query_params)
             serializer.is_valid(raise_exception=True)
-            queryset = self.queryset.is_overflowed(table=table_instance.id,
-                                                   date_from=serializer.data['date_from'],
-                                                   date_to=serializer.data['date_to'])
+            queryset = self.queryset.is_overflowed_with_data(table=table_instance.id,
+                                                             date_from=serializer.data['date_from'],
+                                                             date_to=serializer.data['date_to'])
             response = {
                 'id': table_instance.id,
                 'table': TableSerializer(instance=table_instance).data,

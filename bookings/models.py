@@ -23,6 +23,17 @@ class BookingManager(models.Manager):
             return True
         return False
 
+    def is_overflowed_with_data(self, table, date_from, date_to):
+        """Check for booking availability"""
+        overflows = self.model.objects.filter(table=table, is_over=False). \
+            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
+                   | Q(date_from__lte=date_from, date_to__gte=date_to)
+                   | Q(date_from__gte=date_from, date_to__lte=date_to)
+                   | Q(date_to__gt=date_from, date_to__lt=date_to))
+        if overflows:
+            return overflows
+        return []
+
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
         obj = self.model(**kwargs)
