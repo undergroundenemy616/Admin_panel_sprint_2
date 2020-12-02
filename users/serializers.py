@@ -44,6 +44,7 @@ class AccountSerializer(serializers.ModelSerializer):
         response['email'] = instance.user.email if instance.user.email else instance.email
         if instance.photo:
             response['photo'] = BaseFileSerializer(instance=instance.photo).data
+        response['has_cp_access'] = True if instance.user.email else False
         return response
 
 
