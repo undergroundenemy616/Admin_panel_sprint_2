@@ -25,14 +25,13 @@ APPEND_SLASH = False
 SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 KEY_EXPIRATION = 60 * 3  # 3 minutes
 
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG \
-    else 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.com'
 EMAIL_PORT = 465
 EMAIL_HOST_USER = 'support@liis.su'
