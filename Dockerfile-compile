@@ -8,7 +8,8 @@ RUN mkdir -p /var/source
 WORKDIR /var/source
 COPY . .
 RUN pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
-COPY booking_api_django_new/environments /var/distribute/booking_api_django_new/environments
+RUN find . -name '*.py' -type f -delete
+COPY . /var/distribute
 
 FROM MAIN
 COPY --from=BUILDER /root/.local /root/.local

@@ -1,8 +1,21 @@
 pipelines:
   branches:
-#    compile:
-#      - step:
-#          - echo BIba
+    compile:
+      - step:
+          name: Compile
+          image: python:3.8
+          script:
+            - pip install --user -r /requirements.txt
+            - pip install pyarmor
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+            - find . -name '*.py' -type f -delete
+            - cp -rf . /var/distribute
+            - tar -cvf api-test.tar /var/distribute
+            - pipe: atlassian/sftp-upload-file:0.1.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: "api-test.rar"
     master:
       - step:
           name: Build and load
@@ -17,7 +30,7 @@ pipelines:
             - export DOCKER_CLIENT_TIMEOUT=120
             - export COMPOSE_HTTP_TIMEOUT=120
             - docker login $DOCKER_REG -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-            - docker build -t $DOCKER_REG/simple-office/backend:latest .
+            - docker build -t $DOCKER_REG/simple-office/backend:latest -f Dockerfile-compile .
             - docker push $DOCKER_REG/simple-office/backend:latest
             - ssh -o StrictHostKeyChecking=no $USER@$SERVER "echo $DOCKER_PASSWORD | docker login --username=$DOCKER_USERNAME --password-stdin $DOCKER_REG
               && cd /home/simpleoffice
