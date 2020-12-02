@@ -1,6 +1,6 @@
 pipelines:
   branches:
-    master:
+    compile:
       - step:
           name: Compile
           image: python:3.8
@@ -11,12 +11,12 @@ pipelines:
             - find . -name '*.py' -type f -delete
             - cp -rf . /var/distribute
             - tar -cvf api-test.tar /var/distribute
-            - pipe: atlassian/sftp-upload-file:0.1.2
+            - pipe: atlassian/bitbucket-upload-file:0.1.2
               variables:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: "api-test.rar"
-    compile:
+    master:
       - step:
           name: Build and load
           image: python:latest
