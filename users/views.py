@@ -1,4 +1,5 @@
 import os
+import random
 
 from django.conf.global_settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
@@ -13,6 +14,7 @@ from rest_framework_jwt.settings import api_settings
 
 from core.pagination import DefaultPagination
 from core.permissions import IsOwner, IsAdmin
+from mail import send_html_email_message
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import User, Account
 from users.registration import send_code, confirm_code
@@ -269,15 +271,31 @@ class OperatorPromotionView(GenericAPIView):
         if not account.email:
             return Response({'detail': 'User has no email specified'}, status=status.HTTP_400_BAD_REQUEST)
         if not account.user.email:
+            account.user.email = account.email
+            account.user.is_staff = True
+            password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+            group = Group.objects.filter(access=2, is_deletable=False).first()
+            account.user.set_password(password)
+            account.user.save()
+            send_html_email_message(
+                to=account.email,
+                subject="Добро пожаловать в Газпром!",
+                template_args={
+                    'host': request.build_absolute_uri('/'),
+                    'username': account.user.email,
+                    'password': password
+                }
+            )
+            account.groups.add(group)
             return Response({'message': 'Promoted'}, status=status.HTTP_200_OK)
         else:
             account.user.password = None
             account.user.email = None
-            for group in account.groups.all():
-                if group.access == 3:
-                    account.groups.remove(group)
+            account.user.is_staff = False
             account.user.save()
-            account.save()
+            for group in account.groups.all():
+                if group.access == 2:
+                    account.groups.remove(group)
             return Response({'message': 'Demoted'}, status=status.HTTP_200_OK)
 
 
