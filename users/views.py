@@ -262,7 +262,6 @@ class UserAccessView(GenericAPIView):
             return Response(response, status=status.HTTP_200_OK)
 
 
-# TODO FIX FIX FIX FIX
 class OperatorPromotionView(GenericAPIView):
     permission_classes = [AllowAny, ]
 
