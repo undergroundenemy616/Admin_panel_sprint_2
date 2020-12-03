@@ -120,19 +120,19 @@ class Account(models.Model):
 
     user = models.OneToOneField('User', on_delete=models.CASCADE)
 
-    description = models.TextField(default='', blank=True)
+    description = models.TextField(default='', blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
     gender = models.CharField(choices=GENDERS, max_length=32, default='undefined')
-    first_name = models.CharField(default='', max_length=64, blank=True)
-    last_name = models.CharField(default='', max_length=64, blank=True)
-    middle_name = models.CharField(default='', max_length=64, blank=True)
+    first_name = models.CharField(default='', max_length=64, blank=True, null=True)
+    last_name = models.CharField(default='', max_length=64, blank=True, null=True)
+    middle_name = models.CharField(default='', max_length=64, blank=True, null=True)
     photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)
 
     city = models.IntegerField(null=True, default=None)
     region_integer = models.IntegerField(null=True, blank=True)
     district_integer = models.IntegerField(null=True, blank=True)
-    region_string = models.CharField(default='', max_length=64, blank=True)
-    district_string = models.CharField(default='', max_length=64, blank=True)
+    region_string = models.CharField(default='', max_length=64, blank=True, null=True)
+    district_string = models.CharField(default='', max_length=64, blank=True, null=True)
 
     account_type = models.CharField(max_length=120, default='user')
     groups = models.ManyToManyField('groups.Group',

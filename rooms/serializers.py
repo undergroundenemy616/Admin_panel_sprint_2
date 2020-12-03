@@ -79,7 +79,6 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
         from floors.serializers import FloorSerializer
         data['seats_amount'] = instance.seats_amount
-        data['is_bookable'] = instance.is_bookable
         data['marker'] = None
         tables_nested = Table.objects.filter(room=instance.id)
         data['tables'] = [TableSerializer(instance=table).data for table in tables_nested]
@@ -124,7 +123,6 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
         from floors.serializers import FloorSerializer
         data['seats_amount'] = instance.seats_amount
-        data['is_bookable'] = instance.is_bookable
         data['marker'] = None
         tables_nested = Table.objects.filter(room=instance.id)
         data['tables'] = [TableSerializer(instance=table).data for table in tables_nested]
