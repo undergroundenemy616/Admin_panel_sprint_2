@@ -9,7 +9,8 @@ from offices.serializers import (
     CreateOfficeSerializer,
     NestedOfficeSerializer,
     CreateUpdateOfficeZoneSerializer,
-    OfficeZoneSerializer
+    OfficeZoneSerializer,
+    ListOfficeSerializer
 )
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (
@@ -31,6 +32,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
 
     def get(self, request, *args, **kwargs):
         """Get list of all offices."""
+        self.serializer_class = ListOfficeSerializer
         if request.query_params.get('id'):
             self.pagination_class = None
             one_office = get_object_or_404(Office, pk=request.query_params.get('id'))

@@ -244,10 +244,8 @@ class CreateOfficeSerializer(OfficeSerializer):
         validated_data.pop('license', None)
         return super(CreateOfficeSerializer, self).update(instance, validated_data)
 
-    # TODO:
-    # slow performance of images validation. See more ManyRelatedField
 
-
+# TODO: Piece of shit, very slow performance. 4 minutes on production db
 class NestedOfficeSerializer(OfficeSerializer):
     floors = FloorSerializer(many=True, read_only=True)
     zones = OfficeZoneSerializer(many=True, read_only=True)
@@ -258,6 +256,32 @@ class NestedOfficeSerializer(OfficeSerializer):
 
         # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???
 
+        response['floors_number'] = instance.floors.count()
+        response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
+        response['capacity_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id
+        ).count()
+        response['occupied_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id,
+            is_occupied=True
+        ).count()
+        response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
+        response['license'] = LicenseSerializer(instance=instance.license).data
+        return response
+
+
+class ListOfficeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = '__all__'
+        depth = 2
+
+    def to_representation(self, instance):
+        response = super(ListOfficeSerializer, self).to_representation(instance)
         response['floors_number'] = instance.floors.count()
         response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
         response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
