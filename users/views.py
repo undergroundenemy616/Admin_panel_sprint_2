@@ -8,12 +8,11 @@ from django.contrib.auth import user_logged_in
 from django.db.models import Q
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 
 from core.pagination import DefaultPagination
-from core.permissions import IsOwner, IsAdmin
+from core.permissions import IsOwner, IsAdmin, IsAuthenticated
 from mail import send_html_email_message
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import User, Account
@@ -128,7 +127,7 @@ class LoginStaff(GenericAPIView):
 class AccountView(GenericAPIView):
     serializer_class = AccountSerializer
     queryset = Account.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
         account_id = request.query_params.get('id')
@@ -182,7 +181,7 @@ class RegisterStaffView(GenericAPIView):
 class AccountListView(GenericAPIView, mixins.ListModelMixin):
     serializer_class = AccountSerializer
     queryset = Account.objects.all()
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin, )
     pagination_class = DefaultPagination
 
     def get(self, request, *args, **kwargs):
@@ -227,7 +226,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
 
 class ServiceEmailView(GenericAPIView):
     queryset = Account.objects.all()
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAdmin, ]
 
     def post(self, request, *args, **kwargs):
         account_exist = get_object_or_404(Account, pk=request.data['account'])
@@ -244,7 +243,7 @@ class ServiceEmailView(GenericAPIView):
 
 # TODO FIX FIX FIX FIX
 class UserAccessView(GenericAPIView):
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAdmin, ]
 
     def get(self, request, pk=None, *args, **kwargs):
         account = get_object_or_404(Account, pk=pk)
@@ -263,7 +262,7 @@ class UserAccessView(GenericAPIView):
 
 
 class OperatorPromotionView(GenericAPIView):
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAdmin, ]
 
     def post(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.data['account'])

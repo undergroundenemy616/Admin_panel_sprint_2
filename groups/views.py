@@ -9,11 +9,12 @@ from users.models import User, Account
 
 class ListCreateGroupAPIView(ListCreateAPIView):
     queryset = Group.objects.all()
-    permission_classes = (IsAuthenticated,)
     serializer_class = GroupSerializer
     pagination_class = None
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        self.permission_classes = (IsAdmin, )
         self.serializer_class = CreateGroupSerializer
         return self.create(request, *args, **kwargs)
 
@@ -34,6 +35,7 @@ class DetailGroupView(GenericAPIView,
     permission_classes = (IsAdmin,)
 
     def get(self, request, *args, **kwargs):
+        self.permission_classes = (IsAuthenticated, )
         return self.retrieve(request, *args, **kwargs)
 
     def put(self, request, *args, **kwargs):
@@ -47,7 +49,7 @@ class DetailGroupView(GenericAPIView,
 class UpdateUsersGroupView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = UpdateGroupUsersSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin, )
 
     def put(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)

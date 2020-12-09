@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from core.pagination import DefaultPagination
-from core.permissions import IsAuthenticated
+from core.permissions import IsAuthenticated, IsAdmin
 from offices.models import Office, OfficeZone
 from offices.serializers import (
     CreateOfficeSerializer,
@@ -29,6 +29,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
     serializer_class = NestedOfficeSerializer
     queryset = Office.objects.all()
     pagination_class = DefaultPagination
+    permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
         """Get list of all offices."""
@@ -44,6 +45,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        self.permission_classes = (IsAdmin, )
         serializer = CreateOfficeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -58,6 +60,7 @@ class RetrieveUpdateDeleteOfficeView(UpdateModelMixin,
     """Detail Office view. All request required {id}"""
     serializer_class = CreateOfficeSerializer
     queryset = Office.objects.all()
+    permission_classes = (IsAdmin, )
 
     def get(self, request, *args, **kwargs):
         """Get detail office by primary key."""
@@ -74,14 +77,15 @@ class RetrieveUpdateDeleteOfficeView(UpdateModelMixin,
 
 class ListOfficeZoneView(GenericAPIView):
     queryset = OfficeZone.objects.all()
-    permission_classes = (AllowAny,)
     serializer_class = CreateUpdateOfficeZoneSerializer
+    permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
         requested_zone = get_object_or_404(OfficeZone, pk=request.query_params.get('id'))
         return Response(OfficeZoneSerializer(instance=requested_zone).data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
+        self.permission_classes = (IsAdmin, )
         if request.data['title'] and not isinstance(request.data['title'], list):
             request.data['title'] = [request.data['title']]
         elif isinstance(request.data['title'], list):
@@ -95,7 +99,7 @@ class ListOfficeZoneView(GenericAPIView):
 class UpdateDeleteZoneView(GenericAPIView, DestroyModelMixin):
     queryset = OfficeZone.objects.all()
     serializer_class = CreateUpdateOfficeZoneSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (IsAdmin, )
 
     def put(self, request, pk=None, *args, **kwargs):
         instance = get_object_or_404(OfficeZone, pk=pk)

@@ -1,4 +1,4 @@
-from rest_framework.permissions import AllowAny
+from core.permissions import IsAuthenticated, IsAdmin
 from core.pagination import DefaultPagination
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rooms.models import RoomMarker
@@ -21,12 +21,13 @@ class ListCreateFloorView(ListModelMixin,
                           GenericAPIView):
     """Floors API View."""
     queryset = Floor.objects.all()
-    permission_classes = (AllowAny,)
     pagination_class = None
     serializer_class = NestedFloorSerializer
+    permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
         """Create new floor."""
+        self.permission_classes = (IsAdmin, )
         if not isinstance(request.data['title'], list):
             request.data['title'] = [request.data['title']]
         serializer = self.serializer_class(data=request.data)
@@ -51,8 +52,8 @@ class RetrieveUpdateDeleteFloorView(UpdateModelMixin,
                                     GenericAPIView):
     """Detail Floor API View"""
     queryset = Floor.objects.all()
-    permission_classes = (AllowAny,)
     serializer_class = DetailFloorSerializer
+    permission_classes = (IsAdmin,)
 
     def put(self, request, *args, **kwargs):
         request.data['title'] = [request.data['title']]
@@ -60,6 +61,7 @@ class RetrieveUpdateDeleteFloorView(UpdateModelMixin,
         return self.update(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
+        self.permission_classes = (IsAuthenticated, )
         return self.retrieve(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
@@ -72,11 +74,12 @@ class ListCreateDeleteFloorMapView(ListModelMixin,
                                    GenericAPIView):
     """Floor Maps View."""
     queryset = FloorMap.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAdmin, )
     pagination_class = DefaultPagination
     serializer_class = FloorMapSerializer
 
     def get(self, request, *args, **kwargs):
+        self.permission_classes = (IsAuthenticated, )
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -94,7 +97,7 @@ class ListCreateDeleteFloorMapView(ListModelMixin,
 class CleanFloorMapView(GenericAPIView):
     queryset = RoomMarker.objects.all()
     serializer_class = FloorSerializer
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAdmin, ]
 
     def delete(self, request, *args, **kwargs):
         room_markers = RoomMarker.objects.filter(room__floor_id=request.data['floor'])

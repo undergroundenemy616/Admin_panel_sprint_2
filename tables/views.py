@@ -1,7 +1,7 @@
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, \
     ListModelMixin, Response, status
-from rest_framework.permissions import AllowAny
+from core.permissions import IsAuthenticated, IsAdmin
 from core.pagination import DefaultPagination
 from offices.models import Office
 from tables.models import Table, TableTag
@@ -16,12 +16,13 @@ class TableView(ListModelMixin,
     serializer_class = TableSerializer
     queryset = Table.objects.all()
     pagination_class = DefaultPagination
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        self.permission_classes = (IsAdmin, )
         self.serializer_class = CreateTableSerializer
         return self.create(request, *args, **kwargs)
 
@@ -32,12 +33,14 @@ class DetailTableView(RetrieveModelMixin,
                       GenericAPIView):
     serializer_class = TableSerializer
     queryset = Table.objects.all()
+    permission_classes = (IsAdmin, )
 
     def put(self, request, *args, **kwargs):
         self.serializer_class = UpdateTableSerializer
         return self.update(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
+        self.permission_classes = (IsAuthenticated, )
         return self.retrieve(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
@@ -50,7 +53,7 @@ class TableTagView(ListModelMixin,
     serializer_class = TableTagSerializer
     queryset = TableTag.objects.all()
     pagination_class = None
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
         # self.serializer_class = ListTableTagSerializer
@@ -62,6 +65,7 @@ class TableTagView(ListModelMixin,
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        self.permission_classes = (IsAdmin, )
         if isinstance(request.data['title'], str):
             request.data['title'] = [request.data['title']]
         serializer = self.serializer_class(data=request.data)
@@ -77,7 +81,7 @@ class DetailTableTagView(GenericAPIView,
     serializer_class = TableTagSerializer
     queryset = TableTag.objects.all()
     pagination_class = DefaultPagination
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAdmin, )
 
     def put(self, request, pk=None, *args, **kwargs):
         instance = get_object_or_404(TableTag, pk=pk)

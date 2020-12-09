@@ -12,13 +12,13 @@ class ListOffices(ListCreateAPIView):
     serializer_class = LicenseSerializer
     queryset = License.objects.all()
     pagination_class = DefaultPagination
-    # permission_classes = (IsAdminUser, )
+    permission_classes = (IsAdmin, )
 
 
 class ListLicensesView(GenericAPIView):
     serializer_class = LicenseSerializer
     queryset = License.objects.all()
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin, )
 
     def get(self, request, *args, **kwargs):
         response = []

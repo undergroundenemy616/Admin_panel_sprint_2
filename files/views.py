@@ -1,5 +1,5 @@
 from rest_framework.generics import ListCreateAPIView
-from rest_framework.permissions import IsAdminUser, AllowAny
+from core.permissions import IsAuthenticated
 from rest_framework.mixins import Response, status
 
 from files.models import File
@@ -9,7 +9,7 @@ from files.serializers import FileSerializer
 class ListCreateFilesView(ListCreateAPIView):
     serializer_class = FileSerializer
     queryset = File.objects.all()
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAuthenticated, ]
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.FILES)

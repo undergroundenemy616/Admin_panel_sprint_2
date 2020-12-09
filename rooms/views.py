@@ -7,6 +7,7 @@ from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateMo
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from core.pagination import DefaultPagination
+from core.permissions import IsAuthenticated, IsAdmin
 from core.mixins import FilterListMixin
 from rooms.models import Room, RoomMarker
 from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
@@ -20,7 +21,7 @@ class RoomsView(FilterListMixin,
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
 
-    # permission_classes = (IsAdminUser,)
+    permission_classes = (IsAdmin,)
 
     @staticmethod
     def get_mapped_query(request: Request) -> Optional[Dict]:
@@ -50,6 +51,7 @@ class RoomsView(FilterListMixin,
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        self.permission_classes = (IsAdmin, )
         self.serializer_class = CreateRoomSerializer
         return self.create(request, *args, **kwargs)
 
@@ -62,7 +64,7 @@ class DetailRoomView(RetrieveModelMixin,
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
 
-    # permission_classes = (IsAdminUser,)
+    permission_classes = (IsAdmin,)
 
     def put(self, request, *args, **kwargs):
         self.serializer_class = UpdateRoomSerializer
@@ -80,7 +82,7 @@ class RoomMarkerView(CreateModelMixin,
                      GenericAPIView):
     queryset = RoomMarker.objects.all()
     serializer_class = RoomMarkerSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAdmin, )
 
     def post(self, request, *args, **kwargs):
         room_instance = Room.objects.filter(id=request.data['room']).first()

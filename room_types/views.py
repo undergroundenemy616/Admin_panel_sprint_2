@@ -2,10 +2,11 @@ from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser, AllowAny
+# from rest_framework.permissions import IsAdminUser, AllowAny
 # Local imports
 from core.pagination import DefaultPagination
 from core.mixins import FilterListMixin
+from core.permissions import IsAuthenticated, IsAdmin
 from room_types.serializers import RoomTypeSerializer, CreateUpdateRoomTypeSerializer, DestroyRoomTypeSerializer
 from room_types.models import RoomType
 from offices.models import Office
@@ -16,9 +17,10 @@ class ListCreateRoomTypesView(GenericAPIView, CreateModelMixin, ListModelMixin):
     serializer_class = CreateUpdateRoomTypeSerializer
     queryset = RoomType.objects.all()
     pagination_class = None
-    # permission_classes = (IsAdminUser,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        self.permission_classes = (IsAdmin, )
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         created_type = serializer.save(data=request.data)
@@ -36,7 +38,7 @@ class UpdateDestroyRoomTypesView(GenericAPIView,
     serializer_class = CreateUpdateRoomTypeSerializer
     queryset = RoomType.objects.filter(is_deletable=True)
     pagination_class = DefaultPagination
-    # permission_classes = (IsAdminUser,)
+    permission_classes = (IsAdmin, )
 
     def put(self, request, pk=None, *args, **kwargs):
         instance = get_object_or_404(RoomType, pk=pk)
