@@ -34,6 +34,7 @@ class RoomSerializer(serializers.ModelSerializer):
         response['type'] = room_type['title']
         response['room_type_color'] = room_type['color']
         response['room_type_unified'] = room_type['unified']
+        response['is_bookable'] = room_type['bookable']
         response['room_type_icon'] = room_type['icon']   #[FileSerializer(instance=room_type['icon']).data]
         response['tables'] = [TableSerializer(instance=table).data for table in instance.tables.all()]
         response['capacity'] = instance.tables.count()

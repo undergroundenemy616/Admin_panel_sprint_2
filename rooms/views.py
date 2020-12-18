@@ -22,7 +22,7 @@ class RoomsView(FilterListMixin,
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
 
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin, )
 
     @staticmethod
     def get_mapped_query(request: Request) -> Optional[Dict]:

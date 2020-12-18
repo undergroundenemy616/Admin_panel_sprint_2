@@ -289,6 +289,9 @@ class ListOfficeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(ListOfficeSerializer, self).to_representation(instance)
+        response['floors'] = [{'id': FloorSerializer(instance=floor).data['id'],
+                               'title': FloorSerializer(instance=floor).data['title']}
+                              for floor in instance.floors.all()]
         response['floors_number'] = instance.floors.count()
         response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
         response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
