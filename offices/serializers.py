@@ -16,6 +16,12 @@ from licenses.serializers import LicenseSerializer
 from groups.serializers import GroupSerializer
 
 
+class BaseOfficeZoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfficeZone
+        fields = '__all__'
+
+
 class OfficeZoneSerializer(serializers.ModelSerializer):
     office = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -297,4 +303,5 @@ class ListOfficeSerializer(serializers.ModelSerializer):
         response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
         response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
         response['license'] = LicenseSerializer(instance=instance.license).data
+        response['zones'] = [BaseOfficeZoneSerializer(instance=zone).data for zone in instance.zones.all()]
         return response
