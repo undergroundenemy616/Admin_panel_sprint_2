@@ -309,3 +309,34 @@ class ListOfficeSerializer(serializers.ModelSerializer):
         response['license'] = LicenseSerializer(instance=instance.license).data
         response['zones'] = [BaseOfficeZoneSerializer(instance=zone).data for zone in instance.zones.all()]
         return response
+
+
+# TODO Get this out when front comes
+class OptimizeListOfficeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = '__all__'
+        depth = 1
+
+    def to_representation(self, instance):
+        response = super(OptimizeListOfficeSerializer, self).to_representation(instance)
+        # response['floors'] = [{'id': FloorSerializer(instance=floor).data['id'],
+        #                        'title': FloorSerializer(instance=floor).data['title']}
+        #                       for floor in instance.floors.all()]
+        response['floors_number'] = instance.floors.count()
+        response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
+        response['capacity_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id
+        ).count()
+        response['occupied_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id,
+            is_occupied=True
+        ).count()
+        response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
+        response['license'] = LicenseSerializer(instance=instance.license).data
+        # response['zones'] = [BaseOfficeZoneSerializer(instance=zone).data for zone in instance.zones.all()]
+        return response
