@@ -6,7 +6,6 @@ from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateMo
     DestroyModelMixin, Response, status
 from rest_framework.request import Request
 
-from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
 from core.mixins import FilterListMixin
@@ -112,37 +111,3 @@ class RoomMarkerView(CreateModelMixin,
         room_instance = get_object_or_404(Room, pk=request.data['room'])  # Need to fix to improve performance
         serializer = self.serializer_class(instance=room_instance)
         return Response(serializer.to_representation(instance=room_instance), status=status.HTTP_200_OK)
-
-
-class RoomFreeView(GenericAPIView):
-    queryset = Room.objects.all()
-    # serializer_class =
-    permission_classes = (IsAdmin, )
-
-    def get(self, request, *args, **kwargs):
-        """
-        Endpoint that return room with only free tables
-        Params:
-        office
-        type as room_type
-        floor
-        room
-        date_from
-        date_to
-        """
-        office = request.query_params.get('office')  # TODO: Make serializer
-        room_type = request.query_params.get('type')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        if office and room_type:
-            rooms = Room.objects.filter(floor__office=office, type__title=room_type)
-            if date_from and date_to:
-                for room in rooms:
-                    for table in room.tables.all():
-                        if Booking.objects.is_overflowed(table, date_from, date_to):
-                            room.tables.remove(table)
-            rooms = [room for room in rooms if len(room.tables.all()) != 0]
-            serializer = RoomSerializer(rooms, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-
