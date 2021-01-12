@@ -12,6 +12,11 @@ from tables.models import Table
 from tables.serializers import TableSerializer
 
 
+class SwaggerSer(serializers.Serializer):
+    date_from = serializers.DateTimeField(required=False)
+    date_to = serializers.DateTimeField(required=False)
+
+
 class BaseRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room

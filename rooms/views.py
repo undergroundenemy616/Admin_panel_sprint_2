@@ -1,6 +1,7 @@
 from typing import Dict, Optional
 
 from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, \
     DestroyModelMixin, Response, status
@@ -13,7 +14,8 @@ from core.permissions import IsAdmin
 from core.mixins import FilterListMixin
 from rooms.models import Room, RoomMarker
 from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
-    RoomMarkerSerializer
+    RoomMarkerSerializer, SwaggerSer
+from bookings.models import Booking
 
 
 class RoomsView(FilterListMixin,
@@ -47,16 +49,18 @@ class RoomsView(FilterListMixin,
             del mapped[item]
         return mapped
 
+    @swagger_auto_schema(query_serializer=SwaggerSer)
     def get(self, request, *args, **kwargs):
-        filters = self.get_mapped_query(request)
-
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
-            for room in self.queryset:
-                date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
-                date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
-                bookings = Booking.objects(
-                    Q(table__in=room.tables)
-                    &
+            rooms = Room.objects.all()
+            date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
+            date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
+            if date_from > date_to:
+                return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
+            response = []
+            for room in rooms:
+                room_dict = RoomSerializer(instance=room).data
+                bookings = Booking.objects.filter(
                     (
                             (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
                             |
@@ -66,16 +70,14 @@ class RoomsView(FilterListMixin,
                     )
                 )
                 for booking in bookings:
-                    room_tables = room.tables[:]
-                    for table in room.tables:
-                        if table == booking.table:
+                    room_tables = room_dict['tables'][:]
+                    for table in room_dict['tables']:
+                        if table.get('id') == str(booking.table_id):
                             room_tables.remove(table)
-                    room.tables = room_tables
+                    room_dict['tables'] = room_tables
+                response.append(room_dict)
+            return Response({'results': response}, status=200)
 
-        # if request.query_params.get('search'):
-        #     self.queryset = Room.objects.filter(Q(title__icontains=request.query_params.get('search'))
-        #                                         | Q(type__title__icontains=request.query_params.get('search'))
-        #                                         | Q(description__icontains=request.query_params.get('search')))
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
