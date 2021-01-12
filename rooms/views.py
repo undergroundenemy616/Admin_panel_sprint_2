@@ -5,6 +5,8 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, \
     DestroyModelMixin, Response, status
 from rest_framework.request import Request
+from rest_framework import filters
+from datetime import datetime
 
 from bookings.models import Booking
 from core.pagination import DefaultPagination
@@ -21,6 +23,8 @@ class RoomsView(FilterListMixin,
     serializer_class = RoomSerializer
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', 'type__title', 'description']
 
     permission_classes = (IsAdmin, )
 
@@ -45,10 +49,34 @@ class RoomsView(FilterListMixin,
         return mapped
 
     def get(self, request, *args, **kwargs):
-        if request.query_params.get('search'):
-            self.queryset = Room.objects.filter(Q(title__icontains=request.query_params.get('search'))
-                                                | Q(type__title__icontains=request.query_params.get('search'))
-                                                | Q(description__icontains=request.query_params.get('search')))
+        filters = self.get_mapped_query(request)
+
+        if request.query_params.get('date_to') and request.query_params.get('date_from'):
+            for room in self.queryset:
+                date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
+                date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
+                bookings = Booking.objects(
+                    Q(table__in=room.tables)
+                    &
+                    (
+                            (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
+                            |
+                            (Q(date_from__lte=date_from) & Q(date_to__gte=date_to))
+                            |
+                            (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
+                    )
+                )
+                for booking in bookings:
+                    room_tables = room.tables[:]
+                    for table in room.tables:
+                        if table == booking.table:
+                            room_tables.remove(table)
+                    room.tables = room_tables
+
+        # if request.query_params.get('search'):
+        #     self.queryset = Room.objects.filter(Q(title__icontains=request.query_params.get('search'))
+        #                                         | Q(type__title__icontains=request.query_params.get('search'))
+        #                                         | Q(description__icontains=request.query_params.get('search')))
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
