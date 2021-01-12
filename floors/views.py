@@ -23,7 +23,7 @@ class ListCreateFloorView(ListModelMixin,
     queryset = Floor.objects.all()
     pagination_class = None
     serializer_class = NestedFloorSerializer
-    permission_classes = (IsAuthenticated, )
+    # permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
         """Create new floor."""
