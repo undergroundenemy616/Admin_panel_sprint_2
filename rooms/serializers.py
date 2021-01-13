@@ -15,6 +15,10 @@ from tables.serializers import TableSerializer
 class SwaggerSer(serializers.Serializer):
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
+    range_from = serializers.IntegerField(required=False)
+    range_to = serializers.IntegerField(required=False)
+    marker = serializers.IntegerField(required=False)
+    image = serializers.IntegerField(required=False)
 
 
 class BaseRoomSerializer(serializers.ModelSerializer):

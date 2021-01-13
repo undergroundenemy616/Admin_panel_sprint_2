@@ -15,6 +15,7 @@ from core.mixins import FilterListMixin
 from rooms.models import Room, RoomMarker
 from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
     RoomMarkerSerializer, SwaggerSer
+from tables.models import Table
 from bookings.models import Booking
 
 
@@ -25,7 +26,7 @@ class RoomsView(FilterListMixin,
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
     filter_backends = [filters.SearchFilter]
-    search_fields = ['title', 'type__title', 'description', 'zone__title', 'floor__office__title', 'floor__title']
+    search_fields = ['title', 'type__title', 'description', 'zone__id', 'floor__office__id', 'floor__id']
 
     permission_classes = (IsAdmin, )
 
@@ -51,15 +52,16 @@ class RoomsView(FilterListMixin,
 
     @swagger_auto_schema(query_serializer=SwaggerSer)
     def get(self, request, *args, **kwargs):
+        response = []
+        rooms = Room.objects.all()
+        for room in rooms:
+            response.append(RoomSerializer(instance=room).data)
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
-            rooms = Room.objects.all()
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
             date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
             if date_from > date_to:
                 return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
-            response = []
-            for room in rooms:
-                room_dict = RoomSerializer(instance=room).data
+            for room in response:
                 bookings = Booking.objects.filter(
                     (
                             (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
@@ -70,15 +72,56 @@ class RoomsView(FilterListMixin,
                     )
                 )
                 for booking in bookings:
-                    room_tables = room_dict['tables'][:]
-                    for table in room_dict['tables']:
+                    room_tables = room['tables'][:]
+                    for table in room['tables']:
                         if table.get('id') == str(booking.table_id):
                             room_tables.remove(table)
-                    room_dict['tables'] = room_tables
-                response.append(room_dict)
-            return Response({'results': response}, status=200)
+                    room['tables'] = room_tables
 
-        return self.list(request, *args, **kwargs)
+        if request.query_params.get('range_to') and request.query_params.get('range_from'):
+            not_in_range = []
+            range_to = int(request.query_params.get('range_to'))
+            range_from = int(request.query_params.get('range_from'))
+            if range_to is not None and range_from > range_to:
+                return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
+            for room in response:
+                if (range_to is not None and len(room.get('tables')) not in range(range_from, range_to + 1)) or \
+                        (range_to is None and len(room.get('tables')) < range_from):
+                    not_in_range.append(room)
+            for room in not_in_range:
+                response.remove(room)
+
+        if request.query_params.get('marker') and int(request.query_params.get('marker')) == 1:
+            with_marker = []
+            for room in response:
+                if room['marker']:
+                    with_marker.append(room)
+            response = with_marker
+
+        if request.query_params.get('image') is not None:
+            if int(request.query_params.get('image')) == 1:
+                with_image = []
+                for room in response:
+                    if room['images']:
+                        with_image.append(room)
+                response = with_image
+            elif int(request.query_params.get('image')) == 0:
+                without_image = []
+                for room in response:
+                    if not room['images']:
+                        without_image.append(room)
+                response = without_image
+
+        suitable_tables = 0
+
+        for room in response:
+            suitable_tables += len(room.get('tables'))
+
+        response_dict = {
+            'results': response,
+            'suitable_tables': suitable_tables
+        }
+        return Response(response_dict, status=200)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
