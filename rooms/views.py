@@ -25,7 +25,7 @@ class RoomsView(FilterListMixin,
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
     filter_backends = [filters.SearchFilter]
-    search_fields = ['title', 'type__title', 'description']
+    search_fields = ['title', 'type__title', 'description', 'zone__title', 'floor__office__title', 'floor__title']
 
     permission_classes = (IsAdmin, )
 
