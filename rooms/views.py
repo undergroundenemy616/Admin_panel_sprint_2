@@ -53,6 +53,7 @@ class RoomsView(FilterListMixin,
     @swagger_auto_schema(query_serializer=SwaggerSer)
     def get(self, request, *args, **kwargs):
         response = []
+
         rooms = Room.objects.all()
         for room in rooms:
             response.append(RoomSerializer(instance=room).data)
