@@ -5,6 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+
     dependencies = [
         ('offices', '0001_initial'),
     ]
