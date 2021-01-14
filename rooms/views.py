@@ -26,7 +26,7 @@ class RoomsView(FilterListMixin,
     queryset = Room.objects.all()
     pagination_class = DefaultPagination
     filter_backends = [filters.SearchFilter]
-    search_fields = ['title', 'type__title', 'description', 'zone__id', 'floor__office__id', 'floor__id']
+    search_fields = ['title', 'type__title', 'description']
 
     permission_classes = (IsAdmin, )
 
@@ -53,10 +53,18 @@ class RoomsView(FilterListMixin,
     @swagger_auto_schema(query_serializer=SwaggerSer)
     def get(self, request, *args, **kwargs):
         response = []
-
         rooms = Room.objects.all()
+
+        if request.query_params.get('office'):
+            rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
+        if request.query_params.get('floor'):
+            rooms = rooms.filter(floor_id=request.query_params.get('floor'))
+        if request.query_params.get('zone'):
+            rooms = rooms.filter(zone_id=request.query_params.get('zone'))
+
         for room in rooms:
             response.append(RoomSerializer(instance=room).data)
+
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
             date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')

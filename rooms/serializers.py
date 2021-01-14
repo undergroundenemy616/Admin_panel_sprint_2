@@ -19,6 +19,9 @@ class SwaggerSer(serializers.Serializer):
     range_to = serializers.IntegerField(required=False)
     marker = serializers.IntegerField(required=False)
     image = serializers.IntegerField(required=False)
+    zone = serializers.UUIDField(required=False)
+    floor = serializers.UUIDField(required=False)
+    office = serializers.UUIDField(required=False)
 
 
 class BaseRoomSerializer(serializers.ModelSerializer):
