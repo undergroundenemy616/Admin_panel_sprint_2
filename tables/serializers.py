@@ -7,6 +7,14 @@ from rooms.models import Room
 from tables.models import Table, TableTag
 
 
+class SwaggerTableParameters(serializers.Serializer):
+    free = serializers.IntegerField(required=False)
+    office = serializers.UUIDField(required=False)
+    floor = serializers.UUIDField(required=False)
+    room = serializers.UUIDField(required=False)
+    tags = serializers.ListField(child=serializers.CharField(), required=False)
+
+
 def check_table_tags_exists(tags):
     """Check is every tag in array exists."""
     if not tags:
@@ -86,7 +94,7 @@ class TableSerializer(serializers.ModelSerializer):
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=True)
     tags = serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all(), required=False, many=True)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, many=True)
-    current_rating = serializers.ReadOnlyField()
+    rating = serializers.ReadOnlyField()
 
     class Meta:
         model = Table
@@ -119,7 +127,6 @@ class CreateTableSerializer(serializers.ModelSerializer):
         response = super(CreateTableSerializer, self).to_representation(instance)
         response['images'] = FileSerializer(instance=instance.images, many=True).data
         response['tags'] = TableTagSerializer(instance=instance.tags, many=True).data
-        response['current_rating'] = 0
         return response
 
     def create(self, validated_data):

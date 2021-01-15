@@ -1,12 +1,14 @@
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, \
     ListModelMixin, Response, status
+
 from core.permissions import IsAuthenticated, IsAdmin
 from core.pagination import DefaultPagination
 from offices.models import Office
-from tables.models import Table, TableTag
+from tables.models import Table, TableTag, Rating
 from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer, \
-    UpdateTableTagSerializer, BaseTableTagSerializer
+    UpdateTableTagSerializer, BaseTableTagSerializer, SwaggerTableParameters
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -18,7 +20,41 @@ class TableView(ListModelMixin,
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 
+    @swagger_auto_schema(query_serializer=SwaggerTableParameters)
     def get(self, request, *args, **kwargs):
+        response = []
+        tables = Table.objects.all()
+
+        if request.query_params.get('office'):
+            tables = tables.filter(room__floor__office_id=request.query_params.get('office'))
+        if request.query_params.get('floor'):
+            tables = tables.filter(room__floor_id=request.query_params.get('floor'))
+        if request.query_params.get('room'):
+            tables = tables.filter(room_id=request.query_params.get('room'))
+        if request.query_params.get('free'):
+            if int(request.query_params.get('free')) == 1:
+                tables = tables.filter(is_occupied=False)
+            elif int(request.query_params.get('free')) == 0:
+                tables = tables.filter(is_occupied=True)
+
+        for table in tables:
+            response.append(TableSerializer(instance=table).data)
+
+        if request.query_params.getlist('tags'):
+            tables_with_the_right_tags = []
+
+            for table in response:
+                for tag in table['tags']:
+                    if tag['title'] in request.query_params.getlist('tags'):
+                        tables_with_the_right_tags.append(table)
+
+            response = list({r['id']: r for r in tables_with_the_right_tags}.values())
+
+        for table in response:
+            table['ratings'] = Rating.objects.filter(table_id=table['id']).count()
+
+        request = response
+
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):

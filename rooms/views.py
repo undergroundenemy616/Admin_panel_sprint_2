@@ -4,7 +4,7 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, \
-    DestroyModelMixin, Response, status
+    DestroyModelMixin, ListModelMixin, Response, status
 from rest_framework.request import Request
 from rest_framework import filters
 from datetime import datetime
@@ -14,12 +14,11 @@ from core.permissions import IsAdmin
 from core.mixins import FilterListMixin
 from rooms.models import Room, RoomMarker
 from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
-    RoomMarkerSerializer, SwaggerSer
-from tables.models import Table
+    RoomMarkerSerializer, SwaggerRoomParameters
 from bookings.models import Booking
 
 
-class RoomsView(FilterListMixin,
+class RoomsView(ListModelMixin,
                 CreateModelMixin,
                 GenericAPIView):
     serializer_class = RoomSerializer
@@ -50,15 +49,18 @@ class RoomsView(FilterListMixin,
             del mapped[item]
         return mapped
 
-    @swagger_auto_schema(query_serializer=SwaggerSer)
+    @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
         response = []
         rooms = Room.objects.all()
 
         if request.query_params.get('office'):
             rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
-        if request.query_params.get('floor'):
+        elif request.query_params.get('floor'):
             rooms = rooms.filter(floor_id=request.query_params.get('floor'))
+        else:
+            return Response({"detail": "You must specify at least on of this fields: " +
+                                       "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
         if request.query_params.get('zone'):
             rooms = rooms.filter(zone_id=request.query_params.get('zone'))
 
@@ -126,11 +128,11 @@ class RoomsView(FilterListMixin,
         for room in response:
             suitable_tables += len(room.get('tables'))
 
-        response_dict = {
-            'results': response,
-            'suitable_tables': suitable_tables
-        }
-        return Response(response_dict, status=200)
+        request = response
+
+        response_with_st = self.list(request, *args, **kwargs)
+        response_with_st.data['suitable_tables'] = suitable_tables
+        return response_with_st
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
