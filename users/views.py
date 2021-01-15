@@ -38,6 +38,8 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
 
     def post(self, request):
         """Register or login view"""
+        if request.data.get("phone"):
+            request.data['phone_number'] = request.data['phone']
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
