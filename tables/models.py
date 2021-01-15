@@ -23,8 +23,10 @@ class Table(models.Model):
     is_occupied = models.BooleanField(default=False)
 
     @property
-    def current_rating(self):
+    def rating(self):
         queryset = self.ratings.all().aggregate(models.Avg('rating'))
+        if not queryset['rating__avg']:
+            return 0
         return queryset['rating__avg']
 
     def set_table_occupied(self):
