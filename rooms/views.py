@@ -12,6 +12,8 @@ from datetime import datetime
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
 from core.mixins import FilterListMixin
+from offices.models import Office
+from floors.models import Floor
 from rooms.models import Room, RoomMarker
 from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
     RoomMarkerSerializer, SwaggerRoomParameters
@@ -54,9 +56,15 @@ class RoomsView(ListModelMixin,
         response = []
         rooms = self.queryset.exclude(type_id__isnull=True)
         if request.query_params.get('office'):
-            rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
+            if Office.objects.filter(id=request.query_params.get('office')):
+                rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
+            else:
+                return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
         elif request.query_params.get('floor'):
-            rooms = rooms.filter(floor_id=request.query_params.get('floor'))
+            if Floor.objects.filter(id=request.query_params.get('floor')):
+                rooms = rooms.filter(floor_id=request.query_params.get('floor'))
+            else:
+                return Response({"message": "Floor not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({"detail": "You must specify at least on of this fields: " +
                                        "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
