@@ -38,13 +38,11 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
 
     def post(self, request):
         """Register or login view"""
-        if request.data.get("phone"):
-            request.data['phone_number'] = request.data['phone']
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        phone_number = serializer.data.get('phone_number', None)
-        sms_code = serializer.data.pop('sms_code', None)
+        phone_number = serializer.data.get('phone', None)
+        sms_code = serializer.data.pop('code', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
         if serializer.data.get('description'):
             account, account_created = Account.objects.get_or_create(user=user,
@@ -80,7 +78,7 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
 
                 # Creating data for response
                 auth_data = create_auth_data(user)
-                data["user"] = UserSerializer(instance=user).data
+                # data["user"] = UserSerializer(instance=user).data
                 data["access_token"] = auth_data.get('access_token')
                 data["refresh_token"] = data["access_token"]
                 data["account"] = account.id
@@ -297,5 +295,9 @@ class OperatorPromotionView(GenericAPIView):
                 if group.access == 2:
                     account.groups.remove(group)
             return Response({'message': 'Demoted'}, status=status.HTTP_200_OK)
+
+
+class EnterCollectView(GenericAPIView):
+    pass
 
 

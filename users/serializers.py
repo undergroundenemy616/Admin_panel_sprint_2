@@ -50,8 +50,8 @@ class AccountSerializer(serializers.ModelSerializer):
 
 class LoginOrRegisterSerializer(serializers.Serializer):
     """Log in through phone"""
-    phone_number = serializers.CharField(required=True, min_length=11, max_length=12)
-    sms_code = serializers.IntegerField(required=False)
+    phone = serializers.CharField(required=True, min_length=11, max_length=12)
+    code = serializers.IntegerField(required=False)
     description = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
