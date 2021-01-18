@@ -52,8 +52,7 @@ class RoomsView(ListModelMixin,
     @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
         response = []
-        rooms = Room.objects.all()
-
+        rooms = self.queryset.exclude(type_id__isnull=True)
         if request.query_params.get('office'):
             rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
         elif request.query_params.get('floor'):
@@ -128,11 +127,12 @@ class RoomsView(ListModelMixin,
         for room in response:
             suitable_tables += len(room.get('tables'))
 
-        request = response
+        response_dict = {
+            'results': response,
+            'suitable_tables': suitable_tables
+        }
 
-        response_with_st = self.list(request, *args, **kwargs)
-        response_with_st.data['suitable_tables'] = suitable_tables
-        return response_with_st
+        return Response(response_dict, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
