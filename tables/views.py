@@ -23,7 +23,7 @@ class TableView(ListModelMixin,
     @swagger_auto_schema(query_serializer=SwaggerTableParameters)
     def get(self, request, *args, **kwargs):
         response = []
-        tables = Table.objects.all()
+        tables = self.queryset
 
         if request.query_params.get('office'):
             tables = tables.filter(room__floor__office_id=request.query_params.get('office'))
@@ -53,9 +53,10 @@ class TableView(ListModelMixin,
         for table in response:
             table['ratings'] = Rating.objects.filter(table_id=table['id']).count()
 
-        request = response
-
-        return self.list(request, *args, **kwargs)
+        response_dict = {
+            'results': response
+        }
+        return Response(response_dict, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
