@@ -68,12 +68,8 @@ class RoomsView(ListModelMixin,
         else:
             return Response({"detail": "You must specify at least on of this fields: " +
                                        "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
-
         if request.query_params.get('zone'):
             rooms = rooms.filter(zone_id=request.query_params.get('zone'))
-
-        if request.query_params.get('type'):
-            rooms = rooms.filter(type__title=request.query_params.get('type'))
 
         for room in rooms:
             response.append(RoomSerializer(instance=room).data)

@@ -53,8 +53,6 @@ class TableView(ListModelMixin,
         for table in response:
             table['ratings'] = Rating.objects.filter(table_id=table['id']).count()
 
-        print(response)
-
         response_dict = {
             'results': response
         }
