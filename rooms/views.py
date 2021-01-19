@@ -54,7 +54,7 @@ class RoomsView(ListModelMixin,
     @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
         response = []
-        rooms = self.queryset.exclude(type_id__isnull=True)
+        rooms = self.queryset.all().exclude(type_id__isnull=True)
         if request.query_params.get('office'):
             if Office.objects.filter(id=request.query_params.get('office')):
                 rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
