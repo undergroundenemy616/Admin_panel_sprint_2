@@ -144,25 +144,26 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
 
 
 class BookingActivateActionSerializer(serializers.ModelSerializer):
-    # booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
-    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all())
+    booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
+    # table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all())
 
     class Meta:
         model = Booking
-        fields = ["table"]
+        fields = ["booking"]
 
     def to_representation(self, instance):
         response = BaseBookingSerializer(instance).data
         return response
 
     def update(self, instance, validated_data):
-        if validated_data['table'] != instance.table:
-            raise serializers.ValidationError('Wrong data')
+        # if validated_data['table'] != instance.table:
+        #     raise serializers.ValidationError('Wrong data')
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if not date_now < instance.date_activate_until:
             raise serializers.ValidationError('Activation time have passed')
-        validated_data['is_active'] = True
-        return super(BookingActivateActionSerializer, self).update(instance, validated_data)
+        # validated_data['is_active'] = True
+        instance.set_booking_active()
+        return instance
 
 
 class BookingListSerializer(BookingSerializer):
