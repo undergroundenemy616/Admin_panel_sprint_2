@@ -6,6 +6,7 @@ from django.core.mail import send_mail
 
 from django.contrib.auth import user_logged_in
 from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
@@ -20,7 +21,8 @@ from users.registration import send_code, confirm_code
 from users.serializers import (
     LoginOrRegisterSerializer,
     AccountSerializer,
-    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer, UserSerializer
+    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer, UserSerializer,
+    SwaggerAccountParametr, SwaggerAccountListParametr
 )
 from groups.models import Group
 
@@ -129,6 +131,7 @@ class AccountView(GenericAPIView):
     queryset = Account.objects.all()
     permission_classes = (IsAuthenticated, )
 
+    @swagger_auto_schema(query_serializer=SwaggerAccountParametr)
     def get(self, request, *args, **kwargs):
         account_id = request.query_params.get('id')
         if not account_id:
@@ -184,6 +187,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
     permission_classes = (IsAdmin, )
     pagination_class = DefaultPagination
 
+    @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('start'):
             search = request.query_params.get('search')

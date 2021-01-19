@@ -3,11 +3,13 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 # from rest_framework.permissions import IsAdminUser, AllowAny
+from drf_yasg.utils import swagger_auto_schema
 # Local imports
 from core.pagination import DefaultPagination
 from core.mixins import FilterListMixin
 from core.permissions import IsAuthenticated, IsAdmin
-from room_types.serializers import RoomTypeSerializer, CreateUpdateRoomTypeSerializer, DestroyRoomTypeSerializer
+from room_types.serializers import RoomTypeSerializer, CreateUpdateRoomTypeSerializer, DestroyRoomTypeSerializer, \
+    SwaggerRoomTypeParametrs
 from room_types.models import RoomType
 from offices.models import Office
 
@@ -26,6 +28,7 @@ class ListCreateRoomTypesView(GenericAPIView, CreateModelMixin, ListModelMixin):
         created_type = serializer.save(data=request.data)
         return Response(serializer.to_representation(created_type), status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(query_serializer=SwaggerRoomTypeParametrs)
     def get(self, request, *args, **kwargs):
         self.serializer_class = RoomTypeSerializer
         self.queryset = RoomType.objects.filter(office=get_object_or_404(Office, pk=request.query_params.get('office')))

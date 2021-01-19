@@ -15,6 +15,10 @@ class SwaggerTableParameters(serializers.Serializer):
     tags = serializers.ListField(child=serializers.CharField(), required=False)
 
 
+class SwaggerTableTagParametrs(serializers.Serializer):
+    office = serializers.UUIDField()
+
+
 def check_table_tags_exists(tags):
     """Check is every tag in array exists."""
     if not tags:

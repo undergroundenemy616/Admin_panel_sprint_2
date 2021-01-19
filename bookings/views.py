@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.response import Response
+from drf_yasg.utils import swagger_auto_schema
 
 from core.permissions import IsAdmin, IsAuthenticated
 from core.pagination import DefaultPagination
@@ -11,7 +12,8 @@ from bookings.serializers import BookingSerializer, \
     BookingSlotsSerializer, \
     BookingActivateActionSerializer, \
     BookingDeactivateActionSerializer, BookingFastSerializer, \
-    BookingListSerializer, BookingListTablesSerializer, BookListTableSerializer
+    BookingListSerializer, BookingListTablesSerializer, BookListTableSerializer, \
+    SwaggerBookListTableParametrs
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -187,6 +189,7 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     queryset = Booking.objects.all()
     permission_classes = (IsAuthenticated,)
 
+    @swagger_auto_schema(query_serializer=SwaggerBookListTableParametrs)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('date_from') and request.query_params.get('date_to'):
             table_instance = get_object_or_404(Table, pk=request.query_params.get('table'))
