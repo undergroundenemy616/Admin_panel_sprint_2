@@ -12,6 +12,16 @@ from mail import send_html_email_message
 from users.models import User, Account
 
 
+class SwaggerAccountParametr(serializers.Serializer):
+    id = serializers.UUIDField(required=False)
+
+
+class SwaggerAccountListParametr(serializers.Serializer):
+    search = serializers.CharField(required=False, max_length=256)
+    account_type = serializers.CharField(required=False, max_length=20)
+    include_not_activated = serializers.CharField(required=False, max_length=5)
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

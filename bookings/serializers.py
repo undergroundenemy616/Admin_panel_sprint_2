@@ -15,6 +15,12 @@ from users.models import User, Account
 from users.serializers import AccountSerializer
 
 
+class SwaggerBookListTableParametrs(serializers.Serializer):
+    date_from = serializers.DateTimeField(required=False)
+    date_to = serializers.DateTimeField(required=False)
+    table = serializers.UUIDField()
+
+
 class BaseBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking

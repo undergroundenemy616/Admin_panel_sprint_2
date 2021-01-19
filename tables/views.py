@@ -8,7 +8,7 @@ from core.pagination import DefaultPagination
 from offices.models import Office
 from tables.models import Table, TableTag, Rating
 from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer, \
-    UpdateTableTagSerializer, BaseTableTagSerializer, SwaggerTableParameters
+    UpdateTableTagSerializer, BaseTableTagSerializer, SwaggerTableParameters, SwaggerTableTagParametrs
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -92,6 +92,7 @@ class TableTagView(ListModelMixin,
     pagination_class = None
     permission_classes = (IsAuthenticated, )
 
+    @swagger_auto_schema(query_serializer=SwaggerTableTagParametrs)
     def get(self, request, *args, **kwargs):
         # self.serializer_class = ListTableTagSerializer
         # serializer = self.serializer_class(data={'office': request.query_params.get('office')})

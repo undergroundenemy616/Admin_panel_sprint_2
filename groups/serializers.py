@@ -5,6 +5,10 @@ from users.serializers import AccountSerializer
 from users.models import User, Account
 
 
+class SwaggerGroupsParametrs(serializers.Serializer):
+    id = serializers.UUIDField(required=False)
+
+
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
