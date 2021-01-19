@@ -20,6 +20,7 @@ class SwaggerRoomParameters(serializers.Serializer):
     marker = serializers.IntegerField(required=False)
     image = serializers.IntegerField(required=False)
     zone = serializers.UUIDField(required=False)
+    type = serializers.CharField(required=False)
     floor = serializers.UUIDField(required=False)
     office = serializers.UUIDField(required=False)
 
