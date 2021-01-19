@@ -23,7 +23,7 @@ class TableView(ListModelMixin,
     @swagger_auto_schema(query_serializer=SwaggerTableParameters)
     def get(self, request, *args, **kwargs):
         response = []
-        tables = self.queryset
+        tables = self.queryset.all()
 
         if request.query_params.get('office'):
             tables = tables.filter(room__floor__office_id=request.query_params.get('office'))
