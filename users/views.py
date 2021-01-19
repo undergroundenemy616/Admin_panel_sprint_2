@@ -95,11 +95,11 @@ def authenticate_staff(request=None, **fields):
     try:
         user = User.objects.get(email=fields.get('username'))
     except (User.DoesNotExist, KeyError, TypeError):
-        return None, 'Incorrect email'
+        return None, 'Incorrect email or password'
 
     is_correct = user.check_password(fields.get('password'))
     if not is_correct:
-        return None, 'Incorrect password'
+        return None, 'Incorrect email or password'
 
     if not user.is_staff or not user.is_active:
         return None, 'User is not a staff or has been blocked.'

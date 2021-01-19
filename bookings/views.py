@@ -1,7 +1,9 @@
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.response import Response
+from rest_framework.filters import SearchFilter
 
 from core.permissions import IsAdmin, IsAuthenticated
 from core.pagination import DefaultPagination
@@ -11,7 +13,7 @@ from bookings.serializers import BookingSerializer, \
     BookingSlotsSerializer, \
     BookingActivateActionSerializer, \
     BookingDeactivateActionSerializer, BookingFastSerializer, \
-    BookingListSerializer, BookingListTablesSerializer, BookListTableSerializer
+    BookingListSerializer, BookingListTablesSerializer, BookListTableSerializer, BookingPersonalSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -221,9 +223,18 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
     All User route. Shows all bookings that User have.
     Can be filtered by: date,
     """
-    serializer_class = BookingSerializer
-    queryset = Booking.objects.all()
+    serializer_class = BookingPersonalSerializer
+    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated,)
+    filter_backends = [SearchFilter, ]
+    search_fields = ['table__title',
+                     'table__room__title',
+                     'table__room__type__title',
+                     'table__room__floor__office__title',
+                     'table__room__floor__office__description']
+    pagination_class = DefaultPagination
 
+    @swagger_auto_schema(query_serializer=BookingPersonalSerializer)
     def get(self, request, *args, **kwargs):
+        req_booking = self.queryset.filter()
         return self.list(request, *args, **kwargs)

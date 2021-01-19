@@ -335,3 +335,17 @@ class BookListTableSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         pass
+
+
+class BookingPersonalSerializer(serializers.ModelSerializer):
+    date = serializers.DateTimeField()
+    condition = serializers.ChoiceField(choices=['gt', 'lt', 'gte', 'lte', 'eq'])
+    is_over = serializers.IntegerField()
+    date_from = serializers.DateTimeField()
+    date_to = serializers.DateTimeField()
+
+    class Meta:
+        model = Booking
+        fields = ['date', 'condition', 'is_over', 'date_from', 'date_to']
+
+
