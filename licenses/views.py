@@ -1,10 +1,11 @@
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, GenericAPIView
 from rest_framework.response import Response
+from drf_yasg.utils import swagger_auto_schema
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
 from licenses.models import License
-from licenses.serializers import LicenseSerializer
+from licenses.serializers import LicenseSerializer, SwaggerLicenseParametrs
 from offices.models import Office
 
 
@@ -20,6 +21,7 @@ class ListLicensesView(GenericAPIView):
     queryset = License.objects.all()
     permission_classes = (IsAdmin, )
 
+    @swagger_auto_schema(query_serializer=SwaggerLicenseParametrs)
     def get(self, request, *args, **kwargs):
         response = []
         licenses = License.objects.all()

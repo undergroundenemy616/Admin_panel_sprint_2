@@ -1,4 +1,5 @@
 from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -10,7 +11,8 @@ from offices.serializers import (
     NestedOfficeSerializer,
     CreateUpdateOfficeZoneSerializer,
     OfficeZoneSerializer,
-    ListOfficeSerializer, OptimizeListOfficeSerializer
+    ListOfficeSerializer, OptimizeListOfficeSerializer,
+    SwaggerOfficeParametrs, SwaggerZonesParametrs
 )
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (
@@ -31,6 +33,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
     pagination_class = DefaultPagination
     # permission_classes = (IsAuthenticated, )
 
+    @swagger_auto_schema(query_serializer=SwaggerOfficeParametrs)
     def get(self, request, *args, **kwargs):
         """Get list of all offices."""
         self.serializer_class = ListOfficeSerializer
@@ -82,6 +85,7 @@ class ListOfficeZoneView(GenericAPIView):
     serializer_class = CreateUpdateOfficeZoneSerializer
     permission_classes = (IsAuthenticated, )
 
+    @swagger_auto_schema(query_serializer=SwaggerZonesParametrs)
     def get(self, request, *args, **kwargs):
         requested_zone = get_object_or_404(OfficeZone, pk=request.query_params.get('id'))
         return Response(OfficeZoneSerializer(instance=requested_zone).data, status=status.HTTP_200_OK)

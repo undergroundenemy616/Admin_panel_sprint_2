@@ -16,6 +16,15 @@ from licenses.serializers import LicenseSerializer
 from groups.serializers import GroupSerializer
 
 
+class SwaggerOfficeParametrs(serializers.Serializer):
+    id = serializers.UUIDField(required=False)
+    search = serializers.CharField(required=False, max_length=256)
+
+
+class SwaggerZonesParametrs(serializers.Serializer):
+    id = serializers.UUIDField()
+
+
 class BaseOfficeZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfficeZone

@@ -1,11 +1,13 @@
 from core.permissions import IsAuthenticated, IsAdmin
 from core.pagination import DefaultPagination
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rooms.models import RoomMarker
 from floors.models import Floor, FloorMap
 from floors.serializers import (
     NestedFloorSerializer,
-    FloorMapSerializer, FloorSerializer, DetailFloorSerializer, EditFloorSerializer
+    FloorMapSerializer, FloorSerializer, DetailFloorSerializer, EditFloorSerializer,
+    SwaggerFloorsParametrs
 )
 from rest_framework.mixins import (
     ListModelMixin,
@@ -35,6 +37,7 @@ class ListCreateFloorView(ListModelMixin,
         floors = serializer.save()
         return Response(serializer.to_representation(floors), status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(query_serializer=SwaggerFloorsParametrs)
     def get(self, request, *args, **kwargs):
         """Returns list of floors."""
         if request.query_params.get('office'):

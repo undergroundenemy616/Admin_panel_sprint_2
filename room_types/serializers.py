@@ -6,6 +6,10 @@ from room_types.models import RoomType
 from rooms.models import Room
 
 
+class SwaggerRoomTypeParametrs(serializers.Serializer):
+    office = serializers.UUIDField()
+
+
 class RoomTypeSerializer(serializers.ModelSerializer):
     """
     Serialize object from table RoomType
