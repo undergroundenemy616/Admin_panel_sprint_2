@@ -17,7 +17,7 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   BookingSerializer, BookingSlotsSerializer,
                                   BookListTableSerializer,
                                   SwaggerBookListActiveParametrs,
-                                  SwaggerBookListTableParametrs)
+                                  SwaggerBookListTableParametrs, BookingPersonalSerializer)
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from tables.serializers import Table, TableSerializer
@@ -245,6 +245,9 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
 
     @swagger_auto_schema(query_serializer=BookingPersonalSerializer)
     def get(self, request, *args, **kwargs):
+        if request.query_params.get('search'):
+            self.serializer_class = BookingSerializer
+            return self.list(request, *args, **kwargs)
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         date_from = datetime.strptime(serializer.data['date_from'], '%Y-%m-%dT%H:%M:%SZ')
