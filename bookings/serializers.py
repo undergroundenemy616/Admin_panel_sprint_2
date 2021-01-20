@@ -51,12 +51,19 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = BaseBookingSerializer(instance).data
+        response['active'] = response['is_active']
+        del response['is_active']
         response['room'] = {"id": instance.table.room.id,
-                            "title": instance.table.room.title}
+                            "title": instance.table.room.title,
+                            "type": instance.table.room.type.title,
+                            "zone": {"id": instance.table.room.zone.id,
+                                     "title": instance.table.room.zone.title}
+                            }
         response['floor'] = {"id": instance.table.room.floor.id,
                              "title": instance.table.room.floor.title}
         response['office'] = {"id": instance.table.room.floor.office.id,
                               "title": instance.table.room.floor.office.title}
+        response['user'] = instance.user.id
         return response
 
     def create(self, validated_data, *args, **kwargs):
@@ -157,6 +164,7 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
 
 class BookingActivateActionSerializer(serializers.ModelSerializer):
     booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
+
     # table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all())
 
     class Meta:
@@ -357,7 +365,3 @@ class BookingPersonalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['date_from', 'date_to', 'is_over']
-
-
-
-
