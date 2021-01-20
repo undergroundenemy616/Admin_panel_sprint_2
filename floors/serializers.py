@@ -7,6 +7,12 @@ from rooms.serializers import RoomSerializer
 from tables.models import Table
 
 
+class SwaggerFloorParameters(serializers.Serializer):
+    office = serializers.UUIDField(required=False)
+    expand = serializers.IntegerField(required=False)
+    type = serializers.CharField(required=False)
+
+
 class BaseFloorSerializer(serializers.ModelSerializer):
 
     class Meta:
