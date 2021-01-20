@@ -67,31 +67,6 @@ class BookingsAdminView(BookingsView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class BookingsActiveListView(BookingsView):
-    queryset = Booking.objects.active_only().all()
-    serializer_class = BookingListSerializer
-    permission_classes = (IsAuthenticated,)
-
-    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
-    def get(self, request, *args, **kwargs):
-        request.data['user'] = request.user.id
-        return self.list(request, *args, **kwargs)
-
-
-class BookingsUserListView(BookingsAdminView):
-    serializer_class = BookingListSerializer
-    queryset = Booking.objects.all().prefetch_related('user')
-
-    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
-    def get(self, request, *args, **kwargs):
-        account = get_object_or_404(Account, pk=request.query_params['user'])
-        by_user = self.queryset.filter(user=account.id)
-        self.queryset = by_user
-        response = self.list(request, *args, **kwargs)
-        response.data['user'] = AccountSerializer(instance=account).data
-        return response
-
-
 class ActionCheckAvailableSlotsView(GenericAPIView):
     serializer_class = BookingSlotsSerializer
     queryset = Booking.objects.all()
@@ -270,3 +245,25 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
         self.queryset = req_booking
         self.serializer_class = BookingSerializer
         return self.list(request, *args, **kwargs)
+
+
+class BookingsListUserView(BookingsAdminView):
+    serializer_class = BookingListSerializer
+    queryset = Booking.objects.all().prefetch_related('user')
+
+    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
+    def get(self, request, *args, **kwargs):
+        account = get_object_or_404(Account, pk=request.query_params['user'])
+        by_user = self.queryset.filter(user=account.id)
+        self.queryset = by_user
+        response = self.list(request, *args, **kwargs)
+        response.data['user'] = AccountSerializer(instance=account).data
+        return response
+
+
+class BookingsListOfficeView(GenericAPIView):
+    pass
+
+
+class BookingsListTypeView(GenericAPIView):
+    pass
