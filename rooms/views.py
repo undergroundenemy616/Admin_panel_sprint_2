@@ -58,6 +58,8 @@ class RoomsView(ListModelMixin,
     @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('search'):
+            by_office = self.queryset.filter(floor__office=request.query_params.get('office'))
+            self.queryset = by_office
             return self.list(request, *args, **kwargs)
         response = []
         rooms = self.queryset.all().exclude(type_id__isnull=True)
