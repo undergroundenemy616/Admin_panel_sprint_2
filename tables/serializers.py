@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
 from files.models import File
-from files.serializers import FileSerializer, BaseFileSerializer
+from files.serializers import BaseFileSerializer, FileSerializer
 from offices.models import Office
 from rooms.models import Room
 from tables.models import Table, TableTag

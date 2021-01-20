@@ -1,5 +1,6 @@
-from users import views
 from django.urls import path
+
+from users import views
 
 urlpatterns = [
     # path('/auth', views.LoginOrRegisterUser.as_view()),

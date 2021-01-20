@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 import datetime
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH', default='master') + '.env')

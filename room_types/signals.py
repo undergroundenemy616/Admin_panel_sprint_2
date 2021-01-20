@@ -1,6 +1,7 @@
-from django.dispatch import receiver
-from room_types.models import RoomType
 from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
+from room_types.models import RoomType
 
 
 @receiver(pre_delete, sender=RoomType)

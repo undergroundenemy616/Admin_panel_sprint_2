@@ -1,17 +1,21 @@
-from rest_framework import status
-from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelMixin, DestroyModelMixin
-from rest_framework.response import Response
 # from rest_framework.permissions import IsAdminUser, AllowAny
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, UpdateModelMixin)
+from rest_framework.response import Response
+
+from core.mixins import FilterListMixin
 # Local imports
 from core.pagination import DefaultPagination
-from core.mixins import FilterListMixin
-from core.permissions import IsAuthenticated, IsAdmin
-from room_types.serializers import RoomTypeSerializer, CreateUpdateRoomTypeSerializer, DestroyRoomTypeSerializer, \
-    SwaggerRoomTypeParametrs
-from room_types.models import RoomType
+from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
+from room_types.models import RoomType
+from room_types.serializers import (CreateUpdateRoomTypeSerializer,
+                                    DestroyRoomTypeSerializer,
+                                    RoomTypeSerializer,
+                                    SwaggerRoomTypeParametrs)
 
 
 # Create your views here.

@@ -1,15 +1,20 @@
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, \
-    ListModelMixin, Response, status
-
-from core.permissions import IsAuthenticated, IsAdmin
-from core.pagination import DefaultPagination
-from offices.models import Office
-from tables.models import Table, TableTag, Rating
-from tables.serializers import TableSerializer, TableTagSerializer, CreateTableSerializer, UpdateTableSerializer, \
-    UpdateTableTagSerializer, BaseTableTagSerializer, SwaggerTableParameters, SwaggerTableTagParametrs
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, Response,
+                                   RetrieveModelMixin, UpdateModelMixin,
+                                   status)
 from rest_framework.viewsets import ModelViewSet
+
+from core.pagination import DefaultPagination
+from core.permissions import IsAdmin, IsAuthenticated
+from offices.models import Office
+from tables.models import Rating, Table, TableTag
+from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
+                                SwaggerTableParameters,
+                                SwaggerTableTagParametrs, TableSerializer,
+                                TableTagSerializer, UpdateTableSerializer,
+                                UpdateTableTagSerializer)
 
 
 class TableView(ListModelMixin,

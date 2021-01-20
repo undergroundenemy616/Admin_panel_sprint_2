@@ -1,23 +1,19 @@
-from drf_yasg.utils import swagger_auto_schema
-from core.permissions import IsAuthenticated, IsAdmin
-from core.pagination import DefaultPagination
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, Response,
+                                   RetrieveModelMixin, UpdateModelMixin,
+                                   status)
+
+from core.pagination import DefaultPagination
+from core.permissions import IsAdmin, IsAuthenticated
+from floors.models import Floor, FloorMap
+from floors.serializers import (DetailFloorSerializer, EditFloorSerializer,
+                                FloorMapSerializer, FloorSerializer,
+                                NestedFloorSerializer, SwaggerFloorParameters)
 from offices.models import Office
 from rooms.models import RoomMarker
-from floors.models import Floor, FloorMap
-from floors.serializers import (
-    NestedFloorSerializer,
-    FloorMapSerializer, FloorSerializer, DetailFloorSerializer, EditFloorSerializer, SwaggerFloorParameters
-)
-from rest_framework.mixins import (
-    ListModelMixin,
-    CreateModelMixin,
-    UpdateModelMixin,
-    RetrieveModelMixin,
-    DestroyModelMixin, Response, status
-)
 
 
 class ListCreateFloorView(ListModelMixin,

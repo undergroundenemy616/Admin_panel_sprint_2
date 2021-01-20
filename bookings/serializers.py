@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
+
 from rest_framework import serializers, status
-from core.handlers import ResponseException
+
 from bookings.models import Booking, Table
 from bookings.validators import BookingTimeValidator
+from core.handlers import ResponseException
 from core.pagination import DefaultPagination
 from floors.models import Floor
 from floors.serializers import FloorSerializer
@@ -11,7 +13,7 @@ from offices.serializers import OfficeSerializer
 from room_types.models import RoomType
 from rooms.models import Room
 from rooms.serializers import RoomSerializer
-from users.models import User, Account
+from users.models import Account, User
 from users.serializers import AccountSerializer
 
 

@@ -1,19 +1,20 @@
 from datetime import datetime
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
+from files.models import File
+from files.serializers import FileSerializer
 from floors.models import Floor
+from floors.serializers import FloorSerializer
 from groups.models import Group
+from groups.serializers import GroupSerializer
 from licenses.models import License
 from licenses.serializers import LicenseSerializer
 from offices.models import Office, OfficeZone
-from files.models import File
-from files.serializers import FileSerializer
-from floors.serializers import FloorSerializer
 from room_types.models import RoomType
 from rooms.serializers import RoomMarkerSerializer
 from tables.models import Table
-from licenses.serializers import LicenseSerializer
-from groups.serializers import GroupSerializer
 
 
 class SwaggerOfficeParametrs(serializers.Serializer):

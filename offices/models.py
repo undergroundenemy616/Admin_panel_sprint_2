@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+
 from files.models import File
 from groups.models import Group
 from licenses.models import License

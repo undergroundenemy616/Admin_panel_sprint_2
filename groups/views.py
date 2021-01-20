@@ -1,12 +1,16 @@
-from rest_framework.generics import ListCreateAPIView, GenericAPIView, get_object_or_404, UpdateAPIView
-from rest_framework.mixins import RetrieveModelMixin, Response, status, UpdateModelMixin, DestroyModelMixin
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
+                                     UpdateAPIView, get_object_or_404)
+from rest_framework.mixins import (DestroyModelMixin, Response,
+                                   RetrieveModelMixin, UpdateModelMixin,
+                                   status)
 
-from core.permissions import IsAuthenticated, IsAdmin
+from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
-from groups.serializers import GroupSerializer, CreateGroupSerializer, UpdateGroupSerializer, UpdateGroupUsersSerializer, \
-SwaggerGroupsParametrs
-from users.models import User, Account
+from groups.serializers import (CreateGroupSerializer, GroupSerializer,
+                                SwaggerGroupsParametrs, UpdateGroupSerializer,
+                                UpdateGroupUsersSerializer)
+from users.models import Account, User
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):

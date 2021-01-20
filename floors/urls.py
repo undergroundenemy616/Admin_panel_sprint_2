@@ -1,5 +1,6 @@
-from floors import views
 from django.urls import path
+
+from floors import views
 
 urlpatterns = [
     path('', views.ListCreateFloorView.as_view()),

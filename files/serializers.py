@@ -1,12 +1,15 @@
-from booking_api_django_new.settings import MEDIA_ROOT, MEDIA_URL, \
-    FILES_HOST, FILES_USERNAME, FILES_PASSWORD
+import json
 import os
-from PIL import Image
+import uuid
+
 import PIL
 import requests
-import uuid
-import json
+from PIL import Image
 from rest_framework import serializers
+
+from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD,
+                                             FILES_USERNAME, MEDIA_ROOT,
+                                             MEDIA_URL)
 from files.models import File
 
 

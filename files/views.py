@@ -1,7 +1,7 @@
 from rest_framework.generics import ListCreateAPIView
-from core.permissions import IsAuthenticated
 from rest_framework.mixins import Response, status
 
+from core.permissions import IsAuthenticated
 from files.models import File
 from files.serializers import FileSerializer
 

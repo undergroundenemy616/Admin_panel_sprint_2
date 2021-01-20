@@ -1,5 +1,6 @@
-from bookings import views
 from django.urls import path
+
+from bookings import views
 
 urlpatterns = [
     path('/active', views.BookingsActiveListView.as_view()),

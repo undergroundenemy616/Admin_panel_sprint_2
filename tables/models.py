@@ -1,9 +1,11 @@
 import uuid
-from django.core.validators import MinValueValidator, MaxValueValidator
+
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from rooms.models import Room
+
 from files.models import File
 from offices.models import Office
+from rooms.models import Room
 
 
 class TableTag(models.Model):
