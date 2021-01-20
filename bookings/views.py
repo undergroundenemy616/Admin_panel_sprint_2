@@ -21,6 +21,8 @@ from bookings.serializers import (BookingActivateActionSerializer,
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from tables.serializers import Table, TableSerializer
+from users.models import Account
+from users.serializers import AccountSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -78,10 +80,16 @@ class BookingsActiveListView(BookingsView):
 
 class BookingsUserListView(BookingsAdminView):
     serializer_class = BookingListSerializer
+    queryset = Booking.objects.all().prefetch_related('user')
 
+    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):
-        # request.data['user'] = request.user.id
-        return self.list(request, *args, **kwargs)
+        account = get_object_or_404(Account, pk=request.query_params['user'])
+        by_user = self.queryset.filter(user=account.id)
+        self.queryset = by_user
+        response = self.list(request, *args, **kwargs)
+        response.data['user'] = AccountSerializer(instance=account).data
+        return response
 
 
 class ActionCheckAvailableSlotsView(GenericAPIView):

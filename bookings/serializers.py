@@ -10,6 +10,7 @@ from floors.models import Floor
 from floors.serializers import FloorSerializer
 from offices.models import Office
 from offices.serializers import OfficeSerializer
+from tables.serializers import TableSerializer
 from room_types.models import RoomType
 from rooms.models import Room
 from rooms.serializers import RoomSerializer
@@ -186,7 +187,7 @@ class BookingActivateActionSerializer(serializers.ModelSerializer):
         return instance
 
 
-class BookingListSerializer(BookingSerializer):
+class BookingListSerializer(BookingSerializer, BaseBookingSerializer):
     """Serialize booking list"""
 
     class Meta:
@@ -195,11 +196,20 @@ class BookingListSerializer(BookingSerializer):
 
     def to_representation(self, instance):
         instance: Booking
-        response = super(BookingSerializer, self).to_representation(instance)
+        response = super(BaseBookingSerializer, self).to_representation(instance)
+        response['room'] = {"id": instance.table.room.id,
+                            "title": instance.table.room.title,
+                            "type": instance.table.room.type.title
+                            }
+        response['floor'] = {"id": instance.table.room.floor.id,
+                             "title": instance.table.room.floor.title}
+        response['office'] = {"id": instance.table.room.floor.office.id,
+                              "title": instance.table.room.floor.office.title}
         # TODO: Does it provoke more resource to consume ?
-        response["room"] = RoomSerializer(instance=instance.table.room).data
-        response["floor"] = FloorSerializer(instance=instance.table.room.floor).data
-        response["office"] = OfficeSerializer(instance=instance.table.room.floor.office).data
+        # response["room"] = RoomSerializer(instance=instance.table.room).data
+        # response["floor"] = FloorSerializer(instance=instance.table.room.floor).data
+        # response["office"] = OfficeSerializer(instance=instance.table.room.floor.office).data
+        # response["table"] = TableSerializer(instance=instance.table).data
         return response
 
 
