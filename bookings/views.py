@@ -250,8 +250,8 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
             return self.list(request, *args, **kwargs)
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        date_from = datetime.strptime(serializer.data['date_from'], '%Y-%m-%dT%H:%M:%SZ')
-        date_to = datetime.strptime(serializer.data['date_to'], '%Y-%m-%dT%H:%M:%SZ')
+        date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%fZ')
+        date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%fZ')
         is_over = bool(serializer.data['is_over']) if serializer.data.get('is_over') else 0
         req_booking = self.queryset.filter(user=request.user.account.id) \
             .filter(
