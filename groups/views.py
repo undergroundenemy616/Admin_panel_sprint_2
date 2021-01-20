@@ -19,6 +19,7 @@ class ListCreateGroupAPIView(ListCreateAPIView):
         self.permission_classes = (IsAdmin, )
         self.serializer_class = CreateGroupSerializer
         return self.create(request, *args, **kwargs)
+
     @swagger_auto_schema(query_serializer=SwaggerGroupsParametrs)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('id'):

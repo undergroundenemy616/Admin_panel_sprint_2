@@ -6,6 +6,7 @@ from django.core.mail import send_mail
 
 from django.contrib.auth import user_logged_in
 from django.db.models import Q
+from drf_yasg import  openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -232,6 +233,12 @@ class ServiceEmailView(GenericAPIView):
     queryset = Account.objects.all()
     permission_classes = [IsAdmin, ]
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'account': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def post(self, request, *args, **kwargs):
         account_exist = get_object_or_404(Account, pk=request.data['account'])
         if not account_exist.email:
@@ -268,6 +275,12 @@ class UserAccessView(GenericAPIView):
 class OperatorPromotionView(GenericAPIView):
     permission_classes = [IsAdmin, ]
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'account': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def post(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.data['account'])
         if not account.email:

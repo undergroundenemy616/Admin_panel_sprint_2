@@ -13,7 +13,7 @@ from bookings.serializers import BookingSerializer, \
     BookingActivateActionSerializer, \
     BookingDeactivateActionSerializer, BookingFastSerializer, \
     BookingListSerializer, BookingListTablesSerializer, BookListTableSerializer, \
-    SwaggerBookListTableParametrs
+    SwaggerBookListTableParametrs, SwaggerBookListActiveParametrs
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -63,6 +63,7 @@ class BookingsActiveListView(BookingsView):
     serializer_class = BookingListSerializer
     permission_classes = (IsAuthenticated,)
 
+    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
         return self.list(request, *args, **kwargs)
