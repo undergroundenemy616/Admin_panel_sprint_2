@@ -40,7 +40,6 @@ class ListCreateFloorView(ListModelMixin,
     @swagger_auto_schema(query_serializer=SwaggerFloorParameters)
     def get(self, request, *args, **kwargs):
         """Returns list of floors."""
-        response = []
 
         if request.query_params.get('office'):
             if Office.objects.filter(id=request.query_params.get('office')):
@@ -48,11 +47,16 @@ class ListCreateFloorView(ListModelMixin,
             else:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
 
-            if request.query_params.get("type"):
+            if request.query_params.get('type'):
                 floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type'))
 
-            for floor in floors_by_office:
-                response.append(FloorSerializer(instance=floor).data)
+            if int(request.query_params.get('expand')) == 0:
+                response = []
+                for floor in floors_by_office:
+                    serialized_floor = DetailFloorSerializer(instance=floor).data
+                    serialized_floor.pop('floor_map')
+                    response.append(serialized_floor)
+                return Response(response, status=status.HTTP_200_OK)
 
             self.queryset = floors_by_office
         return self.list(request, *args, **kwargs)
