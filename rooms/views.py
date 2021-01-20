@@ -12,12 +12,12 @@ from datetime import datetime
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
-from core.mixins import FilterListMixin
 from offices.models import Office
 from floors.models import Floor
 from rooms.models import Room, RoomMarker
 from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
     RoomMarkerSerializer, SwaggerRoomParameters
+from tables.serializers import Table, TableSerializer
 from bookings.models import Booking
 
 
@@ -69,8 +69,12 @@ class RoomsView(ListModelMixin,
         else:
             return Response({"detail": "You must specify at least on of this fields: " +
                                        "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
+
         if request.query_params.get('zone'):
             rooms = rooms.filter(zone_id=request.query_params.get('zone'))
+
+        if request.query_params.get('type'):
+            rooms = rooms.filter(type__title=request.query_params.get('type'))
 
         for room in rooms:
             response.append(RoomSerializer(instance=room).data)
@@ -130,6 +134,16 @@ class RoomsView(ListModelMixin,
                     if not room['images']:
                         without_image.append(room)
                 response = without_image
+
+        if request.query_params.getlist('tags'):
+            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags'))
+            for room in response:
+                tables_with_tags = []
+                for table in tables:
+                    serialized_table = TableSerializer(instance=table).data
+                    if str(serialized_table['room']) == room['id']:
+                        tables_with_tags.append(serialized_table)
+                room['tables'] = tables_with_tags
 
         suitable_tables = 0
 
