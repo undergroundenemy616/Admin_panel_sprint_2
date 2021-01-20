@@ -1,9 +1,11 @@
 from rest_framework.generics import ListCreateAPIView, GenericAPIView, get_object_or_404, UpdateAPIView
 from rest_framework.mixins import RetrieveModelMixin, Response, status, UpdateModelMixin, DestroyModelMixin
+from drf_yasg.utils import swagger_auto_schema
 
 from core.permissions import IsAuthenticated, IsAdmin
 from groups.models import Group
-from groups.serializers import GroupSerializer, CreateGroupSerializer, UpdateGroupSerializer, UpdateGroupUsersSerializer
+from groups.serializers import GroupSerializer, CreateGroupSerializer, UpdateGroupSerializer, UpdateGroupUsersSerializer, \
+SwaggerGroupsParametrs
 from users.models import User, Account
 
 
@@ -17,7 +19,7 @@ class ListCreateGroupAPIView(ListCreateAPIView):
         self.permission_classes = (IsAdmin, )
         self.serializer_class = CreateGroupSerializer
         return self.create(request, *args, **kwargs)
-
+    @swagger_auto_schema(query_serializer=SwaggerGroupsParametrs)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('id'):
             group = get_object_or_404(Group, pk=request.query_params.get('id'))
