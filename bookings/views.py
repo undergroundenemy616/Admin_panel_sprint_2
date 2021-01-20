@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -227,7 +230,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
     Can be filtered by: date,
     """
     serializer_class = BookingPersonalSerializer
-    queryset = Booking.objects.all().select_related('table')
+    queryset = Booking.objects.all()
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
     search_fields = ['table__title',
@@ -239,5 +242,17 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
 
     @swagger_auto_schema(query_serializer=BookingPersonalSerializer)
     def get(self, request, *args, **kwargs):
-        req_booking = self.queryset.filter()
+        serializer = self.serializer_class(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        date_from = datetime.strptime(serializer.data['date_from'], '%Y-%m-%dT%H:%M:%SZ')
+        date_to = datetime.strptime(serializer.data['date_to'], '%Y-%m-%dT%H:%M:%SZ')
+        is_over = bool(serializer.data['is_over']) if serializer.data.get('is_over') else 0
+        req_booking = self.queryset.filter(user=request.user.account.id) \
+            .filter(
+            Q(is_over=is_over),
+            Q(date_from__gte=date_from, date_from__lt=date_to)
+            | Q(date_from__lte=date_from, date_to__gte=date_to)
+            | Q(date_to__gt=date_from, date_to__lte=date_to))
+        self.queryset = req_booking
+        self.serializer_class = BookingSerializer
         return self.list(request, *args, **kwargs)

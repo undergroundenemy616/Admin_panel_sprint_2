@@ -344,14 +344,14 @@ class BookListTableSerializer(serializers.ModelSerializer):
 
 
 class BookingPersonalSerializer(serializers.ModelSerializer):
-    date = serializers.DateTimeField()
-    condition = serializers.ChoiceField(choices=['gt', 'lt', 'gte', 'lte', 'eq'])
-    is_over = serializers.IntegerField()
-    date_from = serializers.DateTimeField()
-    date_to = serializers.DateTimeField()
+    is_over = serializers.IntegerField(required=False)
+    date_from = serializers.DateTimeField(required=False)
+    date_to = serializers.DateTimeField(required=False)
 
     class Meta:
         model = Booking
-        fields = ['date', 'condition', 'is_over', 'date_from', 'date_to']
+        fields = ['date_from', 'date_to', 'is_over']
+
+
 
 
