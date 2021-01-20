@@ -1,23 +1,27 @@
+from datetime import datetime
 from typing import Dict, Optional
 
 from django.db.models import Q
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, \
-    DestroyModelMixin, ListModelMixin, Response, status
-from rest_framework.request import Request
 from rest_framework import filters
-from datetime import datetime
+from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, Response,
+                                   RetrieveModelMixin, UpdateModelMixin,
+                                   status)
+from rest_framework.request import Request
 
+from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
-from core.mixins import FilterListMixin
-from offices.models import Office
 from floors.models import Floor
+from offices.models import Office
 from rooms.models import Room, RoomMarker
-from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
-    RoomMarkerSerializer, SwaggerRoomParameters
-from bookings.models import Booking
+from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
+                               RoomMarkerSerializer, RoomSerializer,
+                               SwaggerRoomParameters, UpdateRoomSerializer)
+from tables.serializers import Table, TableSerializer
 
 
 class RoomsView(ListModelMixin,
@@ -68,8 +72,12 @@ class RoomsView(ListModelMixin,
         else:
             return Response({"detail": "You must specify at least on of this fields: " +
                                        "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
+
         if request.query_params.get('zone'):
             rooms = rooms.filter(zone_id=request.query_params.get('zone'))
+
+        if request.query_params.get('type'):
+            rooms = rooms.filter(type__title=request.query_params.get('type'))
 
         for room in rooms:
             response.append(RoomSerializer(instance=room).data)
@@ -129,6 +137,16 @@ class RoomsView(ListModelMixin,
                     if not room['images']:
                         without_image.append(room)
                 response = without_image
+
+        if request.query_params.getlist('tags'):
+            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags'))
+            for room in response:
+                tables_with_tags = []
+                for table in tables:
+                    serialized_table = TableSerializer(instance=table).data
+                    if str(serialized_table['room']) == room['id']:
+                        tables_with_tags.append(serialized_table)
+                room['tables'] = tables_with_tags
 
         suitable_tables = 0
 
@@ -195,6 +213,12 @@ class RoomMarkerView(CreateModelMixin,
         serializer = self.serializer_class(instance=instance.room)
         return Response(serializer.to_representation(instance=instance.room), status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'room': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def delete(self, request, *args, **kwargs):
         room_instance = get_object_or_404(Room, pk=request.data['room'])
         instance = get_object_or_404(RoomMarker, pk=room_instance.room_marker.id)

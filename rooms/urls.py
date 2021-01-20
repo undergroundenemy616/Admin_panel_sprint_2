@@ -1,6 +1,7 @@
-from rooms import views
-from room_types import views as type_view
 from django.urls import path
+
+from room_types import views as type_view
+from rooms import views
 
 urlpatterns = [
     path('', views.RoomsView.as_view()),

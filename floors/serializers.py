@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from files.models import File
 from files.serializers import FileSerializer
 from floors.models import Floor, FloorMap
@@ -7,10 +8,10 @@ from rooms.serializers import RoomSerializer
 from tables.models import Table
 
 
-class SwaggerFloorsParametrs(serializers.Serializer):
+class SwaggerFloorParameters(serializers.Serializer):
     office = serializers.UUIDField(required=False)
-    type = serializers.CharField(required=False, max_length=140)
-    tags = serializers.ListField(child=serializers.CharField(), required=False)
+    expand = serializers.IntegerField(required=False)
+    type = serializers.CharField(required=False)
 
 
 class BaseFloorSerializer(serializers.ModelSerializer):

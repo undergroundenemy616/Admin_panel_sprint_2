@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from files.models import File
 from files.serializers import FileSerializer
+from floors.models import Floor
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
-from floors.models import Floor
-from files.models import File
 from tables.models import Table
 from tables.serializers import TableSerializer
 
@@ -22,6 +22,8 @@ class SwaggerRoomParameters(serializers.Serializer):
     zone = serializers.UUIDField(required=False)
     floor = serializers.UUIDField(required=False)
     office = serializers.UUIDField(required=False)
+    type = serializers.CharField(required=False)
+    tags = serializers.ListField(required=False)
 
 
 class BaseRoomSerializer(serializers.ModelSerializer):
@@ -89,8 +91,9 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         instance: Room
         data = super(CreateRoomSerializer, self).to_representation(instance)
         data['id'] = instance.id
-        from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
         from floors.serializers import FloorSerializer
+        from offices.serializers import \
+            OfficeZoneSerializer  # If not like this Import Error calls
         data['seats_amount'] = instance.seats_amount
         data['marker'] = None
         tables_nested = Table.objects.filter(room=instance.id)
@@ -133,8 +136,9 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         instance: Room
         data = super(UpdateRoomSerializer, self).to_representation(instance)
         data['id'] = instance.id
-        from offices.serializers import OfficeZoneSerializer  # If not like this Import Error calls
         from floors.serializers import FloorSerializer
+        from offices.serializers import \
+            OfficeZoneSerializer  # If not like this Import Error calls
         data['seats_amount'] = instance.seats_amount
         data['marker'] = None
         tables_nested = Table.objects.filter(room=instance.id)

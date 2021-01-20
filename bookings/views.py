@@ -4,21 +4,23 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import UpdateModelMixin, ListModelMixin, CreateModelMixin, DestroyModelMixin
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, UpdateModelMixin)
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter
-from drf_yasg.utils import swagger_auto_schema
 
-from core.permissions import IsAdmin, IsAuthenticated
-from core.pagination import DefaultPagination
 from bookings.models import Booking
-from tables.serializers import TableSerializer, Table
-from bookings.serializers import BookingSerializer, \
-    BookingSlotsSerializer, \
-    BookingActivateActionSerializer, \
-    BookingDeactivateActionSerializer, BookingFastSerializer, \
-    BookingListSerializer, BookingListTablesSerializer, BookListTableSerializer, \
-    SwaggerBookListTableParametrs, BookingPersonalSerializer
+from bookings.serializers import (BookingActivateActionSerializer,
+                                  BookingDeactivateActionSerializer,
+                                  BookingFastSerializer, BookingListSerializer,
+                                  BookingListTablesSerializer,
+                                  BookingSerializer, BookingSlotsSerializer,
+                                  BookListTableSerializer,
+                                  SwaggerBookListActiveParametrs,
+                                  SwaggerBookListTableParametrs)
+from core.pagination import DefaultPagination
+from core.permissions import IsAdmin, IsAuthenticated
+from tables.serializers import Table, TableSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -68,6 +70,7 @@ class BookingsActiveListView(BookingsView):
     serializer_class = BookingListSerializer
     permission_classes = (IsAuthenticated,)
 
+    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
         return self.list(request, *args, **kwargs)

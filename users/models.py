@@ -1,8 +1,10 @@
 import random
 import uuid
+
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models
+
 from groups.models import Group
 
 

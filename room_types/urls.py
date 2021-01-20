@@ -1,6 +1,6 @@
-from room_types import views
 from django.urls import path
 
+from room_types import views
 
 # Moved to rooms urls
 urlpatterns = [

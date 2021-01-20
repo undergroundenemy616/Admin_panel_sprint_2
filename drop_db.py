@@ -4,8 +4,9 @@ import os
 os.environ.setdefault('BRANCH', 'master')
 
 from django.core.exceptions import ImproperlyConfigured
-from booking_api_django_new.settings import DATABASES
 from django.db import connection
+
+from booking_api_django_new.settings import DATABASES
 
 QUERY = """DROP SCHEMA public CASCADE;
         CREATE SCHEMA public;"""

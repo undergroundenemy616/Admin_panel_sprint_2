@@ -1,27 +1,22 @@
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, RetrieveModelMixin,
+                                   UpdateModelMixin)
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+
 from core.pagination import DefaultPagination
-from core.permissions import IsAuthenticated, IsAdmin
+from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office, OfficeZone
-from offices.serializers import (
-    CreateOfficeSerializer,
-    NestedOfficeSerializer,
-    CreateUpdateOfficeZoneSerializer,
-    OfficeZoneSerializer,
-    ListOfficeSerializer, OptimizeListOfficeSerializer,
-    SwaggerOfficeParametrs, SwaggerZonesParametrs
-)
-from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import (
-    UpdateModelMixin,
-    CreateModelMixin,
-    RetrieveModelMixin,
-    DestroyModelMixin,
-    ListModelMixin
-)
+from offices.serializers import (CreateOfficeSerializer,
+                                 CreateUpdateOfficeZoneSerializer,
+                                 ListOfficeSerializer, NestedOfficeSerializer,
+                                 OfficeZoneSerializer,
+                                 OptimizeListOfficeSerializer,
+                                 SwaggerOfficeParametrs, SwaggerZonesParametrs)
 
 
 class ListCreateUpdateOfficeView(ListModelMixin,

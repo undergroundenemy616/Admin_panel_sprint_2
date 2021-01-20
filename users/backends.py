@@ -1,8 +1,10 @@
 import time
+
 import jwt
 from django.contrib.auth import get_user_model
 from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework_jwt.settings import api_settings
+
 from users.serializers import TokenSerializer
 
 
