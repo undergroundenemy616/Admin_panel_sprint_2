@@ -197,6 +197,9 @@ class BookingListSerializer(BookingSerializer, BaseBookingSerializer):
     def to_representation(self, instance):
         instance: Booking
         response = super(BaseBookingSerializer, self).to_representation(instance)
+        response['table'] = {"id": instance.table.id,
+                             "title": instance.table.title,
+                             "has_voted": False}
         response['room'] = {"id": instance.table.room.id,
                             "title": instance.table.room.title,
                             "type": instance.table.room.type.title
