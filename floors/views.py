@@ -1,13 +1,13 @@
+from drf_yasg.utils import swagger_auto_schema
 from core.permissions import IsAuthenticated, IsAdmin
 from core.pagination import DefaultPagination
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from offices.models import Office
 from rooms.models import RoomMarker
 from floors.models import Floor, FloorMap
 from floors.serializers import (
     NestedFloorSerializer,
-    FloorMapSerializer, FloorSerializer, DetailFloorSerializer, EditFloorSerializer,
-    SwaggerFloorsParametrs
+    FloorMapSerializer, FloorSerializer, DetailFloorSerializer, EditFloorSerializer, SwaggerFloorParameters
 )
 from rest_framework.mixins import (
     ListModelMixin,
@@ -37,17 +37,26 @@ class ListCreateFloorView(ListModelMixin,
         floors = serializer.save()
         return Response(serializer.to_representation(floors), status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(query_serializer=SwaggerFloorsParametrs)
+    @swagger_auto_schema(query_serializer=SwaggerFloorParameters)
     def get(self, request, *args, **kwargs):
         """Returns list of floors."""
-        if request.query_params.get('office'):
-            floors_by_office = self.queryset.filter(office=request.query_params.get('office'))
 
-            if request.query_params.get("type"):
+        if request.query_params.get('office'):
+            if Office.objects.filter(id=request.query_params.get('office')):
+                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office'))
+            else:
+                return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            if request.query_params.get('type'):
                 floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type'))
 
-            if request.query_params.get('tags'):
-                pass
+            if int(request.query_params.get('expand')) == 0:
+                response = []
+                for floor in floors_by_office:
+                    serialized_floor = DetailFloorSerializer(instance=floor).data
+                    serialized_floor.pop('floor_map')
+                    response.append(serialized_floor)
+                return Response(response, status=status.HTTP_200_OK)
 
             self.queryset = floors_by_office
         return self.list(request, *args, **kwargs)

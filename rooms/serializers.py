@@ -22,6 +22,8 @@ class SwaggerRoomParameters(serializers.Serializer):
     zone = serializers.UUIDField(required=False)
     floor = serializers.UUIDField(required=False)
     office = serializers.UUIDField(required=False)
+    type = serializers.CharField(required=False)
+    tags = serializers.ListField(required=False)
 
 
 class BaseRoomSerializer(serializers.ModelSerializer):
