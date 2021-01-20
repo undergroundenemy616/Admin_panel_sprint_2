@@ -85,7 +85,6 @@ class ListCreateDeleteFloorMapView(ListModelMixin,
     permission_classes = (IsAdmin, )
     pagination_class = DefaultPagination
     serializer_class = FloorMapSerializer
-    floor = openapi.Parameter('floor', openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True)
 
     def get(self, request, *args, **kwargs):
         self.permission_classes = (IsAuthenticated, )
