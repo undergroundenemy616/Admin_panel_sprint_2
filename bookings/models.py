@@ -1,12 +1,14 @@
 import uuid
 from datetime import datetime, timedelta, timezone
+
 from django.db import models
+from django.db.models import Q
+
 from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS
 from core.scheduler import scheduler
 from push_tokens.send_interface import send_push_message
 from tables.models import Table
-from users.models import User, Account
-from django.db.models import Q
+from users.models import Account, User
 
 MINUTES_TO_ACTIVATE = 15
 

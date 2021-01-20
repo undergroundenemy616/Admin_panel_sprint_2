@@ -1,8 +1,10 @@
 import uuid
+
 from django.core.validators import MinValueValidator
 from django.db import models
-from floors.models import Floor
+
 from files.models import File
+from floors.models import Floor
 from room_types.models import RoomType
 
 

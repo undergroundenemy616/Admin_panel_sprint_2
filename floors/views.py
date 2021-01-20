@@ -1,21 +1,19 @@
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from core.permissions import IsAuthenticated, IsAdmin
-from core.pagination import DefaultPagination
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, Response,
+                                   RetrieveModelMixin, UpdateModelMixin,
+                                   status)
+
+from core.pagination import DefaultPagination
+from core.permissions import IsAdmin, IsAuthenticated
+from floors.models import Floor, FloorMap
+from floors.serializers import (DetailFloorSerializer, EditFloorSerializer,
+                                FloorMapSerializer, FloorSerializer,
+                                NestedFloorSerializer, SwaggerFloorParameters)
 from offices.models import Office
 from rooms.models import RoomMarker
-from floors.models import Floor, FloorMap
-from floors.serializers import (
-    NestedFloorSerializer,
-    FloorMapSerializer, FloorSerializer, DetailFloorSerializer, EditFloorSerializer, SwaggerFloorParameters
-)
-from rest_framework.mixins import (
-    ListModelMixin,
-    CreateModelMixin,
-    UpdateModelMixin,
-    RetrieveModelMixin,
-    DestroyModelMixin, Response, status
-)
 
 
 class ListCreateFloorView(ListModelMixin,
@@ -101,6 +99,12 @@ class ListCreateDeleteFloorMapView(ListModelMixin,
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'floor': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def delete(self, request, *args, **kwargs):
         floormap_instance = FloorMap.objects.filter(floor=request.data['floor']).first()
         floormap_instance.delete()
@@ -115,6 +119,12 @@ class CleanFloorMapView(GenericAPIView):
     serializer_class = FloorSerializer
     permission_classes = [IsAdmin, ]
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'floor': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def delete(self, request, *args, **kwargs):
         room_markers = RoomMarker.objects.filter(room__floor_id=request.data['floor'])
         if room_markers:

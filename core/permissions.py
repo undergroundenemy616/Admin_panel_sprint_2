@@ -1,5 +1,6 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
-from groups.models import OWNER_ACCESS, ADMIN_ACCESS
+
+from groups.models import ADMIN_ACCESS, OWNER_ACCESS
 
 
 class IsAuthenticatedOnPost(BasePermission):

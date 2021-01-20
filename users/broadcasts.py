@@ -1,7 +1,9 @@
 import logging
-import requests
 from abc import ABC, abstractmethod
+
+import requests
 from django.conf import settings
+
 from users.models import User
 
 

@@ -2,10 +2,10 @@ import os
 import random
 
 from django.conf.global_settings import EMAIL_HOST_USER
-from django.core.mail import send_mail
-
 from django.contrib.auth import user_logged_in
+from django.core.mail import send_mail
 from django.db.models import Q
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -13,18 +13,18 @@ from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 
 from core.pagination import DefaultPagination
-from core.permissions import IsOwner, IsAdmin, IsAuthenticated
+from core.permissions import IsAdmin, IsAuthenticated, IsOwner
+from groups.models import Group
 from mail import send_html_email_message
 from users.backends import jwt_encode_handler, jwt_payload_handler
-from users.models import User, Account
-from users.registration import send_code, confirm_code
-from users.serializers import (
-    LoginOrRegisterSerializer,
-    AccountSerializer,
-    LoginOrRegisterStaffSerializer, RegisterStaffSerializer, AccountUpdateSerializer, UserSerializer,
-    SwaggerAccountParametr, SwaggerAccountListParametr
-)
-from groups.models import Group
+from users.models import Account, User
+from users.registration import confirm_code, send_code
+from users.serializers import (AccountSerializer, AccountUpdateSerializer,
+                               LoginOrRegisterSerializer,
+                               LoginOrRegisterStaffSerializer,
+                               RegisterStaffSerializer,
+                               SwaggerAccountListParametr,
+                               SwaggerAccountParametr, UserSerializer)
 
 
 def create_auth_data(user):
@@ -232,6 +232,12 @@ class ServiceEmailView(GenericAPIView):
     queryset = Account.objects.all()
     permission_classes = [IsAdmin, ]
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'account': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def post(self, request, *args, **kwargs):
         account_exist = get_object_or_404(Account, pk=request.data['account'])
         if not account_exist.email:
@@ -268,6 +274,12 @@ class UserAccessView(GenericAPIView):
 class OperatorPromotionView(GenericAPIView):
     permission_classes = [IsAdmin, ]
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'account': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def post(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.data['account'])
         if not account.email:

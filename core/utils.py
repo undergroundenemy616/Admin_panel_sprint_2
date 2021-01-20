@@ -3,6 +3,7 @@ from typing import Union
 
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
+
 from offices.models import Office
 from tables.models import Table
 

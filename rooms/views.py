@@ -1,23 +1,27 @@
+from datetime import datetime
 from typing import Dict, Optional
 
 from django.db.models import Q
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin, CreateModelMixin, \
-    DestroyModelMixin, ListModelMixin, Response, status
-from rest_framework.request import Request
 from rest_framework import filters
-from datetime import datetime
+from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin, Response,
+                                   RetrieveModelMixin, UpdateModelMixin,
+                                   status)
+from rest_framework.request import Request
 
+from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
-from offices.models import Office
 from floors.models import Floor
+from offices.models import Office
 from rooms.models import Room, RoomMarker
-from rooms.serializers import RoomSerializer, FilterRoomSerializer, CreateRoomSerializer, UpdateRoomSerializer, \
-    RoomMarkerSerializer, SwaggerRoomParameters
+from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
+                               RoomMarkerSerializer, RoomSerializer,
+                               SwaggerRoomParameters, UpdateRoomSerializer)
 from tables.serializers import Table, TableSerializer
-from bookings.models import Booking
 
 
 class RoomsView(ListModelMixin,
@@ -209,6 +213,12 @@ class RoomMarkerView(CreateModelMixin,
         serializer = self.serializer_class(instance=instance.room)
         return Response(serializer.to_representation(instance=instance.room), status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'room': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
     def delete(self, request, *args, **kwargs):
         room_instance = get_object_or_404(Room, pk=request.data['room'])
         instance = get_object_or_404(RoomMarker, pk=room_instance.room_marker.id)

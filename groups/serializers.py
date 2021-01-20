@@ -1,8 +1,8 @@
 from rest_framework import serializers
+
 from groups.models import Group
-from users.models import User
+from users.models import Account, User
 from users.serializers import AccountSerializer
-from users.models import User, Account
 
 
 class SwaggerGroupsParametrs(serializers.Serializer):

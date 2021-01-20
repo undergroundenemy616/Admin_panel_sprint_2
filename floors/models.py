@@ -1,8 +1,9 @@
 import uuid
 
 from django.db import models
-from offices.models import Office
+
 from files.models import File
+from offices.models import Office
 
 
 class Floor(models.Model):

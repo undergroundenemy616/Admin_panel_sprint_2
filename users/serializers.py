@@ -7,9 +7,9 @@ from rest_framework.exceptions import ValidationError
 from core.pagination import DefaultPagination
 from files.models import File
 from files.serializers import BaseFileSerializer
-from groups.models import Group, GUEST_ACCESS, OWNER_ACCESS
+from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
-from users.models import User, Account
+from users.models import Account, User
 
 
 class SwaggerAccountParametr(serializers.Serializer):
