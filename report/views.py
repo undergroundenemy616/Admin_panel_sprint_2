@@ -10,7 +10,7 @@ from rest_framework.mixins import (CreateModelMixin,
 from core.permissions import IsAuthenticated
 from report.serializers import ReportSerializer, SwaggerReportParametrs
 from report.models import Report
-from report.sent_mail import generate_html, generate_attach
+from report.generate_html import generate_html, generate_attach
 from users.models import Account, User
 
 
