@@ -10,6 +10,7 @@ from floors.models import Floor
 from floors.serializers import FloorSerializer
 from offices.models import Office
 from offices.serializers import OfficeSerializer
+from tables.serializers import TableSerializer
 from room_types.models import RoomType
 from rooms.models import Room
 from rooms.serializers import RoomSerializer
@@ -51,12 +52,19 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = BaseBookingSerializer(instance).data
+        response['active'] = response['is_active']
+        del response['is_active']
         response['room'] = {"id": instance.table.room.id,
-                            "title": instance.table.room.title}
+                            "title": instance.table.room.title,
+                            "type": instance.table.room.type.title,
+                            "zone": {"id": instance.table.room.zone.id,
+                                     "title": instance.table.room.zone.title}
+                            }
         response['floor'] = {"id": instance.table.room.floor.id,
                              "title": instance.table.room.floor.title}
         response['office'] = {"id": instance.table.room.floor.office.id,
                               "title": instance.table.room.floor.office.title}
+        response['user'] = instance.user.id
         return response
 
     def create(self, validated_data, *args, **kwargs):
@@ -78,16 +86,6 @@ class BookingSerializer(serializers.ModelSerializer):
             table=validated_data['table'],
             user=validated_data['user']
         )
-
-    # def to_representation(self, instance):
-    #     instance: Booking
-    #     response = super(BookingSerializer, self).to_representation(instance)
-    #     response['table'] = {
-    #         "id": instance.table.id,
-    #         "title": instance.table.title
-    #     }
-    #     response['user'] = AccountSerializer(instance=instance.user.account).data
-    #     return response
 
 
 class SlotsSerializer(serializers.Serializer):
@@ -157,6 +155,7 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
 
 class BookingActivateActionSerializer(serializers.ModelSerializer):
     booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
+
     # table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all())
 
     class Meta:
@@ -168,17 +167,14 @@ class BookingActivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        # if validated_data['table'] != instance.table:
-        #     raise serializers.ValidationError('Wrong data')
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if not date_now < instance.date_activate_until:
             raise serializers.ValidationError('Activation time have passed')
-        # validated_data['is_active'] = True
         instance.set_booking_active()
         return instance
 
 
-class BookingListSerializer(BookingSerializer):
+class BookingListSerializer(BookingSerializer, BaseBookingSerializer):
     """Serialize booking list"""
 
     class Meta:
@@ -187,11 +183,18 @@ class BookingListSerializer(BookingSerializer):
 
     def to_representation(self, instance):
         instance: Booking
-        response = super(BookingSerializer, self).to_representation(instance)
-        # TODO: Does it provoke more resource to consume ?
-        response["room"] = RoomSerializer(instance=instance.table.room).data
-        response["floor"] = FloorSerializer(instance=instance.table.room.floor).data
-        response["office"] = OfficeSerializer(instance=instance.table.room.floor.office).data
+        response = super(BaseBookingSerializer, self).to_representation(instance)
+        response['table'] = {"id": instance.table.id,
+                             "title": instance.table.title,
+                             "has_voted": False}
+        response['room'] = {"id": instance.table.room.id,
+                            "title": instance.table.room.title,
+                            "type": instance.table.room.type.title
+                            }
+        response['floor'] = {"id": instance.table.room.floor.id,
+                             "title": instance.table.room.floor.title}
+        response['office'] = {"id": instance.table.room.floor.office.id,
+                              "title": instance.table.room.floor.office.title}
         return response
 
 
@@ -211,8 +214,9 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        validated_data['is_over'] = True
-        validated_data['date_to'] = datetime.utcnow().replace(tzinfo=timezone.utc)
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        instance.set_booking_over()
+        validated_data['date_to'] = now
         return super(BookingDeactivateActionSerializer, self).update(instance, validated_data)
 
 
@@ -357,7 +361,3 @@ class BookingPersonalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['date_from', 'date_to', 'is_over']
-
-
-
-

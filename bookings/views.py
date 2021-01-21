@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -21,6 +21,8 @@ from bookings.serializers import (BookingActivateActionSerializer,
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from tables.serializers import Table, TableSerializer
+from users.models import Account
+from users.serializers import AccountSerializer
 
 
 class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
@@ -65,25 +67,6 @@ class BookingsAdminView(BookingsView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class BookingsActiveListView(BookingsView):
-    queryset = Booking.objects.active_only().all()
-    serializer_class = BookingListSerializer
-    permission_classes = (IsAuthenticated,)
-
-    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
-    def get(self, request, *args, **kwargs):
-        request.data['user'] = request.user.id
-        return self.list(request, *args, **kwargs)
-
-
-class BookingsUserListView(BookingsAdminView):
-    serializer_class = BookingListSerializer
-
-    def get(self, request, *args, **kwargs):
-        # request.data['user'] = request.user.id
-        return self.list(request, *args, **kwargs)
-
-
 class ActionCheckAvailableSlotsView(GenericAPIView):
     serializer_class = BookingSlotsSerializer
     queryset = Booking.objects.all()
@@ -122,6 +105,7 @@ class ActionDeactivateBookingsView(GenericAPIView):
     """
     serializer_class = BookingDeactivateActionSerializer
     queryset = Booking.objects.all()
+    permission_classes = (IsAdmin, )
 
     def post(self, request, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
@@ -131,20 +115,23 @@ class ActionDeactivateBookingsView(GenericAPIView):
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
-class ActionEndBookingsView(GenericAPIView):
+class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
     """
     User route. Deactivate booking only connected with User
     """
     serializer_class = BookingDeactivateActionSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
         if existing_booking.user.id != request.user.account.id:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
+        if now < serializer.data["date_from"] and now < serializer.data["date_to"]:
+            return self.destroy(request, *args, **kwargs)
         serializer.save(user=request.user)
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
@@ -153,12 +140,13 @@ class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
     """
     User route. Delete booking object from DB
     """
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().prefetch_related('user')
+    permission_classes = (IsAuthenticated, )
 
     def delete(self, request, pk=None, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=pk)
         if existing_booking.user.id != request.user.account.id:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         return self.destroy(request, *args, **kwargs)
 
 
@@ -250,8 +238,8 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
             return self.list(request, *args, **kwargs)
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        date_from = datetime.strptime(serializer.data['date_from'], '%Y-%m-%dT%H:%M:%SZ')
-        date_to = datetime.strptime(serializer.data['date_to'], '%Y-%m-%dT%H:%M:%SZ')
+        date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
+        date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
         is_over = bool(serializer.data['is_over']) if serializer.data.get('is_over') else 0
         req_booking = self.queryset.filter(user=request.user.account.id) \
             .filter(
@@ -262,3 +250,17 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
         self.queryset = req_booking
         self.serializer_class = BookingSerializer
         return self.list(request, *args, **kwargs)
+
+
+class BookingsListUserView(BookingsAdminView):
+    serializer_class = BookingListSerializer
+    queryset = Booking.objects.all().prefetch_related('user')
+
+    @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
+    def get(self, request, *args, **kwargs):
+        account = get_object_or_404(Account, pk=request.query_params['user'])
+        by_user = self.queryset.filter(user=account.id)
+        self.queryset = by_user
+        response = self.list(request, *args, **kwargs)
+        response.data['user'] = AccountSerializer(instance=account).data
+        return response
