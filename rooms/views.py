@@ -20,8 +20,20 @@ from offices.models import Office
 from rooms.models import Room, RoomMarker
 from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                RoomMarkerSerializer, RoomSerializer,
-                               SwaggerRoomParameters, UpdateRoomSerializer)
+                               SwaggerRoomParameters, UpdateRoomSerializer,
+                               base_serialize_room)
 from tables.serializers import Table, TableSerializer
+
+import json
+from uuid import UUID
+
+
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.hex
+        return json.JSONEncoder.default(self, obj)
 
 
 class RoomsView(ListModelMixin,
@@ -62,17 +74,20 @@ class RoomsView(ListModelMixin,
             self.queryset = by_office
             return self.list(request, *args, **kwargs)
         response = []
-        rooms = self.queryset.all().exclude(type_id__isnull=True)
         if request.query_params.get('office'):
-            if Office.objects.filter(id=request.query_params.get('office')):
-                rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
-            else:
+            try:
+                Office.objects.get(id=request.query_params.get('office'))
+            except Office.DoesNotExist:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
+            rooms = self.queryset.exclude(type_id__isnull=True).\
+                filter(floor__office_id=request.query_params.get('office')).select_related('floor__office')
         elif request.query_params.get('floor'):
-            if Floor.objects.filter(id=request.query_params.get('floor')):
-                rooms = rooms.filter(floor_id=request.query_params.get('floor'))
-            else:
+            try:
+                Floor.objects.get(id=request.query_params.get('floor'))
+            except Office.DoesNotExist:
                 return Response({"message": "Floor not found"}, status=status.HTTP_404_NOT_FOUND)
+            rooms = self.queryset.exclude(type_id__isnull=True).\
+                filter(floor_id=request.query_params.get('floor')).select_related('floor')
         else:
             return Response({"detail": "You must specify at least on of this fields: " +
                                        "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
@@ -84,7 +99,8 @@ class RoomsView(ListModelMixin,
             rooms = rooms.filter(type__title=request.query_params.get('type'))
 
         for room in rooms:
-            response.append(RoomSerializer(instance=room).data)
+            # response.append(RoomSerializer(instance=room).data)
+            response.append(base_serialize_room(room=room))
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
@@ -162,7 +178,8 @@ class RoomsView(ListModelMixin,
             'suitable_tables': suitable_tables
         }
 
-        return Response(response_dict, status=status.HTTP_200_OK)
+        # return Response(response_dict, status=status.HTTP_200_OK)
+        return Response(json.loads(json.dumps(response_dict, cls=UUIDEncoder)), status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

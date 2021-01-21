@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from typing import Dict, Any
+
 
 from files.models import File
 from files.serializers import FileSerializer
@@ -8,7 +10,7 @@ from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
-from tables.models import Table
+from tables.models import Table, TableTag
 from tables.serializers import TableSerializer
 
 
@@ -33,6 +35,106 @@ class BaseRoomSerializer(serializers.ModelSerializer):
         depth = 1
 
 
+def base_serialize_room(room: Room) -> Dict[str, Any]:
+    return {
+        'id': room.id,
+        'title': room.title,
+        'description': room.description,
+        'type': room.type.title,
+        'zone': {
+            'id': room.zone.id,
+            'title': room.zone.title,
+            'is_deletable': room.zone.is_deletable,
+            'office': office_serializer(room.zone.office),
+        },
+        'floor': floor_serializer_for_room(room.floor),
+        'seats_amount': room.seats_amount,
+        'room_type_color': room.type.color,
+        'room_type_unified': room.type.unified,
+        'is_bookable': room.type.bookable,
+        'room_type_icon': {
+            'title': room.type.icon.title,
+            'path': room.type.icon.path,
+            'thumb': room.type.icon.thumb,
+            'size': room.type.icon.size
+        } if room.type.icon else None,
+        'tables': [table_serializer_for_room(table=table) for table in room.tables.all()],
+        'capacity': room.tables.count(),
+        'marker': room_marker_serializer(marker=room.room_marker) if hasattr(room, 'room_marker') else None
+    }
+
+
+def office_serializer(office: Office) -> Dict[str, Any]:
+    images = []
+    for image in office.images.all():
+        images.append(image_serializer(image=image))
+    return {
+        'id': office.id,
+        'title': office.title,
+        'description': office.description,
+        'working_hours': office.working_hours,
+        'service_email': office.service_email,
+        'license': office.license.id,
+        'images': images,
+    }
+
+
+def floor_serializer_for_room(floor: Floor) -> Dict[str, Any]:
+    return {
+        'id': floor.id,
+        'title': floor.title,
+        'description': floor.description,
+        'office': floor.office.id
+    }
+
+
+def table_serializer_for_room(table: Table) -> Dict[str, Any]:
+    images = []
+    table_tags = []
+    for image in table.images.all():
+        images.append(image_serializer(image=image))
+    for tag in table.tags.all():
+        table_tags.append(table_tag_serializer(tag=tag))
+    return {
+        'id': table.id,
+        'title': table.title,
+        'room': table.room.id,
+        'tags': table_tags,
+        'images': images,
+        'rating': table.rating,
+        'description': table.description,
+        'is_occupied': table.is_occupied
+    }
+
+
+def image_serializer(image: File) -> Dict[str, Any]:
+    return {
+        'id': image.id,
+        'title': image.title,
+        'path': image.path,
+        'thumb': image.thumb,
+        'size': image.size
+    }
+
+
+def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
+    return {
+        'id': marker.id,
+        'icon': marker.icon,
+        'x': float(marker.x),
+        'y': float(marker.y),
+        'room': marker.room.id
+    }
+
+
+def table_tag_serializer(tag: TableTag) -> Dict[str, Any]:
+    return {
+        'id': tag.id,
+        'title': tag.title,
+        'icon': image_serializer(image=tag.icon)
+    }
+
+
 class RoomSerializer(serializers.ModelSerializer):
     tables = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
@@ -44,16 +146,26 @@ class RoomSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = BaseRoomSerializer(instance=instance).data
+        # response = base_serialize_room(room=instance)
         room_type = response.pop('type')
         response['type'] = room_type['title']
         response['room_type_color'] = room_type['color']
         response['room_type_unified'] = room_type['unified']
         response['is_bookable'] = room_type['bookable']
-        response['room_type_icon'] = room_type['icon']   #[FileSerializer(instance=room_type['icon']).data]
+        response['room_type_icon'] = room_type['icon']  #[FileSerializer(instance=room_type['icon']).data]
         response['tables'] = [TableSerializer(instance=table).data for table in instance.tables.all()]
         response['capacity'] = instance.tables.count()
         response['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
             hasattr(instance, 'room_marker') else None
+        # response['type'] = room_type.title
+        # response['room_type_color'] = room_type.color
+        # response['room_type_unified'] = room_type.unified
+        # response['is_bookable'] = room_type.bookable
+        # # response['room_type_icon'] = room_type.icon  # [FileSerializer(instance=room_type['icon']).data]
+        # response['tables'] = [TableSerializer(instance=table).data for table in instance.tables.all()]
+        # response['capacity'] = instance.tables.count()
+        # response['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
+        #     hasattr(instance, 'room_marker') else None
         return response
 
 
