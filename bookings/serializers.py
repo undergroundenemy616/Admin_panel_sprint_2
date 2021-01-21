@@ -87,16 +87,6 @@ class BookingSerializer(serializers.ModelSerializer):
             user=validated_data['user']
         )
 
-    # def to_representation(self, instance):
-    #     instance: Booking
-    #     response = super(BookingSerializer, self).to_representation(instance)
-    #     response['table'] = {
-    #         "id": instance.table.id,
-    #         "title": instance.table.title
-    #     }
-    #     response['user'] = AccountSerializer(instance=instance.user.account).data
-    #     return response
-
 
 class SlotsSerializer(serializers.Serializer):
     """Serialize and validate multiple booking time periods"""
