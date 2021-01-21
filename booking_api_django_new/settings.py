@@ -26,7 +26,7 @@ APPEND_SLASH = False
 SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 KEY_EXPIRATION = 60 * 3  # 3 minutes
 
@@ -161,6 +161,7 @@ LOGGING = {
 
 MIDDLEWARE = [
     'core.middlewares.CorsMiddleware',
+    'core.middlewares.RequestTimeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
