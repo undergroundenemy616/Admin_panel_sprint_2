@@ -87,16 +87,6 @@ class BookingSerializer(serializers.ModelSerializer):
             user=validated_data['user']
         )
 
-    # def to_representation(self, instance):
-    #     instance: Booking
-    #     response = super(BookingSerializer, self).to_representation(instance)
-    #     response['table'] = {
-    #         "id": instance.table.id,
-    #         "title": instance.table.title
-    #     }
-    #     response['user'] = AccountSerializer(instance=instance.user.account).data
-    #     return response
-
 
 class SlotsSerializer(serializers.Serializer):
     """Serialize and validate multiple booking time periods"""
@@ -177,12 +167,9 @@ class BookingActivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        # if validated_data['table'] != instance.table:
-        #     raise serializers.ValidationError('Wrong data')
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if not date_now < instance.date_activate_until:
             raise serializers.ValidationError('Activation time have passed')
-        # validated_data['is_active'] = True
         instance.set_booking_active()
         return instance
 
@@ -208,11 +195,6 @@ class BookingListSerializer(BookingSerializer, BaseBookingSerializer):
                              "title": instance.table.room.floor.title}
         response['office'] = {"id": instance.table.room.floor.office.id,
                               "title": instance.table.room.floor.office.title}
-        # TODO: Does it provoke more resource to consume ?
-        # response["room"] = RoomSerializer(instance=instance.table.room).data
-        # response["floor"] = FloorSerializer(instance=instance.table.room.floor).data
-        # response["office"] = OfficeSerializer(instance=instance.table.room.floor.office).data
-        # response["table"] = TableSerializer(instance=instance.table).data
         return response
 
 
@@ -232,8 +214,9 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        validated_data['is_over'] = True
-        validated_data['date_to'] = datetime.utcnow().replace(tzinfo=timezone.utc)
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        instance.set_booking_over()
+        validated_data['date_to'] = now
         return super(BookingDeactivateActionSerializer, self).update(instance, validated_data)
 
 
