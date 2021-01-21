@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     'rooms',
     'tables',
     'room_types',
+    'report',
     'bookings',
     'push_tokens',
     'rest_framework',

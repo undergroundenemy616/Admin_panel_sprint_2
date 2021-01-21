@@ -89,6 +89,7 @@ urlpatterns = [
     path('book_list', include('bookings.urls_list')),
     path('tokens', include('push_tokens.urls')),
     path('send_', include('push_tokens.urls_send')),
+    path('report', include('report.urls')),
 ]
 
 '''
