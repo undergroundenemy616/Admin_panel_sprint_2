@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -105,6 +105,7 @@ class ActionDeactivateBookingsView(GenericAPIView):
     """
     serializer_class = BookingDeactivateActionSerializer
     queryset = Booking.objects.all()
+    permission_classes = (IsAdmin, )
 
     def post(self, request, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
@@ -114,20 +115,23 @@ class ActionDeactivateBookingsView(GenericAPIView):
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
-class ActionEndBookingsView(GenericAPIView):
+class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
     """
     User route. Deactivate booking only connected with User
     """
     serializer_class = BookingDeactivateActionSerializer
     queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
         if existing_booking.user.id != request.user.account.id:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
+        if now < serializer.data["date_from"] and now < serializer.data["date_to"]:
+            return self.destroy(request, *args, **kwargs)
         serializer.save(user=request.user)
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
@@ -136,12 +140,13 @@ class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
     """
     User route. Delete booking object from DB
     """
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().prefetch_related('user')
+    permission_classes = (IsAuthenticated, )
 
     def delete(self, request, pk=None, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=pk)
         if existing_booking.user.id != request.user.account.id:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         return self.destroy(request, *args, **kwargs)
 
 
@@ -259,11 +264,3 @@ class BookingsListUserView(BookingsAdminView):
         response = self.list(request, *args, **kwargs)
         response.data['user'] = AccountSerializer(instance=account).data
         return response
-
-
-class BookingsListOfficeView(GenericAPIView):
-    pass
-
-
-class BookingsListTypeView(GenericAPIView):
-    pass
