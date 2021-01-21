@@ -1,4 +1,5 @@
 import datetime
+from drf_yasg.utils import swagger_auto_schema
 from django.core.mail import send_mail
 from django.conf.global_settings import EMAIL_HOST_USER
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -7,7 +8,7 @@ from rest_framework.mixins import (CreateModelMixin,
                                    status)
 
 from core.permissions import IsAuthenticated
-from report.serializers import ReportSerializer
+from report.serializers import ReportSerializer, SwaggerReportParametrs
 from report.models import Report
 from report.sent_mail import generate_html, generate_attach
 from users.models import Account, User
@@ -38,8 +39,9 @@ class ReportCreateView(ListModelMixin,
         report = serializer.save()
         return Response(serializer.to_representation(report), status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(query_serializer=SwaggerReportParametrs)
     def get(self, request, *args, **kwargs):
-        query = get_object_or_404(Report, pk=request.data['id'])
+        query = get_object_or_404(Report, pk=request.data.get('id', ''))
         serializer = self.serializer_class(instance=query)
         return Response(serializer.to_representation(query), status=status.HTTP_200_OK)
 

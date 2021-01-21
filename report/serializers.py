@@ -5,6 +5,10 @@ from files.serializers import FileSerializer
 from rest_framework.mixins import status
 
 
+class SwaggerReportParametrs(serializers.Serializer):
+    id = serializers.UUIDField()
+
+
 class ReportSerializer(serializers.ModelSerializer):
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(),
                                                 required=False,  # todo optimaze field
