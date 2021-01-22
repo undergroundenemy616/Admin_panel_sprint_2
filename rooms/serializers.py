@@ -1,18 +1,17 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from typing import Dict, Any
-import time
 
 
 from files.models import File
-from files.serializers import FileSerializer
+from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
 from tables.models import Table, TableTag, Rating
-from tables.serializers import TableSerializer
+from tables.serializers import TableSerializer, table_tag_serializer
 
 
 class SwaggerRoomParameters(serializers.Serializer):
@@ -97,29 +96,11 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
     }
 
 
-def image_serializer(image: File) -> Dict[str, Any]:
-    return {
-        'id': image.id,
-        'title': image.title,
-        'path': image.path,
-        'thumb': image.thumb,
-    }
-
-
 def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
     return {
         'icon': marker.icon,
         'x': float(marker.x),
         'y': float(marker.y),
-    }
-
-
-def table_tag_serializer(tag: TableTag) -> Dict[str, Any]:
-    return {
-        'id': tag.id,
-        'title': tag.title,
-        'office': tag.office.id,
-        'icon': image_serializer(image=tag.icon).copy()
     }
 
 

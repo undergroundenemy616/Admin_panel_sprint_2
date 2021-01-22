@@ -1,8 +1,10 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from typing import Dict, Any
+
 
 from files.models import File
-from files.serializers import BaseFileSerializer, FileSerializer
+from files.serializers import BaseFileSerializer, FileSerializer, image_serializer
 from offices.models import Office
 from rooms.models import Room
 from tables.models import Table, TableTag
@@ -29,6 +31,15 @@ def check_table_tags_exists(tags):
         result = TableTag.objects.filter(title=elem).exists()
         if not result:
             raise ValidationError(f'Table_tag {elem} does not exists.')
+
+
+def table_tag_serializer(tag: TableTag) -> Dict[str, Any]:
+    return {
+        'id': tag.id,
+        'title': tag.title,
+        'office': tag.office.id,
+        'icon': image_serializer(image=tag.icon).copy()
+    }
 
 
 class BaseTableTagSerializer(serializers.ModelSerializer):

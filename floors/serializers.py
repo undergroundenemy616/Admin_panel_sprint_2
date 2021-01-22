@@ -1,10 +1,12 @@
 from rest_framework import serializers
+from typing import Dict, Any
+
 
 from files.models import File
-from files.serializers import FileSerializer
+from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor, FloorMap
 from offices.models import Office
-from rooms.serializers import RoomSerializer
+from rooms.serializers import RoomSerializer, base_serialize_room
 from tables.models import Table
 
 
@@ -12,6 +14,44 @@ class SwaggerFloorParameters(serializers.Serializer):
     office = serializers.UUIDField(required=False)
     expand = serializers.IntegerField(required=False)
     type = serializers.CharField(required=False)
+
+
+def base_floor_serializer(floor: Floor) -> Dict[str, Any]:
+    table = Table.objects.filter(room__floor_id=floor.id).select_related('room__floor')
+    occupied = table.filter(is_occupied=True).count()
+    capacity = table.count()
+    capacity_meeting = table.filter(room__type__unified=True).count()
+    occupied_meeting = table.filter(room__type__unified=True, is_occupied=True).count()
+    capacity_tables = table.filter(room__type__unified=False).count()
+    occupied_tables = table.filter(room__type__unified=False, is_occupied=True).count()
+    return {
+        'id': floor.id,
+        'title': floor.title,
+        'description': floor.description,
+        'office': floor.office.id,
+        'rooms': [base_serialize_room(room=room).copy() for room in floor.rooms.all()],
+        'occupied': occupied,
+        'capacity': capacity,
+        'capacity_meeting': capacity_meeting,
+        'occupied_meeting': occupied_meeting,
+        'capacity_tables': capacity_tables,
+        'occupied_tables': occupied_tables,
+    }
+
+
+def base_floor_serializer_with_floor_map(floor: Floor) -> Dict[str, Any]:
+    floor_map = FloorMap.objects.get(floor=floor.id)
+    response_floor = base_floor_serializer(floor=floor)
+    response_floor['floor_map'] = floor_map_serializer(floor_map=floor_map)
+    return response_floor
+
+
+def floor_map_serializer(floor_map: FloorMap) -> Dict[str, Any]:
+    return {
+        'image': image_serializer(image=floor_map.image),
+        'width': floor_map.width,
+        'height': floor_map.height
+    }
 
 
 class BaseFloorSerializer(serializers.ModelSerializer):
