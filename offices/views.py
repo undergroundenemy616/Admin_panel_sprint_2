@@ -126,6 +126,7 @@ class UpdateDeleteZoneView(GenericAPIView, DestroyModelMixin):
 class GroupAccessView(GenericAPIView):
     queryset = OfficeZone.objects.all()
     permission_classes = (IsAuthenticated,)
+    serializer_class = SwaggerOfficeParametrs
 
     def get(self, request, pk=None, *args, **kwargs):
         office_zones = OfficeZone.objects.filter(groups=pk)

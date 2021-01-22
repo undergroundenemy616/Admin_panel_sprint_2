@@ -91,6 +91,9 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
                 raise ValueError('Invalid data!')
         except ValueError as error:
             return Response({'detail': str(error), 'message': 'ERROR'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('description'):
+            response = AccountSerializer(instance=account).data
+            return Response(response, status=status.HTTP_201_CREATED)
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -256,6 +259,8 @@ class ServiceEmailView(GenericAPIView):
 # TODO FIX FIX FIX FIX
 class UserAccessView(GenericAPIView):
     permission_classes = [IsAdmin, ]
+    serializer_class = SwaggerAccountListParametr
+    queryset = User.objects.all()
 
     def get(self, request, pk=None, *args, **kwargs):
         account = get_object_or_404(Account, pk=pk)
