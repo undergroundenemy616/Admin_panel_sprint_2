@@ -1,5 +1,3 @@
-import datetime
-
 from smtplib import SMTPException
 from django.conf.global_settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
@@ -9,6 +7,7 @@ from rest_framework.mixins import (CreateModelMixin, ListModelMixin, Response,
                                    status)
 
 from core.permissions import IsAuthenticated
+from core.pagination import DefaultPagination
 from report.generate_html import generate_attach, generate_html
 from report.models import Report
 from report.serializers import ReportSerializer, SwaggerReportParametrs
@@ -50,9 +49,9 @@ class ReportCreateView(ListModelMixin,
 
 
 class ReportHistoryView(ListModelMixin, GenericAPIView):
-    queryset = Report.objects.all()
     permission_classes = (IsAuthenticated, )
     serializer_class = ReportSerializer
+    pagination_class = DefaultPagination
 
     def get(self, request, *args, **kwargs):
         self.queryset = Report.objects.prefetch_related('images').filter(
