@@ -20,6 +20,6 @@ class ReportSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(ReportSerializer, self).to_representation(instance)
-        response['office'] = {"id": instance.id, "title": instance.title}
+        response['office'] = {"id": instance.office.id, "title": instance.title}
         response['images'] = [FileSerializer(instance=image).data for image in instance.images.all()]
         return response
