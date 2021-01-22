@@ -14,6 +14,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    status)
 from rest_framework.request import Request
 
+from booking_api_django_new.uuid_encoder import UUIDEncoder
 from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
@@ -25,13 +26,6 @@ from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
                                base_serialize_room)
 from tables.serializers import Table, TableSerializer
-
-
-class UUIDEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, UUID):
-            return str(obj)
-        return json.JSONEncoder.default(self, obj)
 
 
 class RoomsView(ListModelMixin,
