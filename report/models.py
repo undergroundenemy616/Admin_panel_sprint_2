@@ -1,8 +1,10 @@
-from django.db import models
 import uuid
-from users.models import Account
-from offices.models import Office
+
+from django.db import models
+
 from files.models import File
+from offices.models import Office
+from users.models import Account
 
 
 class Report(models.Model):

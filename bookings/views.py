@@ -3,21 +3,22 @@ from datetime import datetime, timezone
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, UpdateModelMixin)
 from rest_framework.response import Response
-from rest_framework.filters import SearchFilter
 
 from bookings.models import Booking
 from bookings.serializers import (BookingActivateActionSerializer,
                                   BookingDeactivateActionSerializer,
                                   BookingFastSerializer, BookingListSerializer,
                                   BookingListTablesSerializer,
-                                  BookingSerializer, BookingSlotsSerializer,
+                                  BookingPersonalSerializer, BookingSerializer,
+                                  BookingSlotsSerializer,
                                   BookListTableSerializer,
                                   SwaggerBookListActiveParametrs,
-                                  SwaggerBookListTableParametrs, BookingPersonalSerializer)
+                                  SwaggerBookListTableParametrs)
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from tables.serializers import Table, TableSerializer

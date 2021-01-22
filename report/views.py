@@ -1,16 +1,16 @@
 import datetime
-from drf_yasg.utils import swagger_auto_schema
-from django.core.mail import send_mail
+
 from django.conf.global_settings import EMAIL_HOST_USER
+from django.core.mail import send_mail
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import (CreateModelMixin,
-                                   ListModelMixin, Response,
+from rest_framework.mixins import (CreateModelMixin, ListModelMixin, Response,
                                    status)
 
 from core.permissions import IsAuthenticated
-from report.serializers import ReportSerializer, SwaggerReportParametrs
+from report.generate_html import generate_attach, generate_html
 from report.models import Report
-from report.generate_html import generate_html, generate_attach
+from report.serializers import ReportSerializer, SwaggerReportParametrs
 from users.models import Account, User
 
 

@@ -1,8 +1,9 @@
 from rest_framework import serializers
-from report.models import Report
+from rest_framework.mixins import status
+
 from files.models import File
 from files.serializers import FileSerializer
-from rest_framework.mixins import status
+from report.models import Report
 
 
 class SwaggerReportParametrs(serializers.Serializer):
