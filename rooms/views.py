@@ -1,4 +1,6 @@
 from datetime import datetime
+import json
+from uuid import UUID
 from typing import Dict, Optional
 
 from django.db.models import Q
@@ -24,15 +26,11 @@ from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                base_serialize_room)
 from tables.serializers import Table, TableSerializer
 
-import json
-from uuid import UUID
-
 
 class UUIDEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, UUID):
-            # if the obj is uuid, we simply return the value of uuid
-            return obj.hex
+            return str(obj)
         return json.JSONEncoder.default(self, obj)
 
 
@@ -79,7 +77,7 @@ class RoomsView(ListModelMixin,
                 Office.objects.get(id=request.query_params.get('office'))
             except Office.DoesNotExist:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
-            rooms = self.queryset.exclude(type_id__isnull=True).\
+            rooms = self.queryset.exclude(type_id__isnull=True, type__bookable=False).\
                 filter(floor__office_id=request.query_params.get('office')).select_related('floor__office')
         elif request.query_params.get('floor'):
             try:
@@ -98,9 +96,9 @@ class RoomsView(ListModelMixin,
         if request.query_params.get('type'):
             rooms = rooms.filter(type__title=request.query_params.get('type'))
 
-        for room in rooms:
+        for room in rooms:  # This for cycle slowing down everything, because of huge amount of data being serialized in it, and id don`t know how to fix it
             # response.append(RoomSerializer(instance=room).data)
-            response.append(base_serialize_room(room=room))
+            response.append(base_serialize_room(room=room).copy())
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
