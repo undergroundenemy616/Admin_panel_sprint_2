@@ -55,6 +55,6 @@ class ReportHistoryView(ListModelMixin, GenericAPIView):
     serializer_class = ReportSerializer
 
     def get(self, request, *args, **kwargs):
-        self.queryset = Report.objects.select_related('account', 'office').prefetch_related('images').filter(
+        self.queryset = Report.objects.prefetch_related('images').filter(
             account=request.user.account).order_by("-created_at").all()
         return self.list(request, *args, **kwargs)
