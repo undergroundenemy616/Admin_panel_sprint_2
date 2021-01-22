@@ -96,7 +96,7 @@ class RoomsView(ListModelMixin,
         if request.query_params.get('type'):
             rooms = rooms.filter(type__title=request.query_params.get('type'))
 
-        for room in rooms:  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and id don`t know how to fix it
+        for room in rooms:  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
             # response.append(RoomSerializer(instance=room).data)
             response.append(base_serialize_room(room=room).copy())
 
