@@ -1,5 +1,6 @@
 import datetime
 
+from smtplib import SMTPException
 from django.conf.global_settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from drf_yasg.utils import swagger_auto_schema
@@ -11,7 +12,6 @@ from core.permissions import IsAuthenticated
 from report.generate_html import generate_attach, generate_html
 from report.models import Report
 from report.serializers import ReportSerializer, SwaggerReportParametrs
-from users.models import Account, User
 
 
 class ReportCreateView(ListModelMixin,
@@ -34,17 +34,17 @@ class ReportCreateView(ListModelMixin,
             send_mail(message='',
                       from_email=EMAIL_HOST_USER,
                       recipient_list=[serializer.validated_data['office'].service_email],
-                      subject=f"[{serializer.validated_data['office'].title}]: {datetime.datetime.now()}",
+                      subject=f"[{serializer.validated_data['office'].title}]: {serializer.validated_data['title']}",
                       html_message=body)
-        except Exception:
-            return Response({"Error": "email cannot be sent"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except SMTPException as error:
+            return Response({"Error": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         serializer.validated_data['id_delivered'] = True
         report = serializer.save()
         return Response(serializer.to_representation(report), status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(query_serializer=SwaggerReportParametrs)
     def get(self, request, *args, **kwargs):
-        query = get_object_or_404(Report, pk=request.data.get('id', ''))
+        query = get_object_or_404(Report, pk=request.data.get('id'))
         serializer = self.serializer_class(instance=query)
         return Response(serializer.to_representation(query), status=status.HTTP_200_OK)
 
@@ -55,7 +55,5 @@ class ReportHistoryView(ListModelMixin, GenericAPIView):
     serializer_class = ReportSerializer
 
     def get(self, request, *args, **kwargs):
-        user = User.objects.get(pk=request.user.id)
-        account = Account.objects.get(user=user)
-        self.queryset = Report.objects.filter(account=account).all()
+        self.queryset = Report.objects.filter(account=request.user.account).all()
         return self.list(request, *args, **kwargs)

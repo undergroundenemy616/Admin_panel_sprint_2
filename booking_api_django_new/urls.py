@@ -64,6 +64,7 @@ urlpatterns = [
     path('service_email', views.ServiceEmailView.as_view()),
     path('user_access/<uuid:pk>', views.UserAccessView.as_view()),
     path('operator_promotion', views.OperatorPromotionView.as_view()),
+    path('report', include('report.urls')),
     path('group_access', include('offices.urls_group_access')),
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
@@ -89,7 +90,6 @@ urlpatterns = [
     path('book_list', include('bookings.urls_list')),
     path('tokens', include('push_tokens.urls')),
     path('send_', include('push_tokens.urls_send')),
-    path('report', include('report.urls')),
 ]
 
 '''

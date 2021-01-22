@@ -4,7 +4,7 @@ def generate_html(body: str, office: str, account):
                 <p style="text-indent:20px;">"{body}"</p>
                 <h3>Данные пользователя:</h3>
         <p style="text-indent:20px;">Имя: {account.first_name + ' ' + account.last_name if account.last_name else account.first_name}</p>
-        <p style="text-indent:20px;">Телефон: {account.phone_number if account.phone_number else 'Отсутствует'}</p>
+        <p style="text-indent:20px;">Телефон: {account.phone_number if account.phone_number else account.user.phone_number}</p>
         <p style="text-indent:20px;">Почтовый адрес: {account.email if account.email else 'Отсутствует'}</p>"""
 
 

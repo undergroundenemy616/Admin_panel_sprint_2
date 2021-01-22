@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.mixins import status
 
 from files.models import File
 from files.serializers import FileSerializer
@@ -24,13 +23,3 @@ class ReportSerializer(serializers.ModelSerializer):
         response['office'] = {"id": instance.id, "title": instance.title}
         response['images'] = [FileSerializer(instance=image).data for image in instance.images.all()]
         return response
-
-    def validate(self, attrs):
-        office = attrs['office']
-        if not office:
-            raise serializers.ValidationError("Office is not found", status.HTTP_404_NOT_FOUND)
-        if not office.service_email:
-            raise serializers.ValidationError("Office email is not found", status.HTTP_400_BAD_REQUEST)
-        if not office.title:
-            raise serializers.ValidationError("Office title is not found", status.HTTP_400_BAD_REQUEST)
-        return attrs
