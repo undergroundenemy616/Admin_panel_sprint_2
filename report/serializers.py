@@ -11,8 +11,7 @@ class SwaggerReportParametrs(serializers.Serializer):
 
 class ReportSerializer(serializers.ModelSerializer):
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(),
-                                                required=False,  # todo optimaze field
-                                                help_text='Images must contains primary keys.',
+                                                required=False,
                                                 many=True)
 
     class Meta:
