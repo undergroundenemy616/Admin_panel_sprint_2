@@ -54,6 +54,6 @@ class ReportHistoryView(ListModelMixin, GenericAPIView):
     pagination_class = DefaultPagination
 
     def get(self, request, *args, **kwargs):
-        self.queryset = Report.objects.prefetch_related('images').filter(
+        self.queryset = Report.objects.prefetch_related('images').select_related('office').filter(
             account=request.user.account).order_by("-created_at").all()
         return self.list(request, *args, **kwargs)
