@@ -55,5 +55,6 @@ class ReportHistoryView(ListModelMixin, GenericAPIView):
     serializer_class = ReportSerializer
 
     def get(self, request, *args, **kwargs):
-        self.queryset = Report.objects.filter(account=request.user.account).all()
+        self.queryset = Report.objects.filter(
+            account=request.user.account).order_by("-created_at").all()
         return self.list(request, *args, **kwargs)
