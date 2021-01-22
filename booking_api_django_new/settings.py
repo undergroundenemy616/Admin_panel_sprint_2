@@ -25,6 +25,7 @@ APPEND_SLASH = False
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
+LOCAL = True if os.getenv('LOCAL') == 'True' else False
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -172,6 +173,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if LOCAL:
+    MIDDLEWARE += ['booking_api_django_new.debug.PrintSqlQuery']
 
 ROOT_URLCONF = 'booking_api_django_new.urls'
 

@@ -261,6 +261,8 @@ class ServiceEmailView(GenericAPIView):
 # TODO FIX FIX FIX FIX
 class UserAccessView(GenericAPIView):
     permission_classes = [IsAdmin, ]
+    serializer_class = SwaggerAccountListParametr
+    queryset = User.objects.all()
 
     def get(self, request, pk=None, *args, **kwargs):
         account = get_object_or_404(Account, pk=pk)
