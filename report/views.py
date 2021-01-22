@@ -30,11 +30,14 @@ class ReportCreateView(ListModelMixin,
                              office=serializer.validated_data['office'].title,
                              account=serializer.validated_data['account'])
         body = generate_attach(body=body, attachments=attachments)
-        send_mail(message='',
-                  from_email=EMAIL_HOST_USER,
-                  recipient_list=[serializer.validated_data['office'].service_email],
-                  subject=f"[{serializer.validated_data['office'].title}]: {datetime.datetime.now()}",
-                  html_message=body)
+        try:
+            send_mail(message='',
+                      from_email=EMAIL_HOST_USER,
+                      recipient_list=[serializer.validated_data['office'].service_email],
+                      subject=f"[{serializer.validated_data['office'].title}]: {datetime.datetime.now()}",
+                      html_message=body)
+        except Exception:
+            return Response({"Error": "email cannot be sent"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         serializer.validated_data['id_delivered'] = True
         report = serializer.save()
         return Response(serializer.to_representation(report), status=status.HTTP_201_CREATED)
