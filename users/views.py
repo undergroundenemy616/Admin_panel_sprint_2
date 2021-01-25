@@ -24,7 +24,7 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                LoginOrRegisterStaffSerializer,
                                RegisterStaffSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, UserSerializer)
+                               SwaggerAccountParametr, UserSerializer, RegisterUserFromAPSerializer)
 
 
 def create_auth_data(user):
@@ -34,29 +34,52 @@ def create_auth_data(user):
     return {'refresh_token': api_settings.JWT_AUTH_HEADER_PREFIX, 'access_token': token}
 
 
-class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
+class RegisterUserFromAdminPanelView(GenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = RegisterUserFromAPSerializer
+    permission_classes = (IsAdmin, )
+
+    def post(self, request):
+        if request.data.get('phone_number'):
+            request.data['phone'] = request.data.get('phone_number')
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone_number = serializer.data.get('phone', None)
+        user, created = User.objects.get_or_create(phone_number=phone_number)
+        # Fix if we have user we dont need any actions
+
+        account, account_created = Account.objects.get_or_create(user=user,
+                                                                 description=serializer.data.get('description'))
+        if account_created:
+            user_group = Group.objects.get(access=4)
+            account.groups.add(user_group)
+        response = AccountSerializer(instance=account).data
+        return Response(response, status=status.HTTP_201_CREATED)
+
+
+class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
     queryset = User.objects.all()
     serializer_class = LoginOrRegisterSerializer
 
     def post(self, request):
         """Register or login view"""
-        if request.data.get('phone_number'):
-            request.data['phone'] = request.data.get('phone_number')
+        # if request.data.get('phone_number'):
+        #     request.data['phone'] = request.data.get('phone_number')
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         phone_number = serializer.data.get('phone', None)
         sms_code = serializer.data.pop('code', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
-        if serializer.data.get('description'):
-            account, account_created = Account.objects.get_or_create(user=user,
-                                                                     description=serializer.data.get('description'))
-        else:
-            account, account_created = Account.objects.get_or_create(user=user)
+        # if serializer.data.get('description'):
+        #     account, account_created = Account.objects.get_or_create(user=user,
+        #                                                              description=serializer.data.get('description'))
+        # else:
+        account, account_created = Account.objects.get_or_create(user=user)
 
-        if account_created:
-            user_group = Group.objects.get(access=4)
-            account.groups.add(user_group)
+        # if account_created:
+        #     user_group = Group.objects.get(access=4)
+        #     account.groups.add(user_group)
 
         try:
             data = {}
@@ -65,7 +88,7 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
                     send_code(user, created)
                 else:
                     print('SMS service is off, any code is acceptable')
-                data['status'], data['phone_number'] = 'DONE', user.phone_number
+                # data['status'], data['phone_number'] = 'DONE', user.phone_number
                 # Creating data for response
                 data = {
                     'message': "OK",
@@ -91,9 +114,9 @@ class LoginOrRegisterUser(mixins.ListModelMixin, GenericAPIView):
                 raise ValueError('Invalid data!')
         except ValueError as error:
             return Response({'detail': str(error), 'message': 'ERROR'}, status=status.HTTP_400_BAD_REQUEST)
-        if request.data.get('description'):
-            response = AccountSerializer(instance=account).data
-            return Response(response, status=status.HTTP_201_CREATED)
+        # if request.data.get('description'):
+        #     response = AccountSerializer(instance=account).data
+        #     return Response(response, status=status.HTTP_201_CREATED)
         return Response(data, status=status.HTTP_200_OK)
 
 

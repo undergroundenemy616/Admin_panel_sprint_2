@@ -25,7 +25,10 @@ from users.models import Account
 from users.serializers import AccountSerializer
 
 
-class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
+class BookingsView(GenericAPIView,
+                   CreateModelMixin,
+                   ListModelMixin,
+                   DestroyModelMixin):
     """
     Book table, get information about specific booking.
     Methods available: GET, POST
@@ -42,6 +45,11 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 
+    def get_permissions(self):  # TODO CHECK maybe not work
+        if self.request.method == 'DELETE':
+            self.permission_classes = (IsAdmin, )
+        return super(BookingsView, self).get_permissions()
+
     def post(self, request, *args, **kwargs):
         request.data['user'] = request.user.account.id
         serializer = self.serializer_class(data=request.data)
@@ -52,6 +60,10 @@ class BookingsView(GenericAPIView, CreateModelMixin, ListModelMixin):
     def get(self, request, *args, **kwargs):
         # TODO: Add addition not required "?id=" parameter for user id
         return self.list(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+        # TODO Check working and stability
 
 
 class BookingsAdminView(BookingsView):

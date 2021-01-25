@@ -138,7 +138,7 @@ class Account(models.Model):
 
     account_type = models.CharField(max_length=120, default='user')
     groups = models.ManyToManyField('groups.Group',
-                                    default="e4f5cf2e-9ad2-4758-ad9d-26ee03c72c99",
+                                    default=[],
                                     related_name='accounts')
     email = models.EmailField(unique=True, default=None, max_length=128, null=True, blank=True)
     phone_number = models.CharField(unique=True, default=None, max_length=16, null=True, blank=True)
