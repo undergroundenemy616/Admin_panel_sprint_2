@@ -118,7 +118,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         if len(images) != 0:
             for image in images:
                 instance.images.add(image)
-        if instance.type.title == 'Переговорная':
+        if instance.type.unified:
             Table.objects.create(title=f'Стол в {instance.title}', room_id=instance.id,)
         return instance
 

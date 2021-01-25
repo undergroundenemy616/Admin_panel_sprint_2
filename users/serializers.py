@@ -78,6 +78,10 @@ class LoginOrRegisterSerializer(serializers.Serializer):
         pass
 
 
+class RegisterUserFromAPSerializer(LoginOrRegisterSerializer):
+    description = serializers.CharField(required=False, allow_blank=True)
+
+
 class LoginOrRegisterStaffSerializer(serializers.Serializer):
     """Log in through email and password"""
     username = serializers.EmailField(required=True, min_length=0, max_length=128)
