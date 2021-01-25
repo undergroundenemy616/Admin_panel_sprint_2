@@ -25,10 +25,10 @@ def base_floor_serializer(floor: Floor) -> Dict[str, Any]:
     capacity_tables = table.filter(room__type__unified=False).count()
     occupied_tables = table.filter(room__type__unified=False, is_occupied=True).count()
     return {
-        'id': floor.id,
+        'id': str(floor.id),
         'title': floor.title,
         'description': floor.description,
-        'office': floor.office.id,
+        'office': str(floor.office.id),
         'rooms': [base_serialize_room(room=room).copy() for room in floor.rooms.all()],
         'occupied': occupied,
         'capacity': capacity,

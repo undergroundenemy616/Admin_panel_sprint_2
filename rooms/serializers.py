@@ -37,12 +37,12 @@ class BaseRoomSerializer(serializers.ModelSerializer):
 
 def base_serialize_room(room: Room) -> Dict[str, Any]:
     return {
-        'id': room.id,
+        'id': str(room.id),
         'title': room.title,
         'description': room.description,
         'type': room.type.title,
         'zone': {
-            'id': room.zone.id,
+            'id': str(room.zone.id),
             'title': room.zone.title,
             'is_deletable': room.zone.is_deletable,
         },
@@ -66,29 +66,29 @@ def base_serialize_room(room: Room) -> Dict[str, Any]:
 
 def office_serializer(office: Office) -> Dict[str, Any]:
     return {
-        'id': office.id,
+        'id': str(office.id),
         'title': office.title,
         'description': office.description,
         'working_hours': office.working_hours,
         'service_email': office.service_email,
-        'license': office.license.id,
+        'license': str(office.license.id),
         'images': [image_serializer(image=image).copy() for image in office.images.all()]
     }
 
 
 def floor_serializer_for_room(floor: Floor) -> Dict[str, Any]:
     return {
-        'id': floor.id,
+        'id': str(floor.id),
         'title': floor.title
     }
 
 
 def table_serializer_for_room(table: Table) -> Dict[str, Any]:
     return {
-        'id': table.id,
+        'id': str(table.id),
         'title': table.title,
-        'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
-        'images': [image_serializer(image=image).copy() for image in table.images.all()],
+        # 'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
+        # 'images': [image_serializer(image=image).copy() for image in table.images.all()],
         'rating': table.rating,
         'ratings': Rating.objects.filter(table_id=table.id).count(),
         'description': table.description,

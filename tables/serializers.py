@@ -2,6 +2,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from typing import Dict, Any
 
+import time
+
 
 from files.models import File
 from files.serializers import BaseFileSerializer, FileSerializer, image_serializer
@@ -35,9 +37,9 @@ def check_table_tags_exists(tags):
 
 def table_tag_serializer(tag: TableTag) -> Dict[str, Any]:
     return {
-        'id': tag.id,
+        'id': str(tag.id),
         'title': tag.title,
-        'office': tag.office.id,
+        'office': str(tag.office.id),
         'icon': image_serializer(image=tag.icon).copy()
     }
 
@@ -120,8 +122,10 @@ class TableSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(TableSerializer, self).to_representation(instance)
-        response['tags'] = [BaseTableTagSerializer(instance=tag).data for tag in instance.tags.all()]
-        response['images'] = [BaseFileSerializer(instance=image).data for image in instance.images.all()]
+        # response['tags'] = [BaseTableTagSerializer(instance=tag).data for tag in instance.tags.all()]
+        # response['images'] = [BaseFileSerializer(instance=image).data for image in instance.images.all()]
+        response['tags'] = BaseTableTagSerializer(instance.tags.all(), many=True).data
+        response['images'] = BaseFileSerializer(instance.images.all(), many=True).data
         return response
 
 

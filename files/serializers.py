@@ -24,7 +24,7 @@ def create_new_folder(local_dir):
 
 def image_serializer(image: File) -> Dict[str, Any]:
     return {
-        'id': image.id,
+        'id': str(image.id),
         'title': image.title,
         'path': image.path,
         'thumb': image.thumb,

@@ -6,6 +6,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
 import json
+import ujson
 
 from booking_api_django_new.uuid_encoder import UUIDEncoder
 from core.pagination import DefaultPagination
@@ -57,19 +58,19 @@ class ListCreateFloorView(ListModelMixin,
                     for floor in floors_by_office:
                         serialized_floor = base_floor_serializer(floor=floor)
                         response.append(serialized_floor)
-                    return Response(json.loads(json.dumps(response, cls=UUIDEncoder)), status=status.HTTP_200_OK)
+                    return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
                 else:
                     response = []
                     for floor in floors_by_office:
                         serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                         response.append(serialized_floor)
-                    return Response(json.loads(json.dumps(response, cls=UUIDEncoder)), status=status.HTTP_200_OK)
+                    return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
             except TypeError:
                 response = []
                 for floor in floors_by_office:
                     serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                     response.append(serialized_floor)
-                return Response(json.loads(json.dumps(response, cls=UUIDEncoder)), status=status.HTTP_200_OK)
+                return Response(ujson.loads(json.dumps(response)), status=status.HTTP_200_OK)
 
         return self.list(request, *args, **kwargs)
 

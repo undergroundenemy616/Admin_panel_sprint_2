@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import ujson
 from uuid import UUID
 from typing import Dict, Optional
 
@@ -171,7 +172,9 @@ class RoomsView(ListModelMixin,
         }
 
         # return Response(response_dict, status=status.HTTP_200_OK)
-        return Response(json.loads(json.dumps(response_dict, cls=UUIDEncoder)), status=status.HTTP_200_OK)
+        # return Response(json.loads(json.dumps(response_dict, cls=UUIDEncoder)), status=status.HTTP_200_OK)
+        return Response(ujson.loads(ujson.dumps(response_dict)), status=status.HTTP_200_OK)
+
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
