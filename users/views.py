@@ -24,7 +24,8 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                LoginOrRegisterStaffSerializer,
                                RegisterStaffSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, UserSerializer, RegisterUserFromAPSerializer)
+                               SwaggerAccountParametr, RegisterUserFromAPSerializer,
+                               user_access_serializer)
 
 
 def create_auth_data(user):
@@ -281,7 +282,7 @@ class ServiceEmailView(GenericAPIView):
             )
         return Response({'message': 'OK'}, status=status.HTTP_201_CREATED)
 
-# TODO FIX FIX FIX FIX
+
 class UserAccessView(GenericAPIView):
     permission_classes = [IsAdmin, ]
     serializer_class = SwaggerAccountListParametr
@@ -297,7 +298,7 @@ class UserAccessView(GenericAPIView):
                 item = {
                     'id': group.id,
                     'title': group.title,
-                    'offices': group.title  # Need to fix
+                    'offices': user_access_serializer(group.id)
                 }
                 response.append(item)
             return Response(response, status=status.HTTP_200_OK)
