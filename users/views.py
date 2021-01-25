@@ -241,6 +241,8 @@ class ServiceEmailView(GenericAPIView):
         type=openapi.TYPE_OBJECT,
         properties={
             'account': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+            'title': openapi.Schema(type=openapi.TYPE_STRING),
+            'body': openapi.Schema(type=openapi.TYPE_STRING)
         }
     ))
     def post(self, request, *args, **kwargs):
