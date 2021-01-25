@@ -10,6 +10,7 @@ from files.serializers import BaseFileSerializer
 from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
 from users.models import Account, User
+from offices.models import OfficeZone, Office
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -153,3 +154,34 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = AccountSerializer(instance).data
         return response
+
+
+def user_access_serializer(group_id):
+    office_zones = OfficeZone.objects.filter(groups=group_id)
+
+    if not office_zones:
+        return []
+
+    response = []
+
+    for zone in office_zones:
+        item = {
+            'id': zone.office.id,
+            'title': zone.office.title,
+            'description': zone.office.description,
+            'zones': []
+        }
+        response.append(item)
+
+    response = list({item['id']: item for item in response}.values())
+
+    for item in response:
+        filtered_zones = office_zones.filter(office=item['id'])
+        for filtered_zone in filtered_zones:
+            item['zones'].append({
+                'id': str(filtered_zone.id),
+                'title': filtered_zone.title
+            })
+
+    return response
+
