@@ -10,10 +10,10 @@ from floors.models import Floor
 from floors.serializers import FloorSerializer
 from offices.models import Office
 from offices.serializers import OfficeSerializer
-from tables.serializers import TableSerializer
 from room_types.models import RoomType
 from rooms.models import Room
 from rooms.serializers import RoomSerializer
+from tables.serializers import TableSerializer
 from users.models import Account, User
 from users.serializers import AccountSerializer
 
