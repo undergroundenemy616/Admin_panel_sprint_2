@@ -17,8 +17,6 @@ from room_types.models import RoomType
 from rooms.serializers import RoomMarkerSerializer
 from tables.models import Table
 
-import time
-
 
 class SwaggerOfficeParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
@@ -320,7 +318,6 @@ class CreateOfficeSerializer(OfficeSerializer):
 
 # TODO: Piece of shit, very slow performance. 4 minutes on production db
 class NestedOfficeSerializer(OfficeSerializer):
-    start_time = time.time()
     floors = FloorSerializer(many=True, read_only=True)
     zones = OfficeZoneSerializer(many=True, read_only=True)
 
