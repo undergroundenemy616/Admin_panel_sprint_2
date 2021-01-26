@@ -15,26 +15,24 @@ from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office, OfficeZone
 from offices.serializers import (CreateOfficeSerializer,
                                  CreateUpdateOfficeZoneSerializer,
-                                 ListOfficeSerializer, NestedOfficeSerializer,
+                                 ListOfficeSerializer,
                                  OfficeZoneSerializer,
-                                 OptimizeListOfficeSerializer,
                                  SwaggerOfficeParametrs, SwaggerZonesParametrs,
-                                 office_base_serializer)
+                                 office_base_serializer, OptimizeListOfficeSerializer)
 
 
 class ListCreateUpdateOfficeView(ListModelMixin,
                                  CreateModelMixin,
                                  GenericAPIView):
     """Office View."""
-    serializer_class = NestedOfficeSerializer
+    serializer_class = ListOfficeSerializer
     queryset = Office.objects.all()
     pagination_class = DefaultPagination
-    # permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated, )
 
     @swagger_auto_schema(query_serializer=SwaggerOfficeParametrs)
     def get(self, request, *args, **kwargs):
         """Get list of all offices."""
-        self.serializer_class = ListOfficeSerializer
         response = []
         if request.query_params.get('start') and request.query_params.get('limit'):
             self.serializer_class = OptimizeListOfficeSerializer
@@ -52,7 +50,6 @@ class ListCreateUpdateOfficeView(ListModelMixin,
             response.append(office_base_serializer(office=office))
         response = {'results': response}
         return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
-        # return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
@@ -144,7 +141,6 @@ class GroupAccessView(GenericAPIView):
         if len(office_zones) != 0:
             item = {}
             for zone in office_zones:
-                # response.append(OfficeZoneSerializer(instance=zone).data)
                 item['id'] = zone.office.id
                 item['title'] = zone.office.title
                 item['description'] = zone.office.description

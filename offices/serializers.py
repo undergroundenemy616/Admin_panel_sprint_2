@@ -25,7 +25,6 @@ class SwaggerOfficeParametrs(serializers.Serializer):
     type = serializers.CharField(required=False, max_length=256)
 
 
-
 class SwaggerZonesParametrs(serializers.Serializer):
     id = serializers.UUIDField()
 
@@ -315,61 +314,6 @@ class CreateOfficeSerializer(OfficeSerializer):
         """Updating existing office without license."""
         validated_data.pop('license', None)
         return super(CreateOfficeSerializer, self).update(instance, validated_data)
-
-
-# TODO: Piece of shit, very slow performance. 4 minutes on production db
-class NestedOfficeSerializer(OfficeSerializer):
-    floors = FloorSerializer(many=True, read_only=True)
-    zones = OfficeZoneSerializer(many=True, read_only=True)
-
-    def to_representation(self, instance):
-        instance: Office
-        response = super(NestedOfficeSerializer, self).to_representation(instance)
-
-        # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???
-
-        response['floors_number'] = instance.floors.count()
-        response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
-        response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
-        response['capacity_meeting'] = Table.objects.filter(
-            room__type__unified=True,
-            room__floor__office_id=instance.id
-        ).count()
-        response['occupied_meeting'] = Table.objects.filter(
-            room__type__unified=True,
-            room__floor__office_id=instance.id,
-            is_occupied=True
-        ).count()
-        response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
-        response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
-        response['license'] = LicenseSerializer(instance=instance.license).data
-        return response
-
-
-class OfficeByIdSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Office
-        fields = '__all__'
-
-    def to_representation(self, instance):
-        response = {}
-
-        response['floors_number'] = instance.floors.count()
-        response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
-        response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
-        response['capacity_meeting'] = Table.objects.filter(
-            room__type__unified=True,
-            room__floor__office_id=instance.id
-        ).count()
-        response['occupied_meeting'] = Table.objects.filter(
-            room__type__unified=True,
-            room__floor__office_id=instance.id,
-            is_occupied=True
-        ).count()
-        response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
-        response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
-        response['license'] = LicenseSerializer(instance=instance.license).data
-        return response
 
 
 class ListOfficeSerializer(serializers.ModelSerializer):
