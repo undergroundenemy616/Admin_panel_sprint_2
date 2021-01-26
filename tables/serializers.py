@@ -1,10 +1,11 @@
+from typing import Any, Dict
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from typing import Dict, Any
-
 
 from files.models import File
-from files.serializers import BaseFileSerializer, FileSerializer, image_serializer
+from files.serializers import (BaseFileSerializer, FileSerializer,
+                               image_serializer)
 from offices.models import Office
 from rooms.models import Room
 from tables.models import Table, TableTag

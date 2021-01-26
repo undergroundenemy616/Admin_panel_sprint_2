@@ -1,3 +1,4 @@
+import ujson
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -5,7 +6,6 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
-import ujson
 
 from booking_api_django_new.uuid_encoder import UUIDEncoder
 from core.pagination import DefaultPagination
@@ -14,7 +14,8 @@ from floors.models import Floor, FloorMap
 from floors.serializers import (DetailFloorSerializer, EditFloorSerializer,
                                 FloorMapSerializer, FloorSerializer,
                                 NestedFloorSerializer, SwaggerFloorParameters,
-                                base_floor_serializer, base_floor_serializer_with_floor_map)
+                                base_floor_serializer,
+                                base_floor_serializer_with_floor_map)
 from offices.models import Office
 from rooms.models import RoomMarker
 

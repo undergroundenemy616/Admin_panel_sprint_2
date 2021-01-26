@@ -1,6 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any
-
+from typing import Any, Dict
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -51,9 +50,9 @@ def office_base_serializer(office: Office) -> Dict[str, Any]:
     capacity = tables.count()
     occupied = tables.filter(is_occupied=True).count()
     capacity_meeting = tables.filter(room__type__unified=True).count()
-    occupied_meeting = Table.objects.filter(room__type__unified=True, is_occupied=True).count()
-    capacity_tables = Table.objects.filter(room__type__unified=False).count()
-    occupied_tables = Table.objects.filter(room__type__unified=False, is_occupied=True).count()
+    occupied_meeting = tables.filter(room__type__unified=True, is_occupied=True).count()
+    capacity_tables = tables.filter(room__type__unified=False).count()
+    occupied_tables = tables.filter(room__type__unified=False, is_occupied=True).count()
     return {
         'id': str(office.id),
         'title': office.title,

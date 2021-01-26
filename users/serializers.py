@@ -1,16 +1,19 @@
 import random
+from smtplib import SMTPException
 
+from django.contrib.auth.password_validation import validate_password
 from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from booking_api_django_new.settings import DEBUG
 from core.pagination import DefaultPagination
 from files.models import File
 from files.serializers import BaseFileSerializer
 from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
+from offices.models import Office, OfficeZone
 from users.models import Account, User
-from offices.models import OfficeZone, Office
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -189,3 +192,53 @@ def user_access_serializer(group_id):
 
     return response
 
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(max_length=512)
+    new_password = serializers.CharField(max_length=512)
+
+    def validate(self, attrs):
+        if not self.context['request'].user.check_password(attrs['old_password']):
+            raise ValidationError(detail="wrong password", code=400)
+        if not DEBUG:
+            validate_password(attrs['new_password'], user=self.context['request'].user)
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        user.set_password(self.data['new_password'])
+        user.save()
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    account = serializers.UUIDField()
+
+    def validate(self, attrs):
+        account = Account.objects.filter(pk=attrs['account']).first()
+        if not account:
+            raise ValidationError(detail="account not found", code=404)
+        if not account.email:
+            raise ValidationError(detail="User has no email specified", code=400)
+        return attrs
+
+    def save(self, **kwargs):
+        account = Account.objects.get(pk=self.data['account'])
+        if not account.user.email:
+            account.user.email = account.email
+            subject = "Добро пожаловать в Газпром!"
+        else:
+            subject = "Ваш пароль был успешно сброшен!"
+
+        password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+        account.user.set_password(password)
+
+        send_html_email_message(
+            to=account.email,
+            subject=subject,
+            template_args={
+                'host': self.context['request'].build_absolute_uri('/'),
+                'username': account.user.email,
+                'password': password
+            }
+        )
+        account.user.save()
