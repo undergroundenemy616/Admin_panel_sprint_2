@@ -1,7 +1,7 @@
+from typing import Any, Dict
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from typing import Dict, Any
-
 
 from files.models import File
 from files.serializers import FileSerializer, image_serializer
@@ -10,7 +10,7 @@ from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
-from tables.models import Table, TableTag, Rating
+from tables.models import Rating, Table, TableTag
 from tables.serializers import TableSerializer, table_tag_serializer
 
 
