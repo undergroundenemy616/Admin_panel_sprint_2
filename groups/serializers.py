@@ -61,3 +61,10 @@ class UpdateGroupSerializer(GroupSerializer):
 class UpdateGroupUsersSerializer(serializers.Serializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=True)
     users = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), many=True, required=True, allow_empty=True)
+
+
+def base_group_serializer(group: Group):
+    return {
+        'id': str(group.id),
+        'title': group.title
+    }

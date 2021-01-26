@@ -15,23 +15,22 @@ from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office, OfficeZone
 from offices.serializers import (CreateOfficeSerializer,
                                  CreateUpdateOfficeZoneSerializer,
-                                 ListOfficeSerializer, NestedOfficeSerializer,
+                                 ListOfficeSerializer,
                                  OfficeZoneSerializer,
-                                 OptimizeListOfficeSerializer,
                                  SwaggerOfficeParametrs, SwaggerZonesParametrs,
-                                 office_base_serializer)
+                                 office_base_serializer, OptimizeListOfficeSerializer)
 
 
 class ListCreateUpdateOfficeView(ListModelMixin,
                                  CreateModelMixin,
                                  GenericAPIView):
     """Office View."""
-    serializer_class = NestedOfficeSerializer
+    serializer_class = ListOfficeSerializer
     queryset = Office.objects.all()
     pagination_class = DefaultPagination
+    permission_classes = (IsAuthenticated, )
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'description']
-    # permission_classes = (IsAuthenticated, )
 
     @swagger_auto_schema(query_serializer=SwaggerOfficeParametrs)
     def get(self, request, *args, **kwargs):
@@ -144,7 +143,6 @@ class GroupAccessView(GenericAPIView):
         if len(office_zones) != 0:
             item = {}
             for zone in office_zones:
-                # response.append(OfficeZoneSerializer(instance=zone).data)
                 item['id'] = zone.office.id
                 item['title'] = zone.office.title
                 item['description'] = zone.office.description
