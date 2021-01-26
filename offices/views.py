@@ -50,14 +50,10 @@ class ListCreateUpdateOfficeView(ListModelMixin,
             except ObjectDoesNotExist:
                 return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
             return Response(ujson.loads(ujson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
-        # if request.query_params.get('search'):
-        #     self.queryset = Office.objects.filter(Q(title__icontains=request.query_params.get('search'))
-        #                                           | Q(description__icontains=request.query_params.get('search')))
         for office in self.queryset.all():
             response.append(office_base_serializer(office=office))
         response = {'results': response}
         return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
-        # return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
