@@ -1,12 +1,14 @@
 from datetime import datetime
+from typing import Dict, Any
+
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import FileSerializer
+from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor
-from floors.serializers import FloorSerializer
+from floors.serializers import FloorSerializer, base_floor_serializer
 from groups.models import Group
 from groups.serializers import GroupSerializer
 from licenses.models import License
@@ -24,6 +26,33 @@ class SwaggerOfficeParametrs(serializers.Serializer):
 
 class SwaggerZonesParametrs(serializers.Serializer):
     id = serializers.UUIDField()
+
+
+def office_base_serializer(office: Office) -> Dict[str, Any]:
+    return {
+        'id': str(office.id),
+        'title': office.title,
+        'description': office.description,
+        'working_hours': office.working_hours,
+        'service_email': office.service_email,
+        'floors_number': 0,
+        'occupied': 0,
+        'capacity': 0,
+        'occupied_tables': 0,
+        'capacity_tables': 0,
+        'occupied_meeting': 0,
+        'capacity_meeting': 0,
+        'floors': [base_floor_serializer(floor=floor) for floor in office.floors.all()],
+        'images': [image_serializer(image=image) for image in office.images.all()],
+        'license': {
+            'id': office.license.id,
+            'forever': office.license.forever,
+            'issued_at': office.license.issued_at,
+            'tables_infinite': office.license.tables_infinite,
+            'tables_available': office.license.tables_available,
+            'expires_at': office.license.expires_at
+        }
+    }
 
 
 class BaseOfficeZoneSerializer(serializers.ModelSerializer):
