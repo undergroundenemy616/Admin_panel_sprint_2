@@ -1,11 +1,12 @@
 import random
-
-from django.db.models import Q
 from smtplib import SMTPException
+
+from django.contrib.auth.password_validation import validate_password
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from django.contrib.auth.password_validation import validate_password
+from booking_api_django_new.settings import DEBUG
 from core.pagination import DefaultPagination
 from files.models import File
 from files.serializers import BaseFileSerializer
@@ -13,7 +14,6 @@ from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
 from offices.models import Office, OfficeZone
 from users.models import Account, User
-from booking_api_django_new.settings import DEBUG
 
 
 class SwaggerAccountParametr(serializers.Serializer):

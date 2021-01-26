@@ -22,11 +22,12 @@ from users.registration import confirm_code, send_code
 from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                LoginOrRegisterSerializer,
                                LoginOrRegisterStaffSerializer,
+                               PasswordChangeSerializer,
+                               PasswordResetSerializer,
                                RegisterStaffSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, user_access_serializer,
-                               PasswordChangeSerializer, PasswordResetSerializer)
+                               SwaggerAccountParametr, user_access_serializer)
 
 
 def create_auth_data(user):
