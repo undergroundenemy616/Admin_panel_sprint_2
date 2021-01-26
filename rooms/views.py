@@ -1,4 +1,7 @@
 from datetime import datetime
+import json
+import ujson
+from uuid import UUID
 from typing import Dict, Optional
 
 from django.db.models import Q
@@ -12,6 +15,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    status)
 from rest_framework.request import Request
 
+from booking_api_django_new.uuid_encoder import UUIDEncoder
 from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
@@ -20,7 +24,8 @@ from offices.models import Office
 from rooms.models import Room, RoomMarker
 from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                RoomMarkerSerializer, RoomSerializer,
-                               SwaggerRoomParameters, UpdateRoomSerializer)
+                               SwaggerRoomParameters, UpdateRoomSerializer,
+                               base_serialize_room)
 from tables.serializers import Table, TableSerializer
 
 
@@ -62,17 +67,20 @@ class RoomsView(ListModelMixin,
             self.queryset = by_office
             return self.list(request, *args, **kwargs)
         response = []
-        rooms = self.queryset.all().exclude(type_id__isnull=True)
         if request.query_params.get('office'):
-            if Office.objects.filter(id=request.query_params.get('office')):
-                rooms = rooms.filter(floor__office_id=request.query_params.get('office'))
-            else:
+            try:
+                Office.objects.get(id=request.query_params.get('office'))
+            except Office.DoesNotExist:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
+            rooms = self.queryset.exclude(type_id__isnull=True, type__bookable=False).\
+                filter(floor__office_id=request.query_params.get('office')).select_related('floor__office')
         elif request.query_params.get('floor'):
-            if Floor.objects.filter(id=request.query_params.get('floor')):
-                rooms = rooms.filter(floor_id=request.query_params.get('floor'))
-            else:
+            try:
+                Floor.objects.get(id=request.query_params.get('floor'))
+            except Office.DoesNotExist:
                 return Response({"message": "Floor not found"}, status=status.HTTP_404_NOT_FOUND)
+            rooms = self.queryset.exclude(type_id__isnull=True).\
+                filter(floor_id=request.query_params.get('floor')).select_related('floor')
         else:
             return Response({"detail": "You must specify at least on of this fields: " +
                                        "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
@@ -83,8 +91,8 @@ class RoomsView(ListModelMixin,
         if request.query_params.get('type'):
             rooms = rooms.filter(type__title=request.query_params.get('type'))
 
-        for room in rooms:
-            response.append(RoomSerializer(instance=room).data)
+        for room in rooms:  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
+            response.append(base_serialize_room(room=room).copy())
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
@@ -162,7 +170,7 @@ class RoomsView(ListModelMixin,
             'suitable_tables': suitable_tables
         }
 
-        return Response(response_dict, status=status.HTTP_200_OK)
+        return Response(ujson.loads(ujson.dumps(response_dict)), status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
