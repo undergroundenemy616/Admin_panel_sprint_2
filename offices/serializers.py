@@ -18,6 +18,8 @@ from room_types.models import RoomType
 from rooms.serializers import RoomMarkerSerializer
 from tables.models import Table
 
+import time
+
 
 class SwaggerOfficeParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
@@ -52,9 +54,9 @@ def office_base_serializer(office: Office) -> Dict[str, Any]:
     capacity = tables.count()
     occupied = tables.filter(is_occupied=True).count()
     capacity_meeting = tables.filter(room__type__unified=True).count()
-    occupied_meeting = Table.objects.filter(room__type__unified=True, is_occupied=True).count()
-    capacity_tables = Table.objects.filter(room__type__unified=False).count()
-    occupied_tables = Table.objects.filter(room__type__unified=False, is_occupied=True).count()
+    occupied_meeting = tables.filter(room__type__unified=True, is_occupied=True).count()
+    capacity_tables = tables.filter(room__type__unified=False).count()
+    occupied_tables = tables.filter(room__type__unified=False, is_occupied=True).count()
     return {
         'id': str(office.id),
         'title': office.title,
@@ -319,11 +321,11 @@ class CreateOfficeSerializer(OfficeSerializer):
 
 # TODO: Piece of shit, very slow performance. 4 minutes on production db
 class NestedOfficeSerializer(OfficeSerializer):
+    start_time = time.time()
     floors = FloorSerializer(many=True, read_only=True)
     zones = OfficeZoneSerializer(many=True, read_only=True)
 
     def to_representation(self, instance):
-        instance: Office
         response = super(NestedOfficeSerializer, self).to_representation(instance)
 
         # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???

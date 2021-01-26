@@ -2,6 +2,7 @@ from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework import filters
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, RetrieveModelMixin,
@@ -29,6 +30,8 @@ class ListCreateUpdateOfficeView(ListModelMixin,
     serializer_class = NestedOfficeSerializer
     queryset = Office.objects.all()
     pagination_class = DefaultPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', 'description']
     # permission_classes = (IsAuthenticated, )
 
     @swagger_auto_schema(query_serializer=SwaggerOfficeParametrs)
@@ -36,6 +39,8 @@ class ListCreateUpdateOfficeView(ListModelMixin,
         """Get list of all offices."""
         self.serializer_class = ListOfficeSerializer
         response = []
+        if request.query_params.get('search'):
+            return self.list(request, *args, **kwargs)
         if request.query_params.get('start') and request.query_params.get('limit'):
             self.serializer_class = OptimizeListOfficeSerializer
         if request.query_params.get('id'):
@@ -45,9 +50,9 @@ class ListCreateUpdateOfficeView(ListModelMixin,
             except ObjectDoesNotExist:
                 return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
             return Response(ujson.loads(ujson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
-        if request.query_params.get('search'):
-            self.queryset = Office.objects.filter(Q(title__icontains=request.query_params.get('search'))
-                                                  | Q(description__icontains=request.query_params.get('search')))
+        # if request.query_params.get('search'):
+        #     self.queryset = Office.objects.filter(Q(title__icontains=request.query_params.get('search'))
+        #                                           | Q(description__icontains=request.query_params.get('search')))
         for office in self.queryset.all():
             response.append(office_base_serializer(office=office))
         response = {'results': response}
