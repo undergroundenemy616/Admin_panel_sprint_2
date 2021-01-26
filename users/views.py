@@ -1,12 +1,12 @@
 import os
 import random
-
 from smtplib import SMTPException
+
 from django.conf.global_settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
-from django.contrib.auth.password_validation import get_password_validators, validate_password
-from django.core.mail import send_mail
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -15,10 +15,10 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 
+from booking_api_django_new.settings import DEBUG
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
-from booking_api_django_new.settings import DEBUG
 from mail import send_html_email_message
 from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import Account, User
@@ -27,9 +27,9 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                LoginOrRegisterSerializer,
                                LoginOrRegisterStaffSerializer,
                                RegisterStaffSerializer,
+                               RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, RegisterUserFromAPSerializer,
-                               user_access_serializer)
+                               SwaggerAccountParametr, user_access_serializer)
 
 
 def create_auth_data(user):

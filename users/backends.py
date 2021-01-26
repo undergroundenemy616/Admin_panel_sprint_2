@@ -65,8 +65,10 @@ def jwt_payload_handler(user):
     payload = {'user_id': user.id}
 
     if api_settings.JWT_ALLOW_REFRESH:
-        payload['orig_iat'] = timegm(datetime.utcnow().utctimetuple()) + int(api_settings.JWT_REFRESH_EXPIRATION_DELTA.total_seconds())
-    payload['exp'] = timegm(datetime.utcnow().utctimetuple()) + int(api_settings.JWT_EXPIRATION_DELTA.total_seconds())
+        payload['orig_iat'] = timegm(datetime.utcnow().utctimetuple()) + \
+                              int(api_settings.JWT_REFRESH_EXPIRATION_DELTA.total_seconds())
+    payload['exp'] = timegm(datetime.utcnow().utctimetuple()) + \
+                    int(api_settings.JWT_EXPIRATION_DELTA.total_seconds())
 
     return payload
 

@@ -9,8 +9,8 @@ from files.models import File
 from files.serializers import BaseFileSerializer
 from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
+from offices.models import Office, OfficeZone
 from users.models import Account, User
-from offices.models import OfficeZone, Office
 
 
 class SwaggerAccountParametr(serializers.Serializer):
