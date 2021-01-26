@@ -5,13 +5,16 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
+import ujson
 
+from booking_api_django_new.uuid_encoder import UUIDEncoder
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from floors.models import Floor, FloorMap
 from floors.serializers import (DetailFloorSerializer, EditFloorSerializer,
                                 FloorMapSerializer, FloorSerializer,
-                                NestedFloorSerializer, SwaggerFloorParameters)
+                                NestedFloorSerializer, SwaggerFloorParameters,
+                                base_floor_serializer, base_floor_serializer_with_floor_map)
 from offices.models import Office
 from rooms.models import RoomMarker
 
@@ -23,7 +26,7 @@ class ListCreateFloorView(ListModelMixin,
     queryset = Floor.objects.all()
     pagination_class = None
     serializer_class = NestedFloorSerializer
-    # permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
         """Create new floor."""
@@ -41,22 +44,33 @@ class ListCreateFloorView(ListModelMixin,
 
         if request.query_params.get('office'):
             if Office.objects.filter(id=request.query_params.get('office')):
-                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office'))
+                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office')).select_related('office')
             else:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
 
             if request.query_params.get('type'):
                 floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type'))
 
-            if int(request.query_params.get('expand')) == 0:
+            try:
+                if int(request.query_params.get('expand')) == 0:
+                    response = []
+                    for floor in floors_by_office:
+                        serialized_floor = base_floor_serializer(floor=floor)
+                        response.append(serialized_floor)
+                    return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+                else:
+                    response = []
+                    for floor in floors_by_office:
+                        serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
+                        response.append(serialized_floor)
+                    return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+            except TypeError:
                 response = []
                 for floor in floors_by_office:
-                    serialized_floor = DetailFloorSerializer(instance=floor).data
-                    serialized_floor.pop('floor_map')
+                    serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                     response.append(serialized_floor)
-                return Response(response, status=status.HTTP_200_OK)
+                return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
 
-            self.queryset = floors_by_office
         return self.list(request, *args, **kwargs)
 
 

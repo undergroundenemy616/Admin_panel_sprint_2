@@ -1,6 +1,8 @@
 import json
 import os
 import uuid
+from typing import Dict, Any
+
 
 import PIL
 import requests
@@ -18,6 +20,15 @@ def create_new_folder(local_dir):
     if not os.path.exists(newpath):
         os.makedirs(newpath)
     return newpath
+
+
+def image_serializer(image: File) -> Dict[str, Any]:
+    return {
+        'id': str(image.id),
+        'title': image.title,
+        'path': image.path,
+        'thumb': image.thumb,
+    }
 
 
 class BaseFileSerializer(serializers.ModelSerializer):
