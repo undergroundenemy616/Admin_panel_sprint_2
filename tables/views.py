@@ -5,6 +5,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
 from rest_framework.viewsets import ModelViewSet
+import ujson
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -43,7 +44,6 @@ class TableView(ListModelMixin,
                 tables = tables.filter(is_occupied=True)
 
         for table in tables:
-            # response.append(TableSerializer(instance=table).data)
             response.append(basic_table_serializer(table=table))
 
         if request.query_params.getlist('tags'):
@@ -63,7 +63,7 @@ class TableView(ListModelMixin,
         response_dict = {
             'results': response
         }
-        return Response(response_dict, status=status.HTTP_200_OK)
+        return Response(ujson.loads(ujson.dumps(response_dict)), status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

@@ -2,8 +2,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from typing import Dict, Any
 
-import time
-
 
 from files.models import File
 from files.serializers import BaseFileSerializer, FileSerializer, image_serializer

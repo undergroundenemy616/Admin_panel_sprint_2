@@ -92,7 +92,6 @@ class RoomsView(ListModelMixin,
             rooms = rooms.filter(type__title=request.query_params.get('type'))
 
         for room in rooms:  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
-            # response.append(RoomSerializer(instance=room).data)
             response.append(base_serialize_room(room=room).copy())
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
@@ -171,10 +170,7 @@ class RoomsView(ListModelMixin,
             'suitable_tables': suitable_tables
         }
 
-        # return Response(response_dict, status=status.HTTP_200_OK)
-        # return Response(json.loads(json.dumps(response_dict, cls=UUIDEncoder)), status=status.HTTP_200_OK)
         return Response(ujson.loads(ujson.dumps(response_dict)), status=status.HTTP_200_OK)
-
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

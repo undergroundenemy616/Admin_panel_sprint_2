@@ -5,7 +5,6 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
-import json
 import ujson
 
 from booking_api_django_new.uuid_encoder import UUIDEncoder
@@ -70,7 +69,7 @@ class ListCreateFloorView(ListModelMixin,
                 for floor in floors_by_office:
                     serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                     response.append(serialized_floor)
-                return Response(ujson.loads(json.dumps(response)), status=status.HTTP_200_OK)
+                return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
 
         return self.list(request, *args, **kwargs)
 

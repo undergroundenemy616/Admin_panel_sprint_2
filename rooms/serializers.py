@@ -88,7 +88,6 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'id': str(table.id),
         'title': table.title,
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
-        # 'images': [image_serializer(image=image).copy() for image in table.images.all()],
         'image': image_serializer(image=table.images.first()) if table.images.first() else None,
         'rating': table.rating,
         'ratings': Rating.objects.filter(table_id=table.id).count(),
