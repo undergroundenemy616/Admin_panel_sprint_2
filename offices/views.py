@@ -1,4 +1,3 @@
-from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -37,7 +36,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
     @swagger_auto_schema(query_serializer=SwaggerOfficeParametrs)
     def get(self, request, *args, **kwargs):
         """Get list of all offices."""
-        self.serializer_class = ListOfficeSerializer
+        self.serializer_class = OptimizeListOfficeSerializer
         response = []
         if request.query_params.get('search'):
             return self.list(request, *args, **kwargs)
