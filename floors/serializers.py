@@ -1,3 +1,5 @@
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import serializers
 from typing import Any, Dict
 
 from rest_framework import serializers
@@ -40,13 +42,15 @@ def base_floor_serializer(floor: Floor) -> Dict[str, Any]:
 
 
 def base_floor_serializer_with_floor_map(floor: Floor) -> Dict[str, Any]:
-    floor_map = FloorMap.objects.get(floor=floor.id)
     response_floor = base_floor_serializer(floor=floor)
-    if floor_map:
+    try:
+        floor_map = FloorMap.objects.get(floor=floor.id)
         response_floor['floor_map'] = floor_map_serializer(floor_map=floor_map)
-    else:
+        return response_floor
+    except ObjectDoesNotExist:
         response_floor['floor_map'] = None
-    return response_floor
+        return response_floor
+
 
 
 def floor_map_serializer(floor_map: FloorMap) -> Dict[str, Any]:

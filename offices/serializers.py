@@ -51,9 +51,9 @@ def office_base_serializer(office: Office) -> Dict[str, Any]:
     capacity = tables.count()
     occupied = tables.filter(is_occupied=True).count()
     capacity_meeting = tables.filter(room__type__unified=True).count()
-    occupied_meeting = Table.objects.filter(room__type__unified=True, is_occupied=True).count()
-    capacity_tables = Table.objects.filter(room__type__unified=False).count()
-    occupied_tables = Table.objects.filter(room__type__unified=False, is_occupied=True).count()
+    occupied_meeting = tables.filter(room__type__unified=True, is_occupied=True).count()
+    capacity_tables = tables.filter(room__type__unified=False).count()
+    occupied_tables = tables.filter(room__type__unified=False, is_occupied=True).count()
     return {
         'id': str(office.id),
         'title': office.title,
@@ -322,7 +322,6 @@ class NestedOfficeSerializer(OfficeSerializer):
     zones = OfficeZoneSerializer(many=True, read_only=True)
 
     def to_representation(self, instance):
-        instance: Office
         response = super(NestedOfficeSerializer, self).to_representation(instance)
 
         # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???
