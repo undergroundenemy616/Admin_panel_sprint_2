@@ -1,6 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any
-
+from typing import Any, Dict
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -329,6 +328,32 @@ class NestedOfficeSerializer(OfficeSerializer):
         response = super(NestedOfficeSerializer, self).to_representation(instance)
 
         # data['capacity_meeting'] = instance.objects.filter(roomtype__title='Переговорная').count()  # todo ???
+
+        response['floors_number'] = instance.floors.count()
+        response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
+        response['capacity_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id
+        ).count()
+        response['occupied_meeting'] = Table.objects.filter(
+            room__type__unified=True,
+            room__floor__office_id=instance.id,
+            is_occupied=True
+        ).count()
+        response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
+        response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
+        response['license'] = LicenseSerializer(instance=instance.license).data
+        return response
+
+
+class OfficeByIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        response = {}
 
         response['floors_number'] = instance.floors.count()
         response['capacity'] = Table.objects.filter(room__floor__office_id=instance.id).count()

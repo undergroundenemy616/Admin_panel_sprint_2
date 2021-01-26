@@ -1,7 +1,8 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
-from typing import Dict, Any
+from typing import Any, Dict
 
+from rest_framework import serializers
 
 from files.models import File
 from files.serializers import FileSerializer, image_serializer

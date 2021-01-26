@@ -22,10 +22,12 @@ from users.registration import confirm_code, send_code
 from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                LoginOrRegisterSerializer,
                                LoginOrRegisterStaffSerializer,
+                               PasswordChangeSerializer,
+                               PasswordResetSerializer,
                                RegisterStaffSerializer,
+                               RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, RegisterUserFromAPSerializer,
-                               user_access_serializer)
+                               SwaggerAccountParametr, user_access_serializer)
 
 
 def create_auth_data(user):
@@ -350,3 +352,41 @@ class EnterCollectView(GenericAPIView):
     pass
 
 
+# TODO: Add old token to blacklist
+class PasswordChangeView(GenericAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = PasswordChangeSerializer
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'old_password': openapi.Schema(type=openapi.TYPE_STRING),
+            'new_password': openapi.Schema(type=openapi.TYPE_STRING)
+        }
+    ))
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        auth_data = create_auth_data(request.user)
+        return Response({
+            'message': "OK",
+            'access_token': auth_data['access_token'],
+            'refresh_token': auth_data['access_token']
+        }, status=status.HTTP_200_OK)
+
+
+class PasswordResetView(GenericAPIView):
+    serializer_class = PasswordResetSerializer
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'account': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "OK"}, status=status.HTTP_200_OK)
