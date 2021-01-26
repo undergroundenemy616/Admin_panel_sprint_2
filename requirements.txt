@@ -14,7 +14,6 @@ djangorestframework==3.11.1
 djangorestframework-jwt==1.11.0
 drf-yasg==1.17.1
 exponent-server-sdk==0.3.1
-gprof2dot==2019.11.30
 idna==2.10
 inflection==0.5.1
 itypes==1.2.0
