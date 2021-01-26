@@ -60,6 +60,8 @@ def base_serialize_room(room: Room) -> Dict[str, Any]:
         } if room.type.icon else None,
         'tables': [table_serializer_for_room(table=table).copy() for table in room.tables.all()],
         'capacity': room.tables.count(),
+        'occupied': room.tables.filter(is_occupied=True).count(),
+        'suitable_tables': room.tables.filter(is_occupied=False).count(),
         'marker': room_marker_serializer(marker=room.room_marker).copy() if hasattr(room, 'room_marker') else None,
         'images': [image_serializer(image=image).copy() for image in room.images.all()]
     }
