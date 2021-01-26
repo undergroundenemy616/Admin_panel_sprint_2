@@ -9,7 +9,7 @@ from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor
 from floors.serializers import FloorSerializer
 from groups.models import Group
-from groups.serializers import GroupSerializer
+from groups.serializers import GroupSerializer, base_group_serializer
 from licenses.models import License
 from licenses.serializers import LicenseSerializer
 from offices.models import Office, OfficeZone
@@ -20,7 +20,7 @@ from tables.models import Table
 
 class SwaggerOfficeParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
-    search = serializers.CharField(required=False, max_length=256)
+    # search = serializers.CharField(required=False, max_length=256)
     type = serializers.CharField(required=False, max_length=256)
 
 
@@ -66,6 +66,7 @@ def office_base_serializer(office: Office) -> Dict[str, Any]:
         'capacity_tables': capacity_tables,
         'occupied_meeting': occupied_meeting,
         'capacity_meeting': capacity_meeting,
+        'zones': [base_zone_serializer(zone=zone) for zone in office.zones.all()],
         'floors': [office_floor_serializer(floor=floor) for floor in office.floors.all()],
         'images': [image_serializer(image=image) for image in office.images.all()],
         'license': license
@@ -76,6 +77,15 @@ def office_floor_serializer(floor: Floor) -> Dict[str, Any]:
     return {
         'id': str(floor.id),
         'title': floor.title
+    }
+
+
+def base_zone_serializer(zone: OfficeZone) -> Dict[str, Any]:
+    return {
+        'id': str(zone.id),
+        'title': zone.title,
+        'pre_defined': not zone.is_deletable,
+        'groups': [base_group_serializer(group=group) for group in zone.groups.all()]
     }
 
 
