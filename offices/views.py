@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -7,6 +8,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    UpdateModelMixin)
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+import ujson
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -16,7 +18,8 @@ from offices.serializers import (CreateOfficeSerializer,
                                  ListOfficeSerializer, NestedOfficeSerializer,
                                  OfficeZoneSerializer,
                                  OptimizeListOfficeSerializer,
-                                 SwaggerOfficeParametrs, SwaggerZonesParametrs)
+                                 SwaggerOfficeParametrs, SwaggerZonesParametrs,
+                                 office_base_serializer)
 
 
 class ListCreateUpdateOfficeView(ListModelMixin,
@@ -36,13 +39,19 @@ class ListCreateUpdateOfficeView(ListModelMixin,
             self.serializer_class = OptimizeListOfficeSerializer
         if request.query_params.get('id'):
             self.pagination_class = None
-            one_office = get_object_or_404(Office, pk=request.query_params.get('id'))
-            serializer = self.serializer_class(instance=one_office)
-            return Response(serializer.to_representation(instance=one_office), status=status.HTTP_200_OK)
+            try:
+                office = self.queryset.get(id=request.query_params.get('id'))
+            except ObjectDoesNotExist:
+                return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
+            return Response(office_base_serializer(office=office), status=status.HTTP_200_OK)
         if request.query_params.get('search'):
             self.queryset = Office.objects.filter(Q(title__icontains=request.query_params.get('search'))
                                                   | Q(description__icontains=request.query_params.get('search')))
-        return self.list(request, *args, **kwargs)
+        response = []
+        for office in self.queryset.all():
+            response.append(office_base_serializer(office=office))
+        return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+        # return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

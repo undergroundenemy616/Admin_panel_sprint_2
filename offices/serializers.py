@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from files.models import File
 from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor
-from floors.serializers import FloorSerializer, base_floor_serializer
+from floors.serializers import FloorSerializer
 from groups.models import Group
 from groups.serializers import GroupSerializer
 from licenses.models import License
@@ -21,6 +21,8 @@ from tables.models import Table
 class SwaggerOfficeParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
     search = serializers.CharField(required=False, max_length=256)
+    type = serializers.CharField(required=False, max_length=256)
+
 
 
 class SwaggerZonesParametrs(serializers.Serializer):
@@ -28,29 +30,53 @@ class SwaggerZonesParametrs(serializers.Serializer):
 
 
 def office_base_serializer(office: Office) -> Dict[str, Any]:
+    license = {
+        'id': str(office.license.id),
+        'forever': office.license.forever,
+        'issued_at': str(office.license.issued_at),
+        'tables_infinite': office.license.tables_infinite
+    }
+    if not office.license.forever:
+        license['expires_at'] = str(office.license.expires_at)
+        # if datetime.strptime(office.license.expires_at, '%Y-%m-%d') > datetime.now():
+        if office.license.expires_at > datetime.now():
+            license['expiry_status'] = "OK"
+        else:
+            license['expiry_status'] = "expired"
+    if not office.license.tables_infinite:
+        license['tables_available'] = int(office.license.tables_available)
+        license['tables_remain'] = int(office.license.tables_available) - int(office.floors.tables.all().count())
+        license['tables_status'] = "OK"  # TODO разобраться в логике этого поля
+    tables = Table.objects.filter(room__floor__office_id=office.id).select_related('room__floor__office_id')
+    capacity = tables.count()
+    occupied = tables.filter(is_occupied=True).count()
+    capacity_meeting = tables.filter(room__type__unified=True).count()
+    occupied_meeting = Table.objects.filter(room__type__unified=True, is_occupied=True).count()
+    capacity_tables = Table.objects.filter(room__type__unified=False).count()
+    occupied_tables = Table.objects.filter(room__type__unified=False, is_occupied=True).count()
     return {
         'id': str(office.id),
         'title': office.title,
         'description': office.description,
         'working_hours': office.working_hours,
         'service_email': office.service_email,
-        'floors_number': 0,
-        'occupied': 0,
-        'capacity': 0,
-        'occupied_tables': 0,
-        'capacity_tables': 0,
-        'occupied_meeting': 0,
-        'capacity_meeting': 0,
-        'floors': [base_floor_serializer(floor=floor) for floor in office.floors.all()],
+        'floors_number': office.floors.count(),
+        'occupied': occupied,
+        'capacity': capacity,
+        'occupied_tables': occupied_tables,
+        'capacity_tables': capacity_tables,
+        'occupied_meeting': occupied_meeting,
+        'capacity_meeting': capacity_meeting,
+        'floors': [office_floor_serializer(floor=floor) for floor in office.floors.all()],
         'images': [image_serializer(image=image) for image in office.images.all()],
-        'license': {
-            'id': office.license.id,
-            'forever': office.license.forever,
-            'issued_at': office.license.issued_at,
-            'tables_infinite': office.license.tables_infinite,
-            'tables_available': office.license.tables_available,
-            'expires_at': office.license.expires_at
-        }
+        'license': license
+    }
+
+
+def office_floor_serializer(floor: Floor) -> Dict[str, Any]:
+    return {
+        'id': str(floor.id),
+        'title': floor.title
     }
 
 
