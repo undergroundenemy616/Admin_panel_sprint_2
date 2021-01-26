@@ -129,10 +129,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://2.59.41.133:5556",
+        "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
