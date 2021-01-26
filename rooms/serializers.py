@@ -50,6 +50,7 @@ def base_serialize_room(room: Room) -> Dict[str, Any]:
         'seats_amount': room.seats_amount,
         'room_type_color': room.type.color,
         'room_type_unified': room.type.unified,
+        'is_occupied': False,
         'is_bookable': room.type.bookable,
         'room_type_icon': {
             'title': room.type.icon.title,
@@ -98,7 +99,7 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
 
 def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
     return {
-        'icon': marker.icon,
+        'icon': marker.icon if marker.icon else None,
         'x': float(marker.x),
         'y': float(marker.y),
     }
