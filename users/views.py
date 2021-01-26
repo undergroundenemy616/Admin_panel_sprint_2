@@ -1,11 +1,8 @@
 import os
 import random
-from smtplib import SMTPException
 
 from django.conf.global_settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db.models import Q
 from drf_yasg import openapi
@@ -15,7 +12,6 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 
-from booking_api_django_new.settings import DEBUG
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
@@ -29,7 +25,8 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                RegisterStaffSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, user_access_serializer)
+                               SwaggerAccountParametr, user_access_serializer,
+                               PasswordChangeSerializer, PasswordResetSerializer)
 
 
 def create_auth_data(user):
@@ -357,6 +354,7 @@ class EnterCollectView(GenericAPIView):
 # TODO: Add old token to blacklist
 class PasswordChangeView(GenericAPIView):
     permission_classes = [IsAuthenticated, ]
+    serializer_class = PasswordChangeSerializer
 
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -366,19 +364,9 @@ class PasswordChangeView(GenericAPIView):
         }
     ))
     def post(self, request, *args, **kwargs):
-        if not request.data.get('old_password'):
-            return Response({'message': "You must enter an old_password"}, status=status.HTTP_400_BAD_REQUEST)
-        if not request.data.get('new_password'):
-            return Response({'message': "You must enter a new_password"}, status=status.HTTP_400_BAD_REQUEST)
-        if not request.user.check_password(request.data.get('old_password')):
-            return Response({'message': "Password didn't match"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not DEBUG:
-            try:
-                validate_password(request.data.get('new_password'), user=request.user)
-            except ValidationError as error:
-                return Response({'message': error})
-
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         auth_data = create_auth_data(request.user)
         return Response({
             'message': "OK",
@@ -388,6 +376,7 @@ class PasswordChangeView(GenericAPIView):
 
 
 class PasswordResetView(GenericAPIView):
+    serializer_class = PasswordResetSerializer
 
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -396,30 +385,7 @@ class PasswordResetView(GenericAPIView):
         }
     ))
     def post(self, request, *args, **kwargs):
-        if not request.data.get('account'):
-            return Response({"message": "You must enter an account"}, status=status.HTTP_400_BAD_REQUEST)
-        account = get_object_or_404(Account, id=request.data.get('account'))
-        if not account.email:
-            return Response({"message": "User has no email specified"}, status=status.HTTP_400_BAD_REQUEST)
-        if not account.user.email:
-            account.user.email = account.email
-            subject = "Добро пожаловать в Газпром!"
-        else:
-            subject = "Ваш пароль был успешно сброшен!"
-
-        password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
-        account.user.set_password(password)
-        try:
-            send_html_email_message(
-                to=account.email,
-                subject=subject,
-                template_args={
-                    'host': request.build_absolute_uri('/'),
-                    'username': account.user.email,
-                    'password': password
-                }
-            )
-        except SMTPException as error:
-            return Response({"message": error.args})
-        account.user.save()
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({"message": "OK"}, status=status.HTTP_200_OK)
