@@ -35,12 +35,25 @@ def check_table_tags_exists(tags):
             raise ValidationError(f'Table_tag {elem} does not exists.')
 
 
+def basic_table_serializer(table: Table) -> Dict[str, Any]:
+    return {
+        'id': str(table.id),
+        'title': table.title,
+        'description': table.description,
+        'room': str(table.room.id),
+        'tags': [table_tag_serializer(tag=tag) for tag in table.tags.all()],
+        'images': [image_serializer(image=image) for image in table.images.all()],
+        'is_occupied': table.is_occupied,
+        'rating': table.rating
+    }
+
+
 def table_tag_serializer(tag: TableTag) -> Dict[str, Any]:
     return {
         'id': str(tag.id),
         'title': tag.title,
         'office': str(tag.office.id),
-        'icon': image_serializer(image=tag.icon).copy()
+        'icon': image_serializer(image=tag.icon).copy() if tag.icon else None
     }
 
 

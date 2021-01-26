@@ -14,7 +14,7 @@ from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
                                 SwaggerTableParameters,
                                 SwaggerTableTagParametrs, TableSerializer,
                                 TableTagSerializer, UpdateTableSerializer,
-                                UpdateTableTagSerializer)
+                                UpdateTableTagSerializer, basic_table_serializer)
 
 
 class TableView(ListModelMixin,
@@ -43,7 +43,8 @@ class TableView(ListModelMixin,
                 tables = tables.filter(is_occupied=True)
 
         for table in tables:
-            response.append(TableSerializer(instance=table).data)
+            # response.append(TableSerializer(instance=table).data)
+            response.append(basic_table_serializer(table=table))
 
         if request.query_params.getlist('tags'):
             tables_with_the_right_tags = []
@@ -55,8 +56,9 @@ class TableView(ListModelMixin,
 
             response = list({r['id']: r for r in tables_with_the_right_tags}.values())
 
+        ratings = Rating.objects.all()
         for table in response:
-            table['ratings'] = Rating.objects.filter(table_id=table['id']).count()
+            table['ratings'] = ratings.filter(table_id=table['id']).count()
 
         response_dict = {
             'results': response

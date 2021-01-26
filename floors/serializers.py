@@ -42,7 +42,10 @@ def base_floor_serializer(floor: Floor) -> Dict[str, Any]:
 def base_floor_serializer_with_floor_map(floor: Floor) -> Dict[str, Any]:
     floor_map = FloorMap.objects.get(floor=floor.id)
     response_floor = base_floor_serializer(floor=floor)
-    response_floor['floor_map'] = floor_map_serializer(floor_map=floor_map)
+    if floor_map:
+        response_floor['floor_map'] = floor_map_serializer(floor_map=floor_map)
+    else:
+        response_floor['floor_map'] = None
     return response_floor
 
 
