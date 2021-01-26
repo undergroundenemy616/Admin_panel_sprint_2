@@ -1,6 +1,5 @@
 APScheduler==3.6.3
 asgiref==3.2.10
-autopep8==1.5.4
 certifi==2020.6.20
 chardet==3.0.4
 coreapi==2.3.3
@@ -11,7 +10,6 @@ django-compile==0.0.5
 django-cors-headers==3.5.0
 django-pyc==1.1.0
 django-redis==4.12.1
-django-silk==4.1.0
 djangorestframework==3.11.1
 djangorestframework-jwt==1.11.0
 drf-yasg==1.17.1
@@ -25,12 +23,8 @@ MarkupSafe==1.1.1
 packaging==20.4
 Pillow==8.0.1
 psycopg2==2.8.5
-pycodestyle==2.6.0
-Pygments==2.7.4
-pygments-pprint-sql==0.1.0
 PyJWT==1.7.1
 pyparsing==2.4.7
-python-dateutil==2.8.1
 python-dotenv==0.14.0
 pytz==2020.1
 redis==3.5.3
@@ -39,7 +33,6 @@ ruamel.yaml==0.16.12
 ruamel.yaml.clib==0.2.2
 six==1.15.0
 sqlparse==0.3.1
-toml==0.10.2
 tzlocal==2.1
 ujson==4.0.2
 uritemplate==3.0.1
