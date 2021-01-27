@@ -32,7 +32,7 @@ class IsAdmin(BasePermission):
     access = ADMIN_ACCESS  # fixme change to ACCESS from settings
 
     def has_permission(self, request, view):
-        access = bool(getattr(request.user.account.groups, 'access', None))
+        access = bool(getattr(request.user.account.groups, 'access', 4))
         if bool(request.user and access <= self.access):
             return True
         return False
