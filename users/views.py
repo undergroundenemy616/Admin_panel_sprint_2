@@ -11,12 +11,13 @@ from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
 from mail import send_html_email_message
-from users.backends import jwt_encode_handler, jwt_payload_handler
 from users.models import Account, User
 from users.registration import confirm_code, send_code
 from users.serializers import (AccountSerializer, AccountUpdateSerializer,
@@ -107,10 +108,11 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 user_logged_in.send(sender=user.__class__, user=user, request=request)
 
                 # Creating data for response
-                auth_data = create_auth_data(user)
-                # data["user"] = UserSerializer(instance=user).data
-                data["access_token"] = auth_data.get('access_token')
-                data["refresh_token"] = data["access_token"]
+                serializer = TokenObtainPairSerializer()
+                token = serializer.get_token(user=user)
+                data = dict()
+                data["refresh_token"] = str(token)
+                data["access_token"] = str(token.access_token)
                 data["account"] = account.id
                 data["activated"] = True
             else:
@@ -152,7 +154,11 @@ class LoginStaff(GenericAPIView):
         if not user:
             return Response({'detail': message}, status=400)
         # data = dict()
-        auth_dict = create_auth_data(user)
+        auth_dict = dict()
+        token_serializer = TokenObtainPairSerializer()
+        token = token_serializer.get_token(user=user)
+        auth_dict["refresh_token"] = str(token)
+        auth_dict["access_token"] = str(token.access_token)
         # data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
         return Response(auth_dict, status=200)
 
@@ -368,11 +374,12 @@ class PasswordChangeView(GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        auth_data = create_auth_data(request.user)
+        token_serializer = TokenObtainPairSerializer()
+        token = token_serializer.get_token(user=request.user)
         return Response({
             'message': "OK",
-            'access_token': auth_data['access_token'],
-            'refresh_token': auth_data['access_token']
+            'access_token': str(token.access_token),
+            'refresh_token': str(token)
         }, status=status.HTTP_200_OK)
 
 
