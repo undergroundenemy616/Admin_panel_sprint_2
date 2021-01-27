@@ -1,7 +1,7 @@
 import os
 import random
 
-from django.conf.global_settings import EMAIL_HOST_USER
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
 from django.core.mail import send_mail
 from django.db.models import Q
