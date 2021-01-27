@@ -29,7 +29,7 @@ def check_table_tags_exists(tags):
         return True
 
     for elem in tags:
-        result = TableTag.objects.filter(title=elem).exists()
+        result = TableTag.objects.filter(id=elem.id).exists()
         if not result:
             raise ValidationError(f'Table_tag {elem} does not exists.')
 
@@ -170,8 +170,7 @@ class CreateTableSerializer(serializers.ModelSerializer):
             for image in images:
                 instance.images.add(image)
         if tags:
-            tags_queryset = TableTag.objects.filter(title__in=tags, office_id=office_id)
-            instance.tags.set(tags_queryset)
+            instance.tags.set(tags)
         return instance
 
 

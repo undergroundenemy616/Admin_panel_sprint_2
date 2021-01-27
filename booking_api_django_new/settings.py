@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
-import datetime
+from datetime import timedelta
 import os
 
 from dotenv import load_dotenv
@@ -53,7 +53,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'core.authorization.BookingAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
@@ -70,38 +70,33 @@ SMSC = {
     # 'SMSC_COST_URL': 'https://smsc.ru/sys/send.php?cost=1'
 }
 
-JWT_AUTH = {
-    # 'JWT_ENCODE_HANDLER':
-    # 'rest_framework_jwt.utils.jwt_encode_handler',
-    'JWT_ENCODE_HANDLER':
-        'users.backends.jwt_encode_handler',
 
-    'JWT_DECODE_HANDLER':
-        'users.backends.jwt_decode_handler',
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': True,
 
-    'JWT_PAYLOAD_HANDLER':
-        'users.backends.jwt_payload_handler',
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
 
-    'JWT_PAYLOAD_GET_USER_ID_HANDLER':
-        'rest_framework_jwt.utils.jwt_get_user_id_from_payload_handler',
+    'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
 
-    'JWT_RESPONSE_PAYLOAD_HANDLER':
-        'users.backends.jwt_response_payload_handler',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
 
-    'JWT_PAYLOAD_GET_USERNAME_HANDLER':
-        'users.backends.jwt_get_username_from_payload',
+    'JTI_CLAIM': 'jti',
 
-    'JWT_SECRET_KEY': SECRET_KEY,
-    'JWT_GET_USER_SECRET_KEY': None,
-    'JWT_ALGORITHM': 'HS256',
-    'JWT_PUBLIC_KEY': None,
-    'JWT_VERIFY': True,
-    'JWT_VERIFY_EXPIRATION': True,
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=60 * 30),  # expiration 30 minutes, then go to refresh
-
-    'JWT_ALLOW_REFRESH': True,  # Was False
-    'JWT_REFRESH_EXPIRATION_DELTA': datetime.timedelta(days=14),  # 14 days for login
-    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=30),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 INSTALLED_APPS = [
