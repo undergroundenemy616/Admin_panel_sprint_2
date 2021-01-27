@@ -1,16 +1,39 @@
+import csv
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
                                      UpdateAPIView, get_object_or_404)
 from rest_framework.mixins import (DestroyModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
+import werkzeug
 
 from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
-                                UpdateGroupUsersSerializer)
+                                UpdateGroupUsersSerializer, SwaggerImportSingleGroupParametrs)
+import io
 from users.models import Account, User
+
+
+def stream_from_file(file: werkzeug.datastructures.FileStorage) -> io.StringIO:
+    """
+    Takes csv file and returns iostream decoded with right encoding
+        :param file:werkzeug.datastructures.FileStorage: file from formdata
+    """
+    try:
+        # first, just try utf8
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+    except UnicodeDecodeError:
+        # if not, it is 99% cyrillic win 1251
+        file.stream.seek(0)
+        try:
+            stream = io.StringIO(file.stream.read().decode("cp1251"), newline=None)
+        except:
+            raise
+    except:
+        return None
+    return stream
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
@@ -64,3 +87,15 @@ class UpdateUsersGroupView(GenericAPIView):
         group = get_object_or_404(Group, id=serializer.data['id'])
         group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
         return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)
+
+
+class AccessGroupImportSingleHandler(ListCreateAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    pagination_class = None
+    permission_classes = (IsAuthenticated,)
+
+    @swagger_auto_schema(query_serializer=SwaggerImportSingleGroupParametrs)
+    def post(self, request, *args, **kwargs):
+        print(request.data.get('file'))
+        return Response(status=status.HTTP_200_OK)

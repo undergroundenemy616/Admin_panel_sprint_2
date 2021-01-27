@@ -9,6 +9,10 @@ class SwaggerGroupsParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
 
 
+class SwaggerImportSingleGroupParametrs(serializers.Serializer):
+    file = serializers.FileField(required=True)
+
+
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
