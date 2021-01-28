@@ -1,3 +1,4 @@
+import csv
 from rest_framework import serializers
 
 from groups.models import Group
@@ -10,6 +11,8 @@ class SwaggerGroupsParametrs(serializers.Serializer):
 
 
 class GroupSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(required=False)
+
     class Meta:
         model = Group
         fields = '__all__'
@@ -26,6 +29,34 @@ class GroupSerializer(serializers.ModelSerializer):
         response['count'] = len(users_in_group)
         response['users'] = [AccountSerializer(instance=user.account).data for user in users_in_group]
         return response
+
+
+class GroupSerializerCSV(serializers.ModelSerializer):
+    file = serializers.FileField(required=False)
+
+    class Meta:
+        model = Group
+        fields = ('file', )
+
+    def create(self, validated_data):
+        file = validated_data.pop('file')
+        list_of_group_titles = []
+        for chunk in list(file.read().splitlines()):
+            try:
+                try:
+                    list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
+                except IndexError:
+                    list_of_group_titles.append(chunk.decode('utf8'))
+            except UnicodeDecodeError:
+                try:
+                    list_of_group_titles.append(chunk.decode('cp1251').split(',')[1])
+                except IndexError:
+                    list_of_group_titles.append(chunk.decode('cp1251'))
+        groups_to_create = []
+        for group in list_of_group_titles:
+            groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
+        groups = Group.objects.bulk_create(groups_to_create)
+        return groups
 
 
 class CreateGroupSerializer(GroupSerializer):

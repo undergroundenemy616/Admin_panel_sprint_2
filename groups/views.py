@@ -1,15 +1,18 @@
+import csv
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
                                      UpdateAPIView, get_object_or_404)
 from rest_framework.mixins import (DestroyModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
-                                UpdateGroupUsersSerializer)
+                                UpdateGroupUsersSerializer, GroupSerializerCSV)
 from users.models import Account, User
 
 
@@ -57,10 +60,26 @@ class UpdateUsersGroupView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = UpdateGroupUsersSerializer
     permission_classes = (IsAdmin, )
+    parser_classes = (MultiPartParser,)
 
     def put(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.FILES)
         serializer.is_valid(raise_exception=True)
         group = get_object_or_404(Group, id=serializer.data['id'])
         group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
         return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)
+
+
+class ListCreateGroupCsvAPIView(ListCreateAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializerCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        groups = serializer.save()
+        response = GroupSerializer(instance=groups, many=True).data
+        return Response(response, status=status.HTTP_201_CREATED)
