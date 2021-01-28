@@ -43,9 +43,15 @@ class GroupSerializerCSV(serializers.ModelSerializer):
         list_of_group_titles = []
         for chunk in list(file.read().splitlines()):
             try:
-                list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
-            except IndexError:
-                list_of_group_titles.append(chunk.decode('utf8'))
+                try:
+                    list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
+                except IndexError:
+                    list_of_group_titles.append(chunk.decode('utf8'))
+            except UnicodeDecodeError:
+                try:
+                    list_of_group_titles.append(chunk.decode('cp1251').split(',')[1])
+                except IndexError:
+                    list_of_group_titles.append(chunk.decode('cp1251'))
         groups_to_create = []
         for group in list_of_group_titles:
             groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
