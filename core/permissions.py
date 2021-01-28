@@ -19,8 +19,13 @@ class IsOwner(BasePermission):
     access = OWNER_ACCESS
 
     def has_permission(self, request, view):
-        access = bool(getattr(request.user.account.groups, 'access', None))
-        return bool(request.user and access <= self.access)
+        try:
+            access = [access_dict.get('access') for access_dict in request.user.account.groups.values('access')]
+        except AttributeError:
+            return False
+        if len(access) != 0 and bool(request.user and min(access) <= self.access):
+            return True
+        return False
 
 
 class IsStaff(BasePermission):
@@ -29,11 +34,14 @@ class IsStaff(BasePermission):
 
 
 class IsAdmin(BasePermission):
-    access = ADMIN_ACCESS  # fixme change to ACCESS from settings
+    access = ADMIN_ACCESS
 
     def has_permission(self, request, view):
-        access = bool(getattr(request.user.account.groups, 'access', None))
-        if bool(request.user and access <= self.access):
+        try:
+            access = [access_dict.get('access') for access_dict in request.user.account.groups.values('access')]
+        except AttributeError:
+            return False
+        if len(access) != 0 and bool(request.user and min(access) <= self.access):
             return True
         return False
 
