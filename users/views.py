@@ -1,7 +1,7 @@
 import os
 import random
 
-from django.conf.global_settings import EMAIL_HOST_USER
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
 from django.core.mail import send_mail
 from django.db.models import Q
@@ -64,6 +64,7 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
 class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
     queryset = User.objects.all()
     serializer_class = LoginOrRegisterSerializer
+    authentication_classes = []
 
     def post(self, request):
         """Register or login view"""
@@ -145,6 +146,7 @@ def authenticate_staff(request=None, **fields):
 class LoginStaff(GenericAPIView):
     serializer_class = LoginOrRegisterStaffSerializer
     queryset = User.objects.all()
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)

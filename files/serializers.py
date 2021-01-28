@@ -6,12 +6,14 @@ from typing import Any, Dict
 import PIL
 import requests
 from PIL import Image
+from django.core.files.storage import default_storage
 from rest_framework import serializers
 
 from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD,
                                              FILES_USERNAME, MEDIA_ROOT,
                                              MEDIA_URL)
 from files.models import File
+from PIL.Image import UnidentifiedImageError
 
 
 def create_new_folder(local_dir):
@@ -38,7 +40,7 @@ class BaseFileSerializer(serializers.ModelSerializer):
 
 
 class FileSerializer(serializers.ModelSerializer):
-    file = serializers.ImageField()
+    file = serializers.FileField()
 
     class Meta:
         model = File
@@ -58,10 +60,16 @@ class FileSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         create_new_folder(MEDIA_ROOT)
         file = validated_data.pop('file')
-        image = Image.open(file)
+        image = None
         new_name = f'{uuid.uuid4().hex + file.name}'
         path = MEDIA_ROOT + new_name
-        image = image.save(path)  # need to store with hash not with uuid
+        try:
+            image = Image.open(file)
+            image.save(path)  # need to store with hash not with uuid
+        except UnidentifiedImageError:
+            with default_storage.open(new_name, 'wb+') as destination:
+                for chunk in file.chunks():
+                    destination.write(chunk)
         try:
             response = requests.post(
                 FILES_HOST + "/upload",
@@ -81,8 +89,8 @@ class FileSerializer(serializers.ModelSerializer):
             "path": FILES_HOST + str(response_dict.get("path")),
             "title": file.name,
             "size": file.size,
-            "width": file.image.width,
-            "height": file.image.height
+            "width": image.width if image else None,
+            "height": image.height if image else None
         }
         if response_dict.get("thumb"):
             file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
