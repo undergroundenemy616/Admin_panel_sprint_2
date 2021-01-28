@@ -5,35 +5,15 @@ from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
 from rest_framework.mixins import (DestroyModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
-import werkzeug
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
-                                UpdateGroupUsersSerializer, SwaggerImportSingleGroupParametrs)
-import io
+                                UpdateGroupUsersSerializer, GroupSerializerCSV)
 from users.models import Account, User
-
-
-def stream_from_file(file: werkzeug.datastructures.FileStorage) -> io.StringIO:
-    """
-    Takes csv file and returns iostream decoded with right encoding
-        :param file:werkzeug.datastructures.FileStorage: file from formdata
-    """
-    try:
-        # first, just try utf8
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-    except UnicodeDecodeError:
-        # if not, it is 99% cyrillic win 1251
-        file.stream.seek(0)
-        try:
-            stream = io.StringIO(file.stream.read().decode("cp1251"), newline=None)
-        except:
-            raise
-    except:
-        return None
-    return stream
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
@@ -80,22 +60,26 @@ class UpdateUsersGroupView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = UpdateGroupUsersSerializer
     permission_classes = (IsAdmin, )
+    parser_classes = (MultiPartParser,)
 
     def put(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.FILES)
         serializer.is_valid(raise_exception=True)
         group = get_object_or_404(Group, id=serializer.data['id'])
         group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
         return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)
 
 
-class AccessGroupImportSingleHandler(ListCreateAPIView):
+class ListCreateGroupCsvAPIView(ListCreateAPIView):
     queryset = Group.objects.all()
-    serializer_class = GroupSerializer
+    serializer_class = GroupSerializerCSV
     pagination_class = None
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
 
-    @swagger_auto_schema(query_serializer=SwaggerImportSingleGroupParametrs)
     def post(self, request, *args, **kwargs):
-        print(request.data.get('file'))
-        return Response(status=status.HTTP_200_OK)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        groups = serializer.save()
+        response = GroupSerializer(instance=groups, many=True).data
+        return Response(response, status=status.HTTP_201_CREATED)
