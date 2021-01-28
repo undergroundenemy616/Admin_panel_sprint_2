@@ -37,4 +37,3 @@ tzlocal==2.1
 ujson==4.0.2
 uritemplate==3.0.1
 urllib3==1.25.10
-Werkzeug==1.0.1
