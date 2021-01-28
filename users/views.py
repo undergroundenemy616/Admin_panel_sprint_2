@@ -288,7 +288,7 @@ class ServiceEmailView(GenericAPIView):
                 recipient_list=[account_exist.email],
                 from_email=EMAIL_HOST_USER,
                 subject=request.data['title'],
-                message='\n'.join(request.data['body']),
+                message=''.join(request.data['body']),
             )
         return Response({'message': 'OK'}, status=status.HTTP_201_CREATED)
 
