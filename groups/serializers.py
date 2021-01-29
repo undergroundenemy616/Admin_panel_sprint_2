@@ -1,7 +1,11 @@
+from core.handlers import ResponseException
 import csv
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
-from rest_framework import serializers
+from rest_framework import serializers, status
 
+
+from booking_api_django_new.validate_phone_number import validate_phone_number
 from groups.models import Group
 from users.models import Account, User
 from users.serializers import AccountSerializer
@@ -33,7 +37,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class GroupSerializerCSV(serializers.ModelSerializer):
-    file = serializers.FileField(required=False)
+    file = serializers.FileField(required=True)
 
     class Meta:
         model = Group
@@ -41,7 +45,9 @@ class GroupSerializerCSV(serializers.ModelSerializer):
 
     def create(self, validated_data):
         file = validated_data.pop('file')
+
         list_of_group_titles = []
+
         for chunk in list(file.read().splitlines()):
             try:
                 try:
@@ -63,7 +69,7 @@ class GroupSerializerCSV(serializers.ModelSerializer):
 
 
 class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
-    file = serializers.FileField(required=False)
+    file = serializers.FileField(required=True)
 
     class Meta:
         model = Group
@@ -71,17 +77,21 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
 
     def create(self, validated_data):
         file = validated_data.pop('file')
+
         list_of_group_titles = []
         list_of_phone_numbers = []
         groups_users_relation = []
+
         for chunk in list(file.read().splitlines()):
             try:
-                list_of_phone_numbers.append(chunk.decode('utf8').split(',')[0])
+                if validate_phone_number(chunk.decode('utf8').split(',')[0]):
+                    list_of_phone_numbers.append(chunk.decode('utf8').split(',')[0])
                 list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
                 groups_users_relation.append({'phone_number': chunk.decode('utf8').split(',')[0],
                                               'group': chunk.decode('utf8').split(',')[1]})
             except UnicodeDecodeError:
-                list_of_phone_numbers.append(chunk.decode('cp1251').split(',')[0])
+                if validate_phone_number(chunk.decode('cp1251').split(',')[0]):
+                    list_of_phone_numbers.append(chunk.decode('cp1251').split(',')[0])
                 list_of_group_titles.append(chunk.decode('cp1251').split(',')[1])
                 groups_users_relation.append({'phone_number': chunk.decode('cp1251').split(',')[0],
                                               'group': chunk.decode('cp1251').split(',')[1]})
@@ -116,6 +126,63 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
                         pass
 
         return Group.objects.all()
+
+
+class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
+    group_id = serializers.UUIDField(required=True)
+    file = serializers.FileField(required=True)
+
+    class Meta:
+        model = Group
+        fields = ('group_id', 'file', )
+
+    def create(self, validated_data):
+        group_id = validated_data.pop('group_id')
+        file = validated_data.pop('file')
+
+        try:
+            group = Group.objects.get(id=group_id)
+        except ObjectDoesNotExist:
+            raise ResponseException('Group not found', status.HTTP_404_NOT_FOUND)
+
+        list_of_phone_numbers = []
+
+        for chunk in list(file.read().splitlines()):
+            try:
+                try:
+                    if validate_phone_number(chunk.decode('utf8').split(',')[0]):
+                        list_of_phone_numbers.append(chunk.decode('utf8').split(',')[0])
+                except IndexError:
+                    if validate_phone_number(chunk.decode('utf8')):
+                        list_of_phone_numbers.append(chunk.decode('utf8'))
+            except UnicodeDecodeError:
+                try:
+                    if validate_phone_number(chunk.decode('cp1251').split(',')[0]):
+                        list_of_phone_numbers.append(chunk.decode('cp1251').split(',')[0])
+                except IndexError:
+                    if validate_phone_number(chunk.decode('cp1251')):
+                        list_of_phone_numbers.append(chunk.decode('cp1251'))
+
+        users_to_create = []
+        accounts_to_create = []
+
+        for phone_number in list_of_phone_numbers:
+            users_to_create.append(User(phone_number=phone_number))
+        User.objects.bulk_create(users_to_create, ignore_conflicts=True)
+
+        users = User.objects.all().filter(phone_number__in=list_of_phone_numbers)
+
+        for user in users:
+            accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
+        accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
+
+        for account in accounts:
+            try:
+                account.groups.add(group)
+            except IntegrityError:
+                pass
+
+        return Group.objects.get(id=group_id)
 
 
 class CreateGroupSerializer(GroupSerializer):

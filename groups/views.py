@@ -13,7 +13,7 @@ from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
                                 UpdateGroupUsersSerializer, GroupSerializerCSV,
-                                GroupSerializerWithAccountsCSV)
+                                GroupSerializerWithAccountsCSV, GroupSerializerOnlyAccountsCSV)
 from users.models import Account, User
 
 
@@ -71,7 +71,7 @@ class UpdateUsersGroupView(GenericAPIView):
         return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)
 
 
-class ListCreateGroupCsvAPIView(ListCreateAPIView):
+class ListCreateGroupCsvAPIView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializerCSV
     pagination_class = None
@@ -86,7 +86,7 @@ class ListCreateGroupCsvAPIView(ListCreateAPIView):
         return Response(response, status=status.HTTP_201_CREATED)
 
 
-class ListCreateGroupWithAccountsCsvAPIView(ListCreateAPIView):
+class ListCreateGroupWithAccountsCsvAPIView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializerWithAccountsCSV
     pagination_class = None
@@ -98,4 +98,19 @@ class ListCreateGroupWithAccountsCsvAPIView(ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         groups = serializer.save()
         response = GroupSerializer(instance=groups, many=True).data
+        return Response(response, status=status.HTTP_201_CREATED)
+
+
+class ListCreateGroupOnlyAccountsCsvAPIView(GenericAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializerOnlyAccountsCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        group = serializer.save()
+        response = GroupSerializer(instance=group).data
         return Response(response, status=status.HTTP_201_CREATED)
