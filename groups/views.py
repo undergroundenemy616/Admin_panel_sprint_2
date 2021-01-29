@@ -90,7 +90,6 @@ class ListCreateGroupCsvAPIView(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         groups = serializer.save()
-        # response = GroupSerializer(instance=groups, many=True).data
         return Response(groups, status=status.HTTP_201_CREATED)
 
 
@@ -105,7 +104,6 @@ class ListCreateGroupWithAccountsCsvAPIView(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         groups = serializer.save()
-        # response = GroupSerializer(instance=groups, many=True).data
         return Response(groups, status=status.HTTP_200_OK)
 
 
@@ -120,5 +118,4 @@ class ListCreateGroupOnlyAccountsCsvAPIView(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         group = serializer.save()
-        # response = GroupSerializer(instance=group).data
         return Response(group, status=status.HTTP_200_OK)
