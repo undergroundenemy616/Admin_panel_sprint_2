@@ -61,7 +61,6 @@ class UpdateUsersGroupView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = UpdateGroupUsersSerializer
     permission_classes = (IsAdmin, )
-    parser_classes = (MultiPartParser,)
 
     def put(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
