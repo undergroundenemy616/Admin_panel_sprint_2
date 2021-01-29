@@ -2,7 +2,10 @@ import random
 import uuid
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.postgres.fields import JSONField
+from django.core.validators import validate_ipv46_address
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
 from groups.models import Group
@@ -146,3 +149,15 @@ class Account(models.Model):
     updated_at = models.DateTimeField(null=False, auto_now=True)
 
 # Add validators
+
+
+class AppEntrances(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    entered_at = models.DateTimeField(auto_now=True)
+    ip_address = models.CharField(max_length=50, validators=[validate_ipv46_address, ])
+    country = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    location = models.CharField(max_length=255)
+    feed_view = models.BooleanField(default=False)
+    user = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='entrance')
+    device_info = JSONField(encoder=DjangoJSONEncoder)
