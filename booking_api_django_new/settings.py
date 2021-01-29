@@ -70,9 +70,10 @@ SMSC = {
     # 'SMSC_COST_URL': 'https://smsc.ru/sys/send.php?cost=1'
 }
 
+ACCESS_TOKEN_LIFETIME = timedelta(days=1) if DEBUG else timedelta(minutes=30)
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': ACCESS_TOKEN_LIFETIME,
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,

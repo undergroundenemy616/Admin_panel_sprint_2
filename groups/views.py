@@ -12,12 +12,13 @@ from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
-                                UpdateGroupUsersSerializer, GroupSerializerCSV)
+                                UpdateGroupUsersSerializer, GroupSerializerCSV,
+                                GroupSerializerWithAccountsCSV, GroupSerializerOnlyAccountsCSV)
 from users.models import Account, User
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
-    queryset = Group.objects.all()
+    queryset = Group.objects.all().order_by()
     serializer_class = GroupSerializer
     pagination_class = None
     permission_classes = (IsAuthenticated,)
@@ -60,17 +61,25 @@ class UpdateUsersGroupView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = UpdateGroupUsersSerializer
     permission_classes = (IsAdmin, )
-    parser_classes = (MultiPartParser,)
 
     def put(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.FILES)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         group = get_object_or_404(Group, id=serializer.data['id'])
+        accounts_for_inactive = Account.objects.filter(groups=group).exclude(id__in=serializer.data['users'])
+        for account in accounts_for_inactive:
+            account.user.is_active = False
+            account.user.save()
         group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
+        for account in Account.objects.select_related("user").filter(id__in=serializer.data['users']):
+            if not account.user.is_active and account.groups:
+                account.user.is_active = True
+                account.user.save()
+
         return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)
 
 
-class ListCreateGroupCsvAPIView(ListCreateAPIView):
+class ListCreateGroupCsvAPIView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializerCSV
     pagination_class = None
@@ -82,4 +91,34 @@ class ListCreateGroupCsvAPIView(ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         groups = serializer.save()
         response = GroupSerializer(instance=groups, many=True).data
+        return Response(response, status=status.HTTP_201_CREATED)
+
+
+class ListCreateGroupWithAccountsCsvAPIView(GenericAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializerWithAccountsCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        groups = serializer.save()
+        response = GroupSerializer(instance=groups, many=True).data
+        return Response(response, status=status.HTTP_201_CREATED)
+
+
+class ListCreateGroupOnlyAccountsCsvAPIView(GenericAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializerOnlyAccountsCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        group = serializer.save()
+        response = GroupSerializer(instance=group).data
         return Response(response, status=status.HTTP_201_CREATED)
