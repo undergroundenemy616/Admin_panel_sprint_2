@@ -69,6 +69,9 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
         phone_number = serializer.data.get('phone', None)
         sms_code = serializer.data.pop('code', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
+        if created:
+            user.is_active = False
+            user.save()
         # if serializer.data.get('description'):
         #     account, account_created = Account.objects.get_or_create(user=user,
         #                                                              description=serializer.data.get('description'))
@@ -78,7 +81,6 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
         # if account_created:
         #     user_group = Group.objects.get(access=4)
         #     account.groups.add(user_group)
-
         try:
             data = {}
             if not sms_code:  # Register or login user
@@ -93,12 +95,14 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                     'new_code_in': 180,
                     'expires_in': 180,
                 }
-            elif sms_code and not created:  # Confirm code
+            elif sms_code and user.is_active:  # Confirm code
+                first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
                     confirm_code(phone_number, sms_code)
                 else:
                     print('SMS service is off, any code is acceptable')
+
                 user_logged_in.send(sender=user.__class__, user=user, request=request)
 
                 # Creating data for response
@@ -108,7 +112,9 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 data["refresh_token"] = str(token)
                 data["access_token"] = str(token.access_token)
                 data["account"] = account.id
-                data["activated"] = True
+                data["activated"] = first_login
+            elif not user.is_active:
+                raise ValueError('User is not active')
             else:
                 raise ValueError('Invalid data!')
         except ValueError as error:
@@ -149,6 +155,7 @@ class LoginStaff(GenericAPIView):
         if not user:
             return Response({'detail': message}, status=400)
         # data = dict()
+        user_logged_in.send(sender=user.__class__, user=user, request=request)
         auth_dict = dict()
         token_serializer = TokenObtainPairSerializer()
         token = token_serializer.get_token(user=user)
@@ -281,7 +288,7 @@ class ServiceEmailView(GenericAPIView):
                 recipient_list=[account_exist.email],
                 from_email=EMAIL_HOST_USER,
                 subject=request.data['title'],
-                message='\n'.join(request.data['body']),
+                message=''.join(request.data['body']),
             )
         return Response({'message': 'OK'}, status=status.HTTP_201_CREATED)
 
@@ -369,6 +376,7 @@ class PasswordChangeView(GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        user_logged_in.send(sender=request.user.__class__, user=request.user, request=request)
         token_serializer = TokenObtainPairSerializer()
         token = token_serializer.get_token(user=request.user)
         return Response({
