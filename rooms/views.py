@@ -18,7 +18,7 @@ from rest_framework.request import Request
 from booking_api_django_new.uuid_encoder import UUIDEncoder
 from bookings.models import Booking
 from core.pagination import DefaultPagination
-from core.permissions import IsAdmin
+from core.permissions import IsAdmin, IsAuthenticated
 from floors.models import Floor
 from offices.models import Office
 from rooms.models import Room, RoomMarker
@@ -38,7 +38,7 @@ class RoomsView(ListModelMixin,
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'type__title', 'description']
 
-    permission_classes = (IsAdmin, )
+    permission_classes = (IsAuthenticated, )
 
     @staticmethod
     def get_mapped_query(request: Request) -> Optional[Dict]:
