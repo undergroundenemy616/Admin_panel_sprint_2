@@ -1,5 +1,5 @@
 from core.handlers import ResponseException
-import csv
+from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from rest_framework import serializers, status
@@ -217,7 +217,13 @@ class UpdateGroupSerializer(GroupSerializer):
 
 class UpdateGroupUsersSerializer(serializers.Serializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=True)
-    users = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), many=True, required=True, allow_empty=True)
+    users = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), many=True,
+                                               required=True, allow_empty=True)
+
+    def validate(self, attrs):
+        if attrs['id'].access < 3:
+            raise ValidationError(detail="Can't add to this group", code=400)
+        return attrs
 
 
 def base_group_serializer(group: Group):
