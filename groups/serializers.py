@@ -160,7 +160,6 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
                     except IntegrityError:
                         pass
 
-        # return Group.objects.all()
         return ({
             "message": "OK",
             "counters": {
