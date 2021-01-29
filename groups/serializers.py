@@ -86,7 +86,7 @@ class GroupSerializerCSV(serializers.ModelSerializer):
                 "groups_processed": groups_processed,
                 "groups_created": groups_created,
             },
-            "results": GroupSerializer(instance=groups_after, many=True).data
+            "result": GroupSerializer(instance=groups_after, many=True).data
         })
 
 
@@ -168,7 +168,7 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
                 "groups_processed": groups_processed,
                 "groups_created": groups_created,
             },
-            "results": GroupSerializer(instance=Group.objects.all(), many=True).data
+            "result": GroupSerializer(instance=Group.objects.all(), many=True).data
         })
 
 
