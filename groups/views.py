@@ -17,7 +17,7 @@ from users.models import Account, User
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
-    queryset = Group.objects.all()
+    queryset = Group.objects.all().order_by()
     serializer_class = GroupSerializer
     pagination_class = None
     permission_classes = (IsAuthenticated,)

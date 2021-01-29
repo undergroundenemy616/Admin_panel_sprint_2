@@ -31,13 +31,6 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                SwaggerAccountParametr, user_access_serializer)
 
 
-def create_auth_data(user):
-    """Creates and returns a full auth dict with `token`, `prefix`."""
-    payload = jwt_payload_handler(user)
-    token = jwt_encode_handler(payload)
-    return {'refresh_token': api_settings.JWT_AUTH_HEADER_PREFIX, 'access_token': token}
-
-
 class RegisterUserFromAdminPanelView(GenericAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterUserFromAPSerializer
