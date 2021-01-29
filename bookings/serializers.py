@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import time
+import random
 
 from rest_framework import serializers, status
 
@@ -68,6 +70,10 @@ class BookingSerializer(serializers.ModelSerializer):
         return response
 
     def create(self, validated_data, *args, **kwargs):
+        # This is the hack to evade booking by two or more user on the same table in the same time
+        time.sleep(random.uniform(0.001, 0.005))
+        time.sleep(random.uniform(0.001, 0.003))
+        time.sleep(random.uniform(0.01, 0.07))
         if self.Meta.model.objects.is_overflowed(validated_data['table'],
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
