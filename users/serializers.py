@@ -1,4 +1,5 @@
 import random
+import ipinfo
 from smtplib import SMTPException
 
 from django.contrib.auth.password_validation import validate_password
@@ -13,7 +14,7 @@ from files.serializers import BaseFileSerializer
 from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
 from offices.models import Office, OfficeZone
-from users.models import Account, User
+from users.models import Account, User, AppEntrances
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -242,3 +243,28 @@ class PasswordResetSerializer(serializers.Serializer):
             }
         )
         account.user.save()
+
+
+class EntranceCollectorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppEntrances
+        fields = ['device_info', ]
+
+    def validate(self, attrs):
+        account = Account.objects.get(user=self.context['request'].user)
+        attrs['device_info'] = self.context['request'].data['device_info']
+        attrs['user'] = account
+        ip_address = self.context['request'].META['HTTP_HOST'] \
+            if self.context['request'].META['HTTP_HOST'] != '127.0.0.1:8000' else '95.161.222.237'
+        if ip_address:
+            attrs['ip_address'] = ip_address
+            handler = ipinfo.getHandler(access_token="e11640aca14e4d")
+            details = handler.getDetails(ip_address)
+            latitude = details.all.get("latitude")
+            longitude = details.all.get("longitude")
+            if latitude and longitude:
+                attrs["location"] = str(latitude) + " " + str(longitude)
+            attrs['country'] = details.all.get("country_name")
+            attrs['city'] = details.all.get("city")
+        print('--------------', attrs)
+        return attrs

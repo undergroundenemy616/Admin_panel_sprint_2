@@ -28,7 +28,8 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                RegisterStaffSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, user_access_serializer)
+                               SwaggerAccountParametr, user_access_serializer,
+                               EntranceCollectorSerializer)
 
 
 def create_auth_data(user):
@@ -394,6 +395,17 @@ class PasswordResetView(GenericAPIView):
             'account': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
         }
     ))
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "OK"}, status=status.HTTP_200_OK)
+
+
+class EntranceCollectorView(GenericAPIView):
+    serializer_class = EntranceCollectorSerializer
+    permission_classes = (IsAuthenticated, )
+
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
