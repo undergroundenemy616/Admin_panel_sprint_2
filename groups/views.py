@@ -59,18 +59,23 @@ class DetailGroupView(GenericAPIView,
 class UpdateUsersGroupView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = UpdateGroupUsersSerializer
-    permission_classes = (IsAdmin, )
+    permission_classes = (IsAuthenticated, )
     parser_classes = (MultiPartParser,)
 
     def put(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         group = get_object_or_404(Group, id=serializer.data['id'])
+        accounts_for_inactive = set(Account.objects.filter(groups=group).exclude(id__in=serializer.data['users']))
         group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
         for account in Account.objects.select_related("user").filter(id__in=serializer.data['users']):
-            if not account.user.is_active:
+            if not account.user.is_active and account.groups:
                 account.user.is_active = True
                 account.user.save()
+        for account in accounts_for_inactive:
+            account.user.is_active = False
+            account.user.save()
+
         return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)
 
 
