@@ -96,7 +96,7 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                     'expires_in': 180,
                 }
             elif sms_code and user.is_active:  # Confirm code
-                fist_login = True if user.last_login is None else False
+                first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
                     confirm_code(phone_number, sms_code)
@@ -112,7 +112,7 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 data["refresh_token"] = str(token)
                 data["access_token"] = str(token.access_token)
                 data["account"] = account.id
-                data["activated"] = fist_login
+                data["activated"] = first_login
             elif not user.is_active:
                 raise ValueError('User is not active')
             else:
