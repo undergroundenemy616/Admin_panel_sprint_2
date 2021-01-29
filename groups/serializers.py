@@ -11,6 +11,10 @@ from users.models import Account, User
 from users.serializers import AccountSerializer
 
 
+def validate_csv_file_extension(file):
+    if '.csv' not in str(file):
+        raise ValidationError('Unsupported file extension')
+
 class SwaggerGroupsParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
 
@@ -44,6 +48,10 @@ class GroupSerializerCSV(serializers.ModelSerializer):
         fields = ('file', )
 
     def create(self, validated_data):
+        validate_csv_file_extension(file=validated_data['file'])
+
+        groups_before = Group.objects.all().count()
+
         file = validated_data.pop('file')
 
         list_of_group_titles = []
@@ -64,8 +72,22 @@ class GroupSerializerCSV(serializers.ModelSerializer):
 
         for group in list_of_group_titles:
             groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
-        groups = Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
-        return groups
+        Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
+
+        groups_after = Group.objects.all()
+
+        groups_processed = groups_after.count()
+
+        groups_created = groups_after.count() - groups_before
+
+        return ({
+            "message": "OK",
+            "counters": {
+                "groups_processed": groups_processed,
+                "groups_created": groups_created,
+            },
+            "results": GroupSerializer(instance=groups_after, many=True).data
+        })
 
 
 class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
@@ -76,6 +98,8 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
         fields = ('file', )
 
     def create(self, validated_data):
+        validate_csv_file_extension(file=validated_data['file'])
+
         file = validated_data.pop('file')
 
         list_of_group_titles = []
@@ -102,7 +126,10 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
 
         for group in list_of_group_titles:
             groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
-        Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
+        group = Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
+
+        groups_created = len(group)
+        groups_processed = len(list_of_group_titles)
 
         for phone_number in list_of_phone_numbers:
             users_to_create.append(User(phone_number=phone_number))
@@ -110,11 +137,19 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
 
         users = User.objects.all().filter(phone_number__in=list_of_phone_numbers)
 
+        groups = Group.objects.all()
+
+        for group in groups:
+            for account in group.accounts.all():
+                if account.phone_number in list_of_phone_numbers:
+                    list_of_phone_numbers.remove(account.phone_number)
+
         for user in users:
             accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
         accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
 
-        groups = Group.objects.all()
+        accounts_created = len(accounts)
+        accounts_added = len(accounts_to_create)
 
         for account in accounts:
             for relation in groups_users_relation:
@@ -125,7 +160,16 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
                     except IntegrityError:
                         pass
 
-        return Group.objects.all()
+        return ({
+            "message": "OK",
+            "counters": {
+                "accounts_added": accounts_added,
+                "accounts_created": accounts_created,
+                "groups_processed": groups_processed,
+                "groups_created": groups_created,
+            },
+            "results": GroupSerializer(instance=Group.objects.all(), many=True).data
+        })
 
 
 class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
@@ -137,6 +181,8 @@ class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
         fields = ('group', 'file', )
 
     def create(self, validated_data):
+        validate_csv_file_extension(file=validated_data['file'])
+
         group_id = validated_data.pop('group')
         file = validated_data.pop('file')
 
@@ -163,6 +209,10 @@ class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
                     if validate_phone_number(chunk.decode('cp1251')):
                         list_of_phone_numbers.append(chunk.decode('cp1251'))
 
+        for account in group.accounts.all():
+            if account.phone_number in list_of_phone_numbers:
+                list_of_phone_numbers.remove(account.phone_number)
+
         users_to_create = []
         accounts_to_create = []
 
@@ -182,7 +232,13 @@ class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
             except IntegrityError:
                 pass
 
-        return Group.objects.get(id=group_id)
+        return ({
+            "message": "OK",
+            "counters": {
+                "accounts_added": len(list_of_phone_numbers), "accounts_created": len(accounts)
+            },
+            "result": GroupSerializer(instance=Group.objects.get(id=group_id)).data
+        })
 
 
 class CreateGroupSerializer(GroupSerializer):
