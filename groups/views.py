@@ -90,7 +90,7 @@ class ListCreateGroupCsvAPIView(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         groups = serializer.save()
-        return Response(groups, status=status.HTTP_201_CREATED)
+        return Response(groups, status=status.HTTP_200_OK)
 
 
 class ListCreateGroupWithAccountsCsvAPIView(GenericAPIView):
