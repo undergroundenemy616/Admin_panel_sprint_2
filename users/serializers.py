@@ -266,5 +266,4 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
                 attrs["location"] = str(latitude) + " " + str(longitude)
             attrs['country'] = details.all.get("country_name")
             attrs['city'] = details.all.get("city")
-        print('--------------', attrs)
         return attrs
