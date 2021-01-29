@@ -64,10 +64,19 @@ class UpdateUsersGroupView(GenericAPIView):
     parser_classes = (MultiPartParser,)
 
     def put(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.FILES)
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         group = get_object_or_404(Group, id=serializer.data['id'])
+        accounts_for_inactive = Account.objects.filter(groups=group).exclude(id__in=serializer.data['users'])
+        for account in accounts_for_inactive:
+            account.user.is_active = False
+            account.user.save()
         group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
+        for account in Account.objects.select_related("user").filter(id__in=serializer.data['users']):
+            if not account.user.is_active and account.groups:
+                account.user.is_active = True
+                account.user.save()
+
         return Response(GroupSerializer(instance=group).data, status=status.HTTP_200_OK)
 
 
