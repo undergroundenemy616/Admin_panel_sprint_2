@@ -129,15 +129,15 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
 
 
 class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
-    group_id = serializers.UUIDField(required=True)
+    group = serializers.UUIDField(required=True)
     file = serializers.FileField(required=True)
 
     class Meta:
         model = Group
-        fields = ('group_id', 'file', )
+        fields = ('group', 'file', )
 
     def create(self, validated_data):
-        group_id = validated_data.pop('group_id')
+        group_id = validated_data.pop('group')
         file = validated_data.pop('file')
 
         try:
