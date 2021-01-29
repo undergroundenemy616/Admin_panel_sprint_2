@@ -1,4 +1,5 @@
 import csv
+from django.db.utils import IntegrityError
 from rest_framework import serializers
 
 from groups.models import Group
@@ -52,11 +53,69 @@ class GroupSerializerCSV(serializers.ModelSerializer):
                     list_of_group_titles.append(chunk.decode('cp1251').split(',')[1])
                 except IndexError:
                     list_of_group_titles.append(chunk.decode('cp1251'))
+
         groups_to_create = []
+
         for group in list_of_group_titles:
             groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
-        groups = Group.objects.bulk_create(groups_to_create)
+        groups = Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
         return groups
+
+
+class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
+    file = serializers.FileField(required=False)
+
+    class Meta:
+        model = Group
+        fields = ('file', )
+
+    def create(self, validated_data):
+        file = validated_data.pop('file')
+        list_of_group_titles = []
+        list_of_phone_numbers = []
+        groups_users_relation = []
+        for chunk in list(file.read().splitlines()):
+            try:
+                list_of_phone_numbers.append(chunk.decode('utf8').split(',')[0])
+                list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
+                groups_users_relation.append({'phone_number': chunk.decode('utf8').split(',')[0],
+                                              'group': chunk.decode('utf8').split(',')[1]})
+            except UnicodeDecodeError:
+                list_of_phone_numbers.append(chunk.decode('cp1251').split(',')[0])
+                list_of_group_titles.append(chunk.decode('cp1251').split(',')[1])
+                groups_users_relation.append({'phone_number': chunk.decode('cp1251').split(',')[0],
+                                              'group': chunk.decode('cp1251').split(',')[1]})
+
+        groups_to_create = []
+        users_to_create = []
+        accounts_to_create = []
+
+        for group in list_of_group_titles:
+            groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
+        Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
+
+        for phone_number in list_of_phone_numbers:
+            users_to_create.append(User(phone_number=phone_number))
+        User.objects.bulk_create(users_to_create, ignore_conflicts=True)
+
+        users = User.objects.all().filter(phone_number__in=list_of_phone_numbers)
+
+        for user in users:
+            accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
+        accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
+
+        groups = Group.objects.all()
+
+        for account in accounts:
+            for relation in groups_users_relation:
+                if account.phone_number == relation.get('phone_number'):
+                    user_group = groups.get(title=relation.get('group'))
+                    try:
+                        account.groups.add(user_group)
+                    except IntegrityError:
+                        pass
+
+        return Group.objects.all()
 
 
 class CreateGroupSerializer(GroupSerializer):

@@ -12,7 +12,8 @@ from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
-                                UpdateGroupUsersSerializer, GroupSerializerCSV)
+                                UpdateGroupUsersSerializer, GroupSerializerCSV,
+                                GroupSerializerWithAccountsCSV)
 from users.models import Account, User
 
 
@@ -73,6 +74,21 @@ class UpdateUsersGroupView(GenericAPIView):
 class ListCreateGroupCsvAPIView(ListCreateAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializerCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        groups = serializer.save()
+        response = GroupSerializer(instance=groups, many=True).data
+        return Response(response, status=status.HTTP_201_CREATED)
+
+
+class ListCreateGroupWithAccountsCsvAPIView(ListCreateAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializerWithAccountsCSV
     pagination_class = None
     permission_classes = (IsAdmin,)
     parser_classes = (MultiPartParser, FormParser, )
