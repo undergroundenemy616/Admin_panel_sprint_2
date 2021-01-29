@@ -255,7 +255,8 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
         attrs['device_info'] = self.context['request'].data['device_info']
         attrs['user'] = account
         ip_address = self.context['request'].META['HTTP_HOST'] \
-            if self.context['request'].META['HTTP_HOST'] != '127.0.0.1:8000' else '95.161.222.237'
+            if self.context['request'].META['HTTP_HOST'] != '127.0.0.1:8000' and \
+               self.context['request'].META['HTTP_HOST'] != '0.0.0.0:5022' else '95.161.222.237'
         if ip_address:
             attrs['ip_address'] = ip_address
             handler = ipinfo.getHandler(access_token="e11640aca14e4d")
