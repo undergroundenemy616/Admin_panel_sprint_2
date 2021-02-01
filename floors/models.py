@@ -15,6 +15,9 @@ class Floor(models.Model):
     def __str__(self):
         return self.title
 
+    class Meta:
+        unique_together = ('title', 'office')
+
 
 class FloorMap(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
