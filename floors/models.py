@@ -16,7 +16,7 @@ class Floor(models.Model):
         return self.title
 
     class Meta:
-        unique_together = ('title', 'office')
+        unique_together = ['title', 'office']
 
 
 class FloorMap(models.Model):

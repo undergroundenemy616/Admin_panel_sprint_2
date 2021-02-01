@@ -30,4 +30,4 @@ class OfficeZone(models.Model):
     is_deletable = models.BooleanField(default=True, blank=False, null=False)
 
     class Meta:
-        unique_together = ('title', 'office')
+        unique_together = ['title', 'office']
