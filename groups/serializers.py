@@ -76,7 +76,7 @@ class GroupSerializerCSV(serializers.ModelSerializer):
 
         groups_after = Group.objects.all()
 
-        groups_processed = groups_after.count()
+        groups_processed = len(list_of_group_titles)
 
         groups_created = groups_after.count() - groups_before
 
@@ -86,7 +86,7 @@ class GroupSerializerCSV(serializers.ModelSerializer):
                 "groups_processed": groups_processed,
                 "groups_created": groups_created,
             },
-            "results": GroupSerializer(instance=groups_after, many=True).data
+            "result": GroupSerializer(instance=groups_after, many=True).data
         })
 
 
@@ -149,7 +149,7 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
         accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
 
         accounts_created = len(accounts)
-        accounts_added = len(accounts_to_create)
+        accounts_added = len(list_of_phone_numbers)
 
         for account in accounts:
             for relation in groups_users_relation:
@@ -168,7 +168,7 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
                 "groups_processed": groups_processed,
                 "groups_created": groups_created,
             },
-            "results": GroupSerializer(instance=Group.objects.all(), many=True).data
+            "result": GroupSerializer(instance=Group.objects.all(), many=True).data
         })
 
 
