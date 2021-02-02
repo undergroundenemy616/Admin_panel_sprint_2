@@ -8,6 +8,7 @@ from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS
 from core.scheduler import scheduler
 from push_tokens.send_interface import send_push_message
 from tables.models import Table
+from groups.models import GUEST_ACCESS
 from users.models import Account, User
 
 MINUTES_TO_ACTIVATE = 15
@@ -40,8 +41,8 @@ class BookingManager(models.Manager):
         try:
             access = [access_dict.get('access') for access_dict in account.groups.values('access')]
         except AttributeError:
-            access = [4]
-        if min(access) < 4:
+            access = [GUEST_ACCESS]
+        if min(access) < GUEST_ACCESS:
             return False
         overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False). \
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
