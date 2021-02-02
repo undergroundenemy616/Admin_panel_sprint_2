@@ -74,6 +74,11 @@ class BookingSerializer(serializers.ModelSerializer):
         time.sleep(random.uniform(0.001, 0.005))
         time.sleep(random.uniform(0.001, 0.003))
         time.sleep(random.uniform(0.01, 0.07))
+        if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
+                                                      validated_data['table'].room.type.unified,
+                                                      validated_data['date_from'],
+                                                      validated_data['date_to']):
+            raise ResponseException('User already has a booking for this date.')
         if self.Meta.model.objects.is_overflowed(validated_data['table'],
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
@@ -257,6 +262,11 @@ class BookingFastSerializer(serializers.ModelSerializer):
         office = validated_data.pop('office')
         tables = list(Table.objects.filter(room__floor__office_id=office.id, room__type__id=validated_data['type'].id))
         for table in tables[:]:
+            if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
+                                                          table.room.type.unified,
+                                                          validated_data['date_from'],
+                                                          validated_data['date_to']):
+                raise ResponseException('User already has a booking for this date.')
             if not self.Meta.model.objects.is_overflowed(table, date_from, date_to):
                 continue
             else:
