@@ -95,7 +95,8 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'rating': table.rating,
         'ratings': Rating.objects.filter(table_id=table.id).count(),
         'description': table.description,
-        'is_occupied': table.is_occupied
+        'is_occupied': table.is_occupied,
+        'room': str(table.room_id)
     }
 
 
