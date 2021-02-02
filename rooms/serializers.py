@@ -202,10 +202,11 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
     type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
     # seats_amount = serializers.IntegerField(required=False, default=0)
     images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, many=True, allow_empty=True)
+    zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), required=False)
 
     class Meta:
         model = Room
-        fields = ['title', 'description', 'images', 'floor', 'type', 'seats_amount']
+        fields = ['title', 'description', 'images', 'floor', 'type', 'seats_amount', 'zone']
         depth = 1
 
     def to_representation(self, instance):
