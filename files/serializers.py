@@ -29,7 +29,7 @@ def image_serializer(image: File) -> Dict[str, Any]:
         'title': image.title,
         'path': image.path,
         'thumb': image.thumb,
-    } if image else []
+    } if image else None
 
 
 class BaseFileSerializer(serializers.ModelSerializer):
