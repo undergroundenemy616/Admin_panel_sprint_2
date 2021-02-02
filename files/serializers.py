@@ -23,7 +23,7 @@ def create_new_folder(local_dir):
     return newpath
 
 
-def image_serializer(image: File) -> Dict[str, Any]:
+def image_serializer(image: File):
     return {
         'id': str(image.id),
         'title': image.title,
@@ -40,7 +40,7 @@ class BaseFileSerializer(serializers.ModelSerializer):
 
 
 class FileSerializer(serializers.ModelSerializer):
-    file = serializers.FileField()
+    file = serializers.FileField(required=True)
 
     class Meta:
         model = File
