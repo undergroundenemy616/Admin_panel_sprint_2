@@ -36,6 +36,22 @@ class BookingManager(models.Manager):
             return overflows
         return []
 
+    def is_user_overflowed(self, account, room_type, date_from, date_to):
+        try:
+            access = [access_dict.get('access') for access_dict in account.groups.values('access')]
+        except AttributeError:
+            return False
+        if min(access) < 4:
+            return False
+        overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False). \
+            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
+                   | Q(date_from__lte=date_from, date_to__gte=date_to)
+                   | Q(date_from__gte=date_from, date_to__lte=date_to)
+                   | Q(date_to__gt=date_from, date_to__lt=date_to))
+        if overflows:
+            return True
+        return False
+
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
         obj = self.model(**kwargs)
