@@ -28,3 +28,6 @@ class OfficeZone(models.Model):
     office = models.ForeignKey(Office, on_delete=models.CASCADE, blank=False, null=False, related_name='zones')
     groups = models.ManyToManyField(Group, related_name='groups')
     is_deletable = models.BooleanField(default=True, blank=False, null=False)
+
+    class Meta:
+        unique_together = ['title', 'office']

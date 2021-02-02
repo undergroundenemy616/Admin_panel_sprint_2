@@ -3,7 +3,7 @@ from rest_framework import serializers
 from typing import Any, Dict
 
 from rest_framework import serializers
-
+from rest_framework.exceptions import ValidationError
 from files.models import File
 from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor, FloorMap
@@ -103,6 +103,11 @@ class FloorSerializer(serializers.ModelSerializer):
             for floor in instance:
                 response.append(BaseFloorSerializer(instance=floor).data)
             return response
+
+    def validate(self, attrs):
+        if Floor.objects.filter(title=attrs['title'][0], office=attrs['office']):
+            raise ValidationError(code=400, detail="Floor already exist")
+        return attrs
 
     def create(self, validated_data):
         titles = validated_data.pop('title')
