@@ -40,7 +40,7 @@ class BookingManager(models.Manager):
         try:
             access = [access_dict.get('access') for access_dict in account.groups.values('access')]
         except AttributeError:
-            return False
+            access = [4]
         if min(access) < 4:
             return False
         overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False). \
