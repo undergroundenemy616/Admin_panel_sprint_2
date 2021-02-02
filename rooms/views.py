@@ -25,7 +25,7 @@ from rooms.models import Room, RoomMarker
 from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                RoomMarkerSerializer, RoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
-                               base_serialize_room)
+                               base_serialize_room, table_serializer_for_room)
 from tables.serializers import Table, TableSerializer
 
 
@@ -155,8 +155,8 @@ class RoomsView(ListModelMixin,
             for room in response:
                 tables_with_tags = []
                 for table in tables:
-                    serialized_table = TableSerializer(instance=table).data
-                    if str(serialized_table['room']) == room['id']:
+                    serialized_table = table_serializer_for_room(table=table)
+                    if serialized_table['room'] == room['id']:
                         tables_with_tags.append(serialized_table)
                 room['tables'] = tables_with_tags
 
