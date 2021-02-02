@@ -40,7 +40,7 @@ class BaseFileSerializer(serializers.ModelSerializer):
 
 
 class FileSerializer(serializers.ModelSerializer):
-    file = serializers.FileField()
+    file = serializers.FileField(required=True)
 
     class Meta:
         model = File
