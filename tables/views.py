@@ -78,14 +78,14 @@ class DetailTableView(RetrieveModelMixin,
                       GenericAPIView):
     serializer_class = TableSerializer
     queryset = Table.objects.all()
-    permission_classes = (IsAdmin, )
+    permission_classes = (IsAuthenticated, )
 
     def put(self, request, *args, **kwargs):
         self.serializer_class = UpdateTableSerializer
         return self.update(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        self.permission_classes = (IsAuthenticated, )
+        # self.permission_classes = (IsAuthenticated, )
         return self.retrieve(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):

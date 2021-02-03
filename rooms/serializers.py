@@ -91,11 +91,12 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'id': str(table.id),
         'title': table.title,
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
-        'images': image_serializer(image=table.images.first()) if table.images.first() else [],
+        'images': list(image_serializer(image=table.images.first())) if table.images.first() else [],
         'rating': table.rating,
         'ratings': Rating.objects.filter(table_id=table.id).count(),
         'description': table.description,
-        'is_occupied': table.is_occupied
+        'is_occupied': table.is_occupied,
+        'room': str(table.room_id)
     }
 
 

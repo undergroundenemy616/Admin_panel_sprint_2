@@ -172,10 +172,10 @@ class CreateFastBookingsView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
-        request.data['user'] = request.user.id
+        request.data['user'] = request.user.account.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        serializer.save(user=request.user.account)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 

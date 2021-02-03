@@ -24,12 +24,12 @@ def create_new_folder(local_dir):
 
 
 def image_serializer(image: File):
-    return [{
+    return {
         'id': str(image.id),
         'title': image.title,
         'path': image.path,
         'thumb': image.thumb,
-    }]
+    }
 
 
 class BaseFileSerializer(serializers.ModelSerializer):

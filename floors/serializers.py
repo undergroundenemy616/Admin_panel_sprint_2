@@ -56,8 +56,8 @@ def base_floor_serializer_with_floor_map(floor: Floor) -> Dict[str, Any]:
 def floor_map_serializer(floor_map: FloorMap) -> Dict[str, Any]:
     return {
         'image': image_serializer(image=floor_map.image),
-        'width': floor_map.width,
-        'height': floor_map.height
+        'width': int(floor_map.width),
+        'height': int(floor_map.height)
     }
 
 
