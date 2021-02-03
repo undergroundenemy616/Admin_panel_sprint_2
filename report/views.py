@@ -39,7 +39,7 @@ class ReportCreateView(ListModelMixin,
                       html_message=body)
         except SMTPException as error:
             return Response({"Error": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        serializer.validated_data['is_delivered'] = True
+        serializer.validated_data['id_delivered'] = True
         report = serializer.save()
         return Response(serializer.to_representation(report), status=status.HTTP_201_CREATED)
 
