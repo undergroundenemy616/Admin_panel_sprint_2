@@ -72,10 +72,10 @@ class FileSerializer(serializers.ModelSerializer):
                     destination.write(chunk)
         try:
             response = requests.post(
-                FILES_HOST + "/upload",
-                files={"file": open(path, "rb")},
+                url=FILES_HOST + "/upload",
+                files={"file": (file.name, file.file.getvalue(), file.content_type)},
                 auth=(FILES_USERNAME, FILES_PASSWORD),
-            )
+                )
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
         if response.status_code != 200:
