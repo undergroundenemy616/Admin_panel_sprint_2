@@ -23,6 +23,7 @@ class ReportCreateView(ListModelMixin,
     serializer_class = ReportSerializer
 
     def post(self, request, *args, **kwargs):
+        request.data['account'] = request.user.account.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         attachments = [i.path for i in serializer.validated_data['images']]
@@ -38,7 +39,7 @@ class ReportCreateView(ListModelMixin,
                       html_message=body)
         except SMTPException as error:
             return Response({"Error": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        serializer.validated_data['id_delivered'] = True
+        serializer.validated_data['is_delivered'] = True
         report = serializer.save()
         return Response(serializer.to_representation(report), status=status.HTTP_201_CREATED)
 
