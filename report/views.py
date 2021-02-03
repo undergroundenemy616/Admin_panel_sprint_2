@@ -1,6 +1,6 @@
 from smtplib import SMTPException
 
-from django.conf.global_settings import EMAIL_HOST_USER
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
