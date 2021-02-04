@@ -9,15 +9,10 @@ from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
 from core.pagination import DefaultPagination
 from floors.models import Floor
-from floors.serializers import FloorSerializer
 from offices.models import Office
-from offices.serializers import OfficeSerializer
 from room_types.models import RoomType
 from rooms.models import Room
-from rooms.serializers import RoomSerializer
-from tables.serializers import TableSerializer
 from users.models import Account, User
-from users.serializers import AccountSerializer
 
 
 class SwaggerBookListActiveParametrs(serializers.Serializer):
@@ -60,13 +55,13 @@ class BookingSerializer(serializers.ModelSerializer):
                             "title": instance.table.room.title,
                             "type": instance.table.room.type.title,
                             "zone": {"id": instance.table.room.zone.id,
-                                     "title": instance.table.room.zone.title}
+                                     "title": instance.table.room.zone.title} if instance.table.room.zone else None
                             }
         response['floor'] = {"id": instance.table.room.floor.id,
                              "title": instance.table.room.floor.title}
         response['office'] = {"id": instance.table.room.floor.office.id,
                               "title": instance.table.room.floor.office.title}
-        response['user'] = instance.user.id
+        response['user'] = instance.user_id
         return response
 
     def create(self, validated_data, *args, **kwargs):
@@ -377,3 +372,27 @@ class BookingPersonalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['date_from', 'date_to', 'is_over']
+
+
+class BookingSerializerForTableSlots(serializers.ModelSerializer):
+    date_from = serializers.DateTimeField(required=True)
+    date_to = serializers.DateTimeField(required=True)
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
+    theme = serializers.CharField(max_length=200, default="Без темы")
+    user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
+    pagination_class = DefaultPagination
+
+    class Meta:
+        model = Booking
+        fields = ['date_from', 'date_to', 'table', 'theme', 'user']
+
+    def validate(self, attrs):
+        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+
+    def to_representation(self, instance):
+        response = BaseBookingSerializer(instance).data
+        response['active'] = response['is_active']
+        del response['is_active']
+        response['user'] = instance.user_id
+        response['table'] = instance.table_id
+        return response
