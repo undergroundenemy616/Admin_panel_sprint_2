@@ -49,7 +49,7 @@ class BookingsView(GenericAPIView,
     def get_permissions(self):  # TODO CHECK maybe not work
         if self.request.method == 'DELETE':
             self.permission_classes = (IsAdmin, )
-        return super(BookingsView, self).get_permissions()
+        return super(BookingsView, self).get_permissions()  # TODO: Not working
 
     def post(self, request, *args, **kwargs):
         request.data['user'] = request.user.account.id
