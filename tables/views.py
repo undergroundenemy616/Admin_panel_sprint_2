@@ -186,8 +186,7 @@ class TableMarkerView(CreateModelMixin, DestroyModelMixin,
         instance = get_object_or_404(TableMarker, pk=table.table_marker.id)
         instance.delete()
         table.refresh_from_db()
-        table_serializer = TableSerializer(instance=table)
-        return Response(table_serializer.data, status=status.HTTP_200_OK)
+        return Response(TableSerializer(instance=table).data, status=status.HTTP_200_OK)
 
 
 class TableSlotsView(ListModelMixin,
