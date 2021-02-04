@@ -1,7 +1,10 @@
+from core.handlers import ResponseException
+from datetime import datetime
 from typing import Any, Dict
-
+import pytz
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.mixins import status
 
 from files.models import File
 from files.serializers import (BaseFileSerializer, FileSerializer,
@@ -9,6 +12,8 @@ from files.serializers import (BaseFileSerializer, FileSerializer,
 from offices.models import Office
 from rooms.models import Room
 from tables.models import Table, TableTag
+from bookings.models import Booking
+from bookings.serializers import BookingSerializer
 
 
 class SwaggerTableParameters(serializers.Serializer):
@@ -17,6 +22,12 @@ class SwaggerTableParameters(serializers.Serializer):
     floor = serializers.UUIDField(required=False)
     room = serializers.UUIDField(required=False)
     tags = serializers.ListField(child=serializers.CharField(), required=False)
+
+
+class SwaggerTableSlotsParametrs(serializers.Serializer):
+    date = serializers.DateField(required=False, format="%Y-%m-%d", input_formats=['%Y-%m-%d', 'iso-8601'])
+    daily = serializers.IntegerField(required=False)
+    monthly = serializers.IntegerField(required=False)
 
 
 class SwaggerTableTagParametrs(serializers.Serializer):
@@ -196,3 +207,13 @@ class UpdateTableSerializer(CreateTableSerializer):
             tags_queryset = TableTag.objects.filter(title__in=tags, office_id=office_id)
             instance.tags.set(tags_queryset)
         return super(UpdateTableSerializer, self).update(instance, validated_data)
+
+
+class TableSlotsSerializer(serializers.ModelSerializer):
+    date = serializers.DateField(required=False, format="%Y-%m-%d", input_formats=['%Y-%m-%d', 'iso-8601'])
+    daily = serializers.IntegerField(required=False)
+    monthly = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = Booking
+        fields = ['date', 'daily', 'monthly']

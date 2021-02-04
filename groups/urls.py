@@ -9,4 +9,3 @@ urlpatterns = [
     path('/import_list', views.ListCreateGroupWithAccountsCsvAPIView.as_view()),
     path('/import_single', views.ListCreateGroupOnlyAccountsCsvAPIView.as_view())
 ]
-# TODO: import_single
