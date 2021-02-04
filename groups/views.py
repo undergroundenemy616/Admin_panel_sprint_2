@@ -1,4 +1,3 @@
-import csv
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
                                      UpdateAPIView, get_object_or_404)
@@ -13,7 +12,8 @@ from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
                                 UpdateGroupUsersSerializer, GroupSerializerCSV,
-                                GroupSerializerWithAccountsCSV, GroupSerializerOnlyAccountsCSV)
+                                GroupSerializerWithAccountsCSV, GroupSerializerOnlyAccountsCSV,
+                                GroupSerializerLite)
 from users.models import Account, User
 
 
@@ -34,7 +34,7 @@ class ListCreateGroupAPIView(ListCreateAPIView):
             group = get_object_or_404(Group, pk=request.query_params.get('id'))
             serializer = self.serializer_class(instance=group)
             return Response(serializer.to_representation(group), status=status.HTTP_200_OK)
-        return self.list(self, request, *args, **kwargs)
+        return Response(GroupSerializerLite(instance=self.queryset.all(), many=True).data, status=status.HTTP_200_OK)
 
 
 class DetailGroupView(GenericAPIView,
