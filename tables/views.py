@@ -14,20 +14,14 @@ from bookings.serializers import BookingSerializer, BookingSerializerForTableSlo
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
-from tables.models import Rating, Table, TableTag, TableMarker
 import pytz
-from tables.models import Rating, Table, TableTag
+from tables.models import Rating, Table, TableTag,  TableMarker
 from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
-                                SwaggerTableParameters,
-                                SwaggerTableTagParametrs, TableSerializer,
-                                TableTagSerializer, UpdateTableSerializer,
-                                UpdateTableTagSerializer, TableMarkerSerializer,
-                                basic_table_serializer,
+                                TableMarkerSerializer, TableSlotsSerializer,
                                 SwaggerTableParameters, SwaggerTableTagParametrs,
                                 TableSerializer, TableTagSerializer,
                                 UpdateTableSerializer, UpdateTableTagSerializer,
-                                SwaggerTableSlotsParametrs, basic_table_serializer,
-                                TableSlotsSerializer)
+                                SwaggerTableSlotsParametrs, basic_table_serializer)
 
 
 class TableView(ListModelMixin,

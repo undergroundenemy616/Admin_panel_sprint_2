@@ -11,7 +11,6 @@ from files.serializers import (BaseFileSerializer, FileSerializer,
                                image_serializer)
 from offices.models import Office
 from rooms.models import Room
-from tables.models import Table, TableTag
 from bookings.models import Booking
 from bookings.serializers import BookingSerializer
 from tables.models import Table, TableTag, TableMarker
