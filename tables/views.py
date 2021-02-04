@@ -1,4 +1,5 @@
 import ujson
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
@@ -10,12 +11,12 @@ from rest_framework.viewsets import ModelViewSet
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
-from tables.models import Rating, Table, TableTag
+from tables.models import Rating, Table, TableTag, TableMarker
 from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
                                 SwaggerTableParameters,
                                 SwaggerTableTagParametrs, TableSerializer,
                                 TableTagSerializer, UpdateTableSerializer,
-                                UpdateTableTagSerializer,
+                                UpdateTableTagSerializer, TableMarkerSerializer,
                                 basic_table_serializer)
 
 
@@ -140,3 +141,46 @@ class DetailTableTagView(GenericAPIView,
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+class TableMarkerView(CreateModelMixin, DestroyModelMixin,
+                      GenericAPIView):
+
+    queryset = TableMarker.objects.all()
+    serializer_class = TableMarkerSerializer
+    permission_classes = (IsAdmin, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        table_serializer = TableSerializer(instance=instance.table)
+        return Response(table_serializer.data, status=status.HTTP_201_CREATED)
+
+    def put(self, request, *args, **kwargs):
+        table = get_object_or_404(Table, pk=request.data['table'])
+        if hasattr(table, 'table_marker'):
+            serializer = self.serializer_class(data=request.data,
+                                               instance=TableMarker.objects.get(pk=table.table_marker.id))
+        else:
+            return Response({"message": "Table doesn't have marker"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        table_serializer = TableSerializer(instance=instance.table)
+        return Response(table_serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'table': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
+    def delete(self, request, *args, **kwargs):
+        table = get_object_or_404(Table, pk=request.data['table'])
+        if not hasattr(table, 'table_marker'):
+            return Response({"message": "table doesn't have marker"}, status=status.HTTP_400_BAD_REQUEST)
+        instance = get_object_or_404(TableMarker, pk=table.table_marker.id)
+        instance.delete()
+        table.refresh_from_db()
+        table_serializer = TableSerializer(instance=table)
+        return Response(table_serializer.data, status=status.HTTP_200_OK)

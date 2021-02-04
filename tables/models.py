@@ -49,3 +49,22 @@ class Rating(models.Model):
         null=False,
         blank=False
     )
+
+
+class TableMarker(models.Model):
+    table = models.OneToOneField(Table, related_name='table_marker', null=False,
+                                 blank=False, on_delete=models.CASCADE)
+    x = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        null=False,
+        blank=False
+    )
+    y = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        null=False,
+        blank=False
+    )
