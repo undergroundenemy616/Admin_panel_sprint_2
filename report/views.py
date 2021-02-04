@@ -1,6 +1,6 @@
 from smtplib import SMTPException
 
-from django.conf.global_settings import EMAIL_HOST_USER
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -39,7 +39,7 @@ class ReportCreateView(ListModelMixin,
                       html_message=body)
         except SMTPException as error:
             return Response({"Error": error.args}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        serializer.validated_data['is_delivered'] = True
+        serializer.validated_data['id_delivered'] = True
         report = serializer.save()
         return Response(serializer.to_representation(report), status=status.HTTP_201_CREATED)
 

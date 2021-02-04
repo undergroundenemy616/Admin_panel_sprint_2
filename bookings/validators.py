@@ -34,5 +34,6 @@ class BookingTimeValidator:
 
     def check_future(self):
         current_date = datetime.utcnow().replace(tzinfo=timezone.utc)
-        if self.start < current_date or self.end < current_date:
+        # TODO: NEED TO FIX FRONT EBAT'
+        if self.end < current_date:  #self.start < current_date or This is canceled beacuse of stupid legacy
             raise self.exc_class('Cannot create booking in the past')
