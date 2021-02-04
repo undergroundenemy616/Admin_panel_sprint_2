@@ -1,6 +1,6 @@
 from smtplib import SMTPException
 
-from django.conf.global_settings import EMAIL_HOST_USER
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -23,6 +23,7 @@ class ReportCreateView(ListModelMixin,
     serializer_class = ReportSerializer
 
     def post(self, request, *args, **kwargs):
+        request.data['account'] = request.user.account.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         attachments = [i.path for i in serializer.validated_data['images']]
