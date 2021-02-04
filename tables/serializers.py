@@ -1,14 +1,19 @@
+from core.handlers import ResponseException
+from datetime import datetime
 from typing import Any, Dict
-
+import pytz
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.mixins import status
 
 from files.models import File
 from files.serializers import (BaseFileSerializer, FileSerializer,
                                image_serializer)
 from offices.models import Office
 from rooms.models import Room
-from tables.models import Table, TableTag
+from bookings.models import Booking
+from bookings.serializers import BookingSerializer
+from tables.models import Table, TableTag, TableMarker
 
 
 class SwaggerTableParameters(serializers.Serializer):
@@ -17,6 +22,12 @@ class SwaggerTableParameters(serializers.Serializer):
     floor = serializers.UUIDField(required=False)
     room = serializers.UUIDField(required=False)
     tags = serializers.ListField(child=serializers.CharField(), required=False)
+
+
+class SwaggerTableSlotsParametrs(serializers.Serializer):
+    date = serializers.DateField(required=False, format="%Y-%m-%d", input_formats=['%Y-%m-%d', 'iso-8601'])
+    daily = serializers.IntegerField(required=False)
+    monthly = serializers.IntegerField(required=False)
 
 
 class SwaggerTableTagParametrs(serializers.Serializer):
@@ -43,6 +54,7 @@ def basic_table_serializer(table: Table) -> Dict[str, Any]:
         'tags': [table_tag_serializer(tag=tag) for tag in table.tags.all()],
         'images': [image_serializer(image=image) for image in table.images.all()],
         'is_occupied': table.is_occupied,
+        'marker': table_marker_serializer(marker=table.table_marker).copy() if hasattr(table, 'table_marker') else None,
         'rating': table.rating
     }
 
@@ -53,6 +65,13 @@ def table_tag_serializer(tag: TableTag) -> Dict[str, Any]:
         'title': tag.title,
         'office': str(tag.office.id),
         'icon': image_serializer(image=tag.icon).copy() if tag.icon else None
+    }
+
+
+def table_marker_serializer(marker: TableMarker) -> Dict[str, Any]:
+    return {
+        'x': float(marker.x),
+        'y': float(marker.y),
     }
 
 
@@ -136,6 +155,8 @@ class TableSerializer(serializers.ModelSerializer):
         response = super(TableSerializer, self).to_representation(instance)
         response['tags'] = BaseTableTagSerializer(instance.tags.all(), many=True).data
         response['images'] = BaseFileSerializer(instance.images.all(), many=True).data
+        response['marker'] = TableMarkerSerializer(instance=instance.table_marker).data if \
+            hasattr(instance, 'table_marker') else None
         return response
 
 
@@ -157,6 +178,7 @@ class CreateTableSerializer(serializers.ModelSerializer):
         response = super(CreateTableSerializer, self).to_representation(instance)
         response['images'] = FileSerializer(instance=instance.images, many=True).data
         response['tags'] = TableTagSerializer(instance=instance.tags, many=True).data
+        response['marker'] = None
         return response
 
     def create(self, validated_data):
@@ -196,3 +218,19 @@ class UpdateTableSerializer(CreateTableSerializer):
             tags_queryset = TableTag.objects.filter(title__in=tags, office_id=office_id)
             instance.tags.set(tags_queryset)
         return super(UpdateTableSerializer, self).update(instance, validated_data)
+
+
+class TableMarkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TableMarker
+        fields = ['x', 'y', 'table']
+
+
+class TableSlotsSerializer(serializers.ModelSerializer):
+    date = serializers.DateField(required=False, format="%Y-%m-%d", input_formats=['%Y-%m-%d', 'iso-8601'])
+    daily = serializers.IntegerField(required=False)
+    monthly = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = Booking
+        fields = ['date', 'daily', 'monthly']

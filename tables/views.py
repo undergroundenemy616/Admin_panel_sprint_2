@@ -1,22 +1,27 @@
 import ujson
+from drf_yasg import openapi
+from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
+from datetime import datetime
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
-from rest_framework.viewsets import ModelViewSet
 
+from bookings.models import Booking
+from bookings.serializers import BookingSerializer, BookingSerializerForTableSlots
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
-from tables.models import Rating, Table, TableTag
+import pytz
+from tables.models import Rating, Table, TableTag,  TableMarker
 from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
-                                SwaggerTableParameters,
-                                SwaggerTableTagParametrs, TableSerializer,
-                                TableTagSerializer, UpdateTableSerializer,
-                                UpdateTableTagSerializer,
-                                basic_table_serializer)
+                                TableMarkerSerializer, TableSlotsSerializer,
+                                SwaggerTableParameters, SwaggerTableTagParametrs,
+                                TableSerializer, TableTagSerializer,
+                                UpdateTableSerializer, UpdateTableTagSerializer,
+                                SwaggerTableSlotsParametrs, basic_table_serializer)
 
 
 class TableView(ListModelMixin,
@@ -140,3 +145,84 @@ class DetailTableTagView(GenericAPIView,
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+class TableMarkerView(CreateModelMixin, DestroyModelMixin,
+                      GenericAPIView):
+
+    queryset = TableMarker.objects.all()
+    serializer_class = TableMarkerSerializer
+    permission_classes = (IsAdmin, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        table_serializer = TableSerializer(instance=instance.table)
+        return Response(table_serializer.data, status=status.HTTP_201_CREATED)
+
+    def put(self, request, *args, **kwargs):
+        table = get_object_or_404(Table, pk=request.data['table'])
+        if hasattr(table, 'table_marker'):
+            serializer = self.serializer_class(data=request.data,
+                                               instance=TableMarker.objects.get(pk=table.table_marker.id))
+        else:
+            return Response({"message": "Table doesn't have marker"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        table_serializer = TableSerializer(instance=instance.table)
+        return Response(table_serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'table': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
+    def delete(self, request, *args, **kwargs):
+        table = get_object_or_404(Table, pk=request.data['table'])
+        if not hasattr(table, 'table_marker'):
+            return Response({"message": "table doesn't have marker"}, status=status.HTTP_400_BAD_REQUEST)
+        instance = get_object_or_404(TableMarker, pk=table.table_marker.id)
+        instance.delete()
+        table.refresh_from_db()
+        return Response(TableSerializer(instance=table).data, status=status.HTTP_200_OK)
+
+
+class TableSlotsView(ListModelMixin,
+                CreateModelMixin,
+                GenericAPIView):
+    serializer_class = TableSlotsSerializer
+    queryset = Table.objects.all()
+    pagination_class = DefaultPagination
+    permission_classes = (IsAuthenticated,)
+
+    @swagger_auto_schema(query_serializer=SwaggerTableSlotsParametrs)
+    def get(self, request, pk=None, *args, **kwargs):
+        try:
+            self.queryset.get(id=pk)
+        except Table.DoesNotExist:
+            return Response("Table not found", status.HTTP_404_NOT_FOUND)
+
+        bookings = Booking.objects.filter(table_id=pk)
+
+        if request.query_params.get('date'):
+            occupied = []
+            date = datetime.strptime(request.query_params.get('date'), '%Y-%m-%d')
+            if request.query_params.get('monthly'):
+                if int(request.query_params.get('monthly')) == 1:
+                    for booking in bookings:
+                        if booking.date_from.year == date.year == booking.date_to.year:
+                            if booking.date_from.month == date.month == booking.date_to.month:
+                                occupied.append(booking)
+                return Response(BookingSerializerForTableSlots(instance=occupied, many=True).data, status=status.HTTP_200_OK)
+            elif request.query_params.get('daily'):
+                if int(request.query_params.get('daily')) == 1:
+                    for booking in bookings:
+                        if booking.date_from.date() <= date.date() <= booking.date_to.date():
+                            occupied.append(booking)
+                return Response(BookingSerializerForTableSlots(instance=occupied, many=True).data, status=status.HTTP_200_OK)
+            else:
+                return Response("Please, select filter", status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(BookingSerializerForTableSlots(instance=bookings, many=True).data, status=status.HTTP_200_OK)

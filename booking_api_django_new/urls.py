@@ -25,6 +25,7 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView
 from users import views
+from tables.views import TableSlotsView
 
 
 def get_swagger() -> Any:
@@ -75,7 +76,9 @@ urlpatterns = [
     path('license', include('licenses.urls')),
     path('table', include('tables.urls')),
     path('tables', include('tables.urls_detail')),
+    path('table_slots/<uuid:pk>', TableSlotsView.as_view()),
     path('room_map', include('rooms.urls_map')),
+    path('table_markers', include('tables.urls_marker')),
     path('room/type', include('room_types.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
