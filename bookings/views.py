@@ -7,6 +7,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, UpdateModelMixin)
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
 from bookings.models import Booking
@@ -19,7 +20,7 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   BookListTableSerializer,
                                   SwaggerBookListActiveParametrs,
                                   SwaggerBookListTableParametrs)
-from core.pagination import DefaultPagination
+from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from tables.serializers import Table, TableSerializer
 from users.models import Account
@@ -242,7 +243,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
                      'table__room__type__title',
                      'table__room__floor__office__title',
                      'table__room__floor__office__description']
-    pagination_class = DefaultPagination
+    pagination_class = LimitStartPagination
 
     @swagger_auto_schema(query_serializer=BookingPersonalSerializer)
     def get(self, request, *args, **kwargs):
