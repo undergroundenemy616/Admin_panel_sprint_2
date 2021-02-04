@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('id_delivered', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.Account')),
-                ('images', models.ManyToManyField(related_name='report', to='files.File')),
+                ('images', models.ManyToManyField(related_name='reports', to='files.File')),
                 ('office', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='offices.Office')),
             ],
         ),

@@ -9,9 +9,9 @@ from rest_framework.mixins import (CreateModelMixin, ListModelMixin, Response,
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAuthenticated
-from report.generate_html import generate_attach, generate_html
-from report.models import Report
-from report.serializers import ReportSerializer, SwaggerReportParametrs
+from reports.generate_html import generate_attach, generate_html
+from reports.models import Report
+from reports.serializers import ReportSerializer, SwaggerReportParametrs
 
 
 class ReportCreateView(ListModelMixin,

@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from files.models import File
 from files.serializers import FileSerializer
-from report.models import Report
+from reports.models import Report
 
 
 class SwaggerReportParametrs(serializers.Serializer):
