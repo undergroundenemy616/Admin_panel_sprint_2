@@ -11,7 +11,7 @@ from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
 from tables.models import Rating, Table, TableTag
-from tables.serializers import TableSerializer, table_tag_serializer
+from tables.serializers import TableSerializer, table_tag_serializer, table_marker_serializer
 
 
 class SwaggerRoomParameters(serializers.Serializer):
@@ -96,7 +96,8 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'ratings': Rating.objects.filter(table_id=table.id).count(),
         'description': table.description,
         'is_occupied': table.is_occupied,
-        'room': str(table.room_id)
+        'room': str(table.room_id),
+        'marker': table_marker_serializer(marker=table.table_marker).copy() if hasattr(table, 'table_marker') else None
     }
 
 
