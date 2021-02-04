@@ -78,6 +78,7 @@ urlpatterns = [
     path('tables', include('tables.urls_detail')),
     path('table_slots/<uuid:pk>', TableSlotsView.as_view()),
     path('room_map', include('rooms.urls_map')),
+    path('table_markers', include('tables.urls_marker')),
     path('room/type', include('room_types.urls')),
     path('room', include('rooms.urls')),
     path('rooms', include('rooms.urls_detail')),
