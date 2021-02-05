@@ -137,6 +137,8 @@ def table_tags_validator(tags):
     """Check is every tag in array exists. Delete when start using id"""
     if not tags:
         return True
+    if len(tags[0].split(',')) > 1 and len(tags) == 1:
+        tags = tags[0].split(',')
 
     for tag in tags:
         result = TableTag.objects.filter(title=tag).exists()
@@ -151,8 +153,7 @@ class RoomGetSerializer(serializers.Serializer):
     type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
     date_to = serializers.DateTimeField(required=False)
     date_from = serializers.DateTimeField(required=False)
-    tags = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all()),
-                                 validators=[table_tags_validator], allow_empty=True, required=False, allow_null=True)
+    tags = serializers.ListField(validators=[table_tags_validator], required=False)
     #tags = serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all(), required=False, many=True)
     # TODO replase tag title for tag id, need front fix, also fix in RoomsView
 
