@@ -133,6 +133,30 @@ class RoomSerializer(serializers.ModelSerializer):
         return response
 
 
+def table_tags_validator(tags):
+    """Check is every tag in array exists. Delete when start using id"""
+    if not tags:
+        return True
+
+    for tag in tags:
+        result = TableTag.objects.filter(title=tag).exists()
+        if not result:
+            raise ValidationError(f'Table_tag {tag} does not exists.')
+
+
+class RoomGetSerializer(serializers.Serializer):
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
+    zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), required=False)
+    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+    date_to = serializers.DateTimeField(required=False)
+    date_from = serializers.DateTimeField(required=False)
+    tags = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all()),
+                                 validators=[table_tags_validator], allow_empty=True, required=False, allow_null=True)
+    #tags = serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all(), required=False, many=True)
+    # TODO replase tag title for tag id, need front fix, also fix in RoomsView
+
+
 class NestedRoomSerializer(RoomSerializer):
     tables = TableSerializer(many=True, read_only=True)
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())

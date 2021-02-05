@@ -16,16 +16,18 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.request import Request
 
 from booking_api_django_new.uuid_encoder import UUIDEncoder
+from groups.models import Group
 from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from floors.models import Floor
-from offices.models import Office
+from offices.models import Office, OfficeZone
 from rooms.models import Room, RoomMarker
 from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                RoomMarkerSerializer, RoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
-                               base_serialize_room, table_serializer_for_room)
+                               base_serialize_room, table_serializer_for_room,
+                               RoomGetSerializer)
 from tables.serializers import Table, TableSerializer
 
 
@@ -60,25 +62,37 @@ class RoomsView(ListModelMixin,
             del mapped[item]
         return mapped
 
+    def get_queryset(self, *args, **kwargs):
+        queryset = self.queryset
+        account_groups = self.request.user.account.groups.all()
+        kiosk_groups = Group.objects.filter(title='Информационный киоск').first()
+        access = [access_dict.get('access') for access_dict in account_groups.values('access')]
+        coworking_zone = OfficeZone.objects.filter(title='Зона коворкинга')
+
+        if kiosk_groups in account_groups:
+            return queryset.filter(zone__in=coworking_zone)
+        elif min(access) < 3:
+            return queryset.all()
+        else:
+            visitor_group = Group.objects.filter(title='Посетитель')
+            account_groups = account_groups + visitor_group
+            zones = OfficeZone.objects.filter(groups__in=account_groups)
+            return self.queryset.filter(zones__in=zones)
+
     @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
+        serializer = RoomGetSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        self.queryset = self.get_queryset()
         if request.query_params.get('search'):
             by_office = self.queryset.filter(floor__office=request.query_params.get('office'))
             self.queryset = by_office
             return self.list(request, *args, **kwargs)
         response = []
         if request.query_params.get('office'):
-            try:
-                Office.objects.get(id=request.query_params.get('office'))
-            except Office.DoesNotExist:
-                return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
             rooms = self.queryset.exclude(type_id__isnull=True, type__bookable=False).\
                 filter(floor__office_id=request.query_params.get('office')).select_related('floor__office')
         elif request.query_params.get('floor'):
-            try:
-                Floor.objects.get(id=request.query_params.get('floor'))
-            except Office.DoesNotExist:
-                return Response({"message": "Floor not found"}, status=status.HTTP_404_NOT_FOUND)
             rooms = self.queryset.exclude(type_id__isnull=True).\
                 filter(floor_id=request.query_params.get('floor')).select_related('floor')
         else:
