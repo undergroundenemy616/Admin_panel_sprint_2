@@ -38,13 +38,16 @@ def office_base_serializer(office: Office) -> Dict[str, Any]:
     if not office.license.forever:
         license['expires_at'] = str(office.license.expires_at)
         # if datetime.strptime(office.license.expires_at, '%Y-%m-%d') > datetime.now():
-        if office.license.expires_at > datetime.now():
+        if office.license.expires_at > datetime.now().date():
             license['expiry_status'] = "OK"
         else:
             license['expiry_status'] = "expired"
     if not office.license.tables_infinite:
         license['tables_available'] = int(office.license.tables_available)
-        license['tables_remain'] = int(office.license.tables_available) - int(office.floors.tables.all().count())
+        try:
+            license['tables_remain'] = int(office.license.tables_available) - int(office.floors.tables.all().count())
+        except AttributeError:
+            license['tables_remain'] = 0
         license['tables_status'] = "OK"  # TODO разобраться в логике этого поля
     tables = Table.objects.filter(room__floor__office_id=office.id).select_related('room__floor__office_id')
     capacity = tables.count()

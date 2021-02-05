@@ -15,6 +15,7 @@ def validate_csv_file_extension(file):
     if '.csv' not in str(file):
         raise ValidationError('Unsupported file extension')
 
+
 class SwaggerGroupsParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
 
@@ -37,6 +38,29 @@ class GroupSerializer(serializers.ModelSerializer):
         users_in_group = User.objects.filter(account__groups=response['id'])
         response['count'] = len(users_in_group)
         response['users'] = [AccountSerializer(instance=user.account).data for user in users_in_group]
+        return response
+
+
+class GroupSerializerLite(serializers.ModelSerializer):
+    file = serializers.FileField(required=False)
+
+    class Meta:
+        model = Group
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        response = super(GroupSerializerLite, self).to_representation(instance)
+        is_deletable = instance.is_deletable
+        response['pre_defined'] = not is_deletable
+        legacy_access = Group.to_legacy_access(access=instance.access)
+        if not legacy_access:
+            raise serializers.ValidationError('Invalid group access')
+        response.update(legacy_access)
+        users_in_group = User.objects.filter(account__groups=response['id'])
+        response['count'] = len(users_in_group)
+        response['users'] = [user.account.id for user in users_in_group]
+        for key in ['is_deletable', 'access']:
+            response.pop(key)
         return response
 
 
