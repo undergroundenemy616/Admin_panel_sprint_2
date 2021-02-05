@@ -13,7 +13,7 @@ class Report(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     office = models.ForeignKey(Office, on_delete=models.CASCADE)
     body = models.TextField()
-    images = models.ManyToManyField(File, related_name="report")
+    images = models.ManyToManyField(File, related_name="reports")
     id_delivered = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
