@@ -25,6 +25,11 @@ class SwaggerBookListTableParametrs(serializers.Serializer):
     table = serializers.UUIDField()
 
 
+class SwaggerBookListRoomTypeStats(serializers.Serializer):
+    date_from = serializers.DateField(required=True, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=True, format='%Y-%m-%d')
+
+
 class BaseBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
