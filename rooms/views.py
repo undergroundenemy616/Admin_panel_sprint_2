@@ -16,7 +16,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.request import Request
 
 from booking_api_django_new.uuid_encoder import UUIDEncoder
-from groups.models import Group, GUEST_ACCESS
+from groups.models import Group, GUEST_ACCESS, ADMIN_ACCESS
 from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -71,10 +71,10 @@ class RoomsView(ListModelMixin,
 
         if kiosk_groups in account_groups:
             return queryset.filter(zone__in=coworking_zone)
-        elif min(access) < 3:
+        elif min(access) <= ADMIN_ACCESS:
             return queryset.all()
         else:
-            visitor_group = Group.objects.filter(title='Посетитель')
+            visitor_group = Group.objects.filter(title='Посетитель', is_deletable=False)
             account_groups = list(account_groups.values_list('id', flat=True)) + list(
                 visitor_group.values_list('id', flat=True))
             zones = OfficeZone.objects.filter(groups__id__in=account_groups)
