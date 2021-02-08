@@ -37,6 +37,10 @@ class SwaggerBookingEmployeeStatistics(serializers.Serializer):
     year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
 
 
+class SwaggerBookingFuture(serializers.Serializer):
+    date = serializers.DateField(required=False, format='%Y-%m-%d')
+
+
 class BaseBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
@@ -432,6 +436,25 @@ def employee_statistics(stats):
         "last_name": stats.last_name,
         "date_from": str(stats.date_from),
         "date_to": str(stats.date_to)
+    }
+
+
+def bookings_future(stats):
+    return {
+        "booking_id": str(stats.id),
+        "table_id": str(stats.table_id),
+        "table_title": stats.table_title,
+        "office_id": str(stats.office_id),
+        "office_title": stats.office_title,
+        "floor_id": str(stats.floor_id),
+        "floor_title": stats.floor_title,
+        "user_id": str(stats.user_id),
+        "first_name": stats.first_name,
+        "middle_name": stats.middle_name,
+        "last_name": stats.last_name,
+        "date_from": str(stats.date_from),
+        "date_to": str(stats.date_to),
+        "date_activate_until": str(stats.date_activate_until)
     }
 
 

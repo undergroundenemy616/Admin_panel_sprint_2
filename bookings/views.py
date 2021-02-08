@@ -29,7 +29,9 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   SwaggerBookListTableParametrs,
                                   SwaggerBookListRoomTypeStats,
                                   SwaggerBookingEmployeeStatistics,
-                                  chop_microseconds, room_type_statictic_serializer, employee_statistics, most_frequent)
+                                  SwaggerBookingFuture,
+                                  chop_microseconds, room_type_statictic_serializer,
+                                  employee_statistics, most_frequent, bookings_future)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -543,3 +545,105 @@ class BookingEmployeeStatistics(GenericAPIView):
         Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
 
         return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+
+
+class BookingFuture(GenericAPIView):
+    serializer_class = BookingSerializer
+    queryset = Booking.objects.all()
+    permission_classes = (IsAdmin,)
+
+    @swagger_auto_schema(query_serializer=SwaggerBookingFuture)
+    def get(self, request, *args, **kwargs):
+        date = request.query_params.get('date')
+
+        file_name = "future_" + date + '.xlsx'
+
+        stats = self.queryset.all().raw(f"""
+        SELECT b.id, ua.id as user_id, ua.first_name as first_name, ua.middle_name as middle_name, 
+        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id, 
+        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, 
+        b.date_activate_until
+        FROM bookings_booking b
+        INNER JOIN tables_table tt on b.table_id = tt.id
+        INNER JOIN rooms_room rr on rr.id = tt.room_id
+        INNER JOIN floors_floor ff on rr.floor_id = ff.id
+        INNER JOIN offices_office oo on ff.office_id = oo.id
+        INNER JOIN users_account ua on b.user_id = ua.id
+        WHERE b.date_from::date = '{date}'""")
+
+        sql_results = []
+
+        for s in stats:
+            sql_results.append(bookings_future(s))
+
+        if sql_results:
+            secure_file_name = uuid.uuid4().hex + file_name
+
+            workbook = xlsxwriter.Workbook(secure_file_name)
+
+            worksheet = workbook.add_worksheet()
+
+            j = 0
+
+            for i in range(len(sql_results) + 1):
+                i += 1
+                if i == 1:
+                    worksheet.write('A1', 'Ф.И.О')
+                    worksheet.write('B1', 'Начало брони')
+                    worksheet.write('C1', 'Окончание брони')
+                    worksheet.write('D1', 'Продолжительность брони (в часах)')
+                    worksheet.write('E1', 'Офис')
+                    worksheet.write('F1', 'Этаж')
+                    worksheet.write('G1', 'Рабочее место')
+                else:
+                    full_name = str(str(sql_results[j].get('last_name')) + ' ' +
+                                    str(sql_results[j].get('first_name')) + ' ' +
+                                    str(sql_results[j].get('middle_name'))).replace('None', "")
+                    if not full_name.replace(" ", ""):
+                        full_name = "Имя не указано"
+                    book_time = float((datetime.fromisoformat(sql_results[j]['date_to']).timestamp() -
+                                       datetime.fromisoformat(sql_results[j]['date_from']).timestamp()) / 3600).__round__(2)
+
+                    r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
+                                                    '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
+                                                  '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+
+                    worksheet.write('A' + str(i), full_name)
+                    worksheet.write('B' + str(i), str(r_date_from))
+                    worksheet.write('C' + str(i), str(r_date_to))
+                    worksheet.write('D' + str(i), book_time),
+                    worksheet.write('E' + str(i), str(sql_results[j]['office_title'])),
+                    worksheet.write('F' + str(i), sql_results[j]['floor_title']),
+                    worksheet.write('G' + str(i), str(sql_results[j]['table_title']))
+                    j += 1
+
+            workbook.close()
+
+            try:
+                response = requests.post(
+                    url=FILES_HOST + "/upload",
+                    files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                    auth=(FILES_USERNAME, FILES_PASSWORD),
+                )
+            except requests.exceptions.RequestException:
+                return {"message": "Error occured during file upload"}, 500
+
+            response_dict = ujson.loads(response.text)
+            file_attrs = {
+                "path": FILES_HOST + str(response_dict.get("path")),
+                "title": secure_file_name,
+                "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+            }
+            if response_dict.get("thumb"):
+                file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+
+            file_storage_object = File(**file_attrs)
+            file_storage_object.save()
+
+            Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+
+            return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response("Not found", status=status.HTTP_404_NOT_FOUND)
