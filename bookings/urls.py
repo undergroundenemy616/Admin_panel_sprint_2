@@ -9,4 +9,7 @@ urlpatterns = [
     path('/deactivate', views.ActionDeactivateBookingsView.as_view()),
     path('/end', views.ActionEndBookingsView.as_view()),
     path('/fast', views.CreateFastBookingsView.as_view()),
+    path('/room_type_stats', views.BookingStatisticsRoomTypes.as_view()),
+    path('/employee_stats', views.BookingEmployeeStatistics.as_view()),
+    path('/future', views.BookingFuture.as_view()),
 ]
