@@ -66,7 +66,7 @@ class RoomsView(ListModelMixin,
         queryset = self.queryset
         account_groups = self.request.user.account.groups.all()
         kiosk_groups = Group.objects.filter(title='Информационный киоск').first()
-        access = [access_dict.get('access') for access_dict in account_groups.values('access')]
+        access = [access_dict.get('access') for access_dict in account_groups.values('access')] or [4]
         coworking_zone = OfficeZone.objects.filter(title='Зона коворкинга')
 
         if kiosk_groups in account_groups:
@@ -75,9 +75,10 @@ class RoomsView(ListModelMixin,
             return queryset.all()
         else:
             visitor_group = Group.objects.filter(title='Посетитель')
-            account_groups = account_groups + visitor_group
-            zones = OfficeZone.objects.filter(groups__in=account_groups)
-            return self.queryset.filter(zones__in=zones)
+            account_groups = list(account_groups.values_list('id', flat=True)) + list(
+                visitor_group.values_list('id', flat=True))
+            zones = OfficeZone.objects.filter(groups__id__in=account_groups)
+            return self.queryset.filter(zone__in=zones)
 
     @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
