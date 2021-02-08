@@ -16,7 +16,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.request import Request
 
 from booking_api_django_new.uuid_encoder import UUIDEncoder
-from groups.models import Group
+from groups.models import Group, GUEST_ACCESS
 from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -66,7 +66,7 @@ class RoomsView(ListModelMixin,
         queryset = self.queryset
         account_groups = self.request.user.account.groups.all()
         kiosk_groups = Group.objects.filter(title='Информационный киоск').first()
-        access = [access_dict.get('access') for access_dict in account_groups.values('access')] or [4]
+        access = [access_dict.get('access') for access_dict in account_groups.values('access')] or [GUEST_ACCESS]
         coworking_zone = OfficeZone.objects.filter(title='Зона коворкинга')
 
         if kiosk_groups in account_groups:
