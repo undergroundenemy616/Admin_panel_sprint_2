@@ -2,6 +2,7 @@ from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD,
                                              FILES_USERNAME, MEDIA_ROOT,
                                              MEDIA_URL)
 from calendar import monthrange
+from collections import Counter
 from datetime import datetime, timezone, timedelta, date
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -29,11 +30,10 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   BookingListTablesSerializer,
                                   BookingPersonalSerializer, BookingSerializer,
                                   BookingSlotsSerializer,
-                                  BookListTableSerializer,
                                   SwaggerBookListActiveParametrs,
                                   SwaggerBookListTableParametrs,
-                                  SwaggerBookListTableParametrs,
-                                  SwaggerBookListRoomTypeStats)
+                                  SwaggerBookListRoomTypeStats,
+                                  SwaggerBookingEmployeeStatistics)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -391,9 +391,195 @@ class BookingStatisticsRoomTypes(GenericAPIView):
         return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
 
 
+class BookingEmployeeStatistics(GenericAPIView):
+    serializer_class = BookingSerializer
+    queryset = Booking.objects.all()
+    pagination_class = DefaultPagination
+    permission_classes = (IsAuthenticated,)
+
+    @swagger_auto_schema(query_serializer=SwaggerBookingEmployeeStatistics)
+    def get(self, request, *args, **kwargs):
+        if request.query_params.get('month'):
+            month = request.query_params.get('month')
+            month_num = int(strptime(month, '%B').tm_mon)
+        else:
+            month_num = int(datetime.now().month)
+            month = datetime.now().strftime("%B")
+
+        if request.query_params.get('year'):
+            year = int(request.query_params.get('year'))
+        else:
+            year = int(datetime.now().year)
+
+        file_name = month + '_' + str(year) + '.xlsx'
+        secure_file_name = uuid.uuid4().hex + file_name
+
+        stats = self.queryset.all().raw(f"""
+        SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
+        oo.title as office_title, ff.title as floor_title, ua.id as user_id, ua.first_name as first_name,
+        ua.middle_name as middle_name, ua.last_name as last_name
+        FROM bookings_booking b
+        INNER JOIN tables_table tt on b.table_id = tt.id
+        INNER JOIN rooms_room rr on rr.id = tt.room_id
+        INNER JOIN floors_floor ff on rr.floor_id = ff.id
+        INNER JOIN offices_office oo on ff.office_id = oo.id
+        INNER JOIN users_account ua on b.user_id = ua.id
+        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}""")
+
+        sql_results = []
+
+        for s in stats:
+            sql_results.append(employee_statistics(s))
+
+        if sql_results:
+            employees = []
+            for stat in sql_results:
+                employees.append({
+                    'id': stat['user_id'],
+                    'first_name': stat['first_name'],
+                    'middle_name': stat['middle_name'],
+                    'last_name': stat['last_name'],
+                    'office_title': stat['office_title'],
+                    'office_id': stat['office_id'],
+                    'book_count': 0,
+                    'time': 0,
+                    'places': []
+                })
+
+            num_days = monthrange(year=year, month=month_num)[1]
+
+            working_days = num_days
+
+            cal = Russia()
+
+            for i in range(num_days):
+                if not cal.is_working_day(date(year=year, month=month_num, day=i + 1)):
+                    working_days = working_days - 1
+
+            for employee in employees:
+                for result in sql_results:
+                    if result['user_id'] == employee['id'] and result['office_id'] == employee['office_id']:
+                        employee['book_count'] = employee['book_count'] + 1
+                        employee['time'] = employee['time'] + int(
+                            datetime.fromisoformat(result['date_to']).timestamp() -
+                            datetime.fromisoformat(result['date_from']).timestamp())
+                        employee['places'].append(str(result['table_id']))
+                employee['middle_time'] = str(chop_microseconds(timedelta(days=0,
+                                                                          seconds=employee['time'] / working_days)))
+                employee['middle_booking_time'] = str(chop_microseconds(
+                    timedelta(days=0, seconds=employee['time'] / employee['book_count'])))
+                employee['time'] = str(chop_microseconds(timedelta(days=0, seconds=employee['time'])))
+
+            set_rows = set()
+
+            for employee in employees:
+                set_rows.add(ujson.dumps(employee, sort_keys=True))
+
+            list_rows = []
+
+            for set_row in set_rows:
+                list_rows.append(ujson.loads(set_row))
+
+            for row in list_rows:
+                row['places'] = most_frequent(row['places'])
+
+            for table in sql_results:
+                for row in list_rows:
+                    if table['table_id'] == row['places']:
+                        row['table'] = "Место: " + table['table_title'] + ", этаж: " + table['floor_title']
+
+            workbook = xlsxwriter.Workbook(secure_file_name)
+
+            worksheet = workbook.add_worksheet()
+            bold = workbook.add_format({'bold': 1})
+
+            j = 0
+
+            for i in range(len(list_rows) + 1):
+                i += 1
+                if i == 1:
+                    worksheet.write('A1', 'Ф.И.О')
+                    worksheet.write('B1', 'Среднее время брони в день (в часах)')
+                    worksheet.write('C1', 'Общее время бронирования за месяц (в часах)')
+                    worksheet.write('D1', 'Средняя длительность бронирования (в часах)')
+                    worksheet.write('E1', 'Кол-во бронирований')
+                    worksheet.write('F1', 'Офис')
+                    worksheet.write('G1', 'Часто бронируемое место')
+                else:
+                    full_name = str(str(list_rows[j].get('last_name')) + ' ' +
+                                    str(list_rows[j].get('first_name')) + ' ' +
+                                    str(list_rows[j].get('middle_name'))).replace('None', "")
+                    if not full_name.replace(" ", ""):
+                        full_name = "Имя не указано"
+                    worksheet.write('A' + str(i), full_name)
+                    worksheet.write('B' + str(i), list_rows[j]['middle_time'])
+                    worksheet.write('C' + str(i), list_rows[j]['time'])
+                    worksheet.write('D' + str(i), list_rows[j]['middle_booking_time'])
+                    worksheet.write('E' + str(i), list_rows[j]['book_count'])
+                    worksheet.write('F' + str(i), list_rows[j]['office_title'])
+                    worksheet.write('G' + str(i), list_rows[j]['table'])
+                    j += 1
+
+            worksheet.write('A' + str(len(list_rows) + 2), 'Рабочих дней в месяце:', bold)
+            worksheet.write('B' + str(len(list_rows) + 2), working_days, bold)
+
+            workbook.close()
+        try:
+            response = requests.post(
+                url=FILES_HOST + "/upload",
+                files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                auth=(FILES_USERNAME, FILES_PASSWORD),
+            )
+        except requests.exceptions.RequestException:
+            return {"message": "Error occured during file upload"}, 500
+
+        response_dict = ujson.loads(response.text)
+        file_attrs = {
+            "path": FILES_HOST + str(response_dict.get("path")),
+            "title": secure_file_name,
+            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+        }
+        if response_dict.get("thumb"):
+            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+
+        file_storage_object = File(**file_attrs)
+        file_storage_object.save()
+
+        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+
+        return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+
+
 def room_type_statictic_serializer(stats):
     return {
         "booking_id": str(stats.id),
         "room_type_title": stats.title,
         "office_id": str(stats.office_id)
     }
+
+
+def employee_statistics(stats):
+    return {
+        "booking_id": str(stats.id),
+        "table_id": str(stats.table_id),
+        "table_title": stats.table_title,
+        "office_id": str(stats.office_id),
+        "office_title": stats.office_title,
+        "floor_title": stats.floor_title,
+        "user_id": str(stats.user_id),
+        "first_name": stats.first_name,
+        "middle_name": stats.middle_name,
+        "last_name": stats.last_name,
+        "date_from": str(stats.date_from),
+        "date_to": str(stats.date_to)
+    }
+
+
+def most_frequent(List):
+    occurence_count = Counter(List)
+    return occurence_count.most_common(1)[0][0]
+
+
+def chop_microseconds(delta):
+    return delta - timedelta(microseconds=delta.microseconds)

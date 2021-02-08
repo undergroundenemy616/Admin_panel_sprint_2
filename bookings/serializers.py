@@ -30,6 +30,12 @@ class SwaggerBookListRoomTypeStats(serializers.Serializer):
     date_to = serializers.DateField(required=True, format='%Y-%m-%d')
 
 
+class SwaggerBookingEmployeeStatistics(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    month = serializers.CharField(required=False, max_length=10)
+    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+
+
 class BaseBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
