@@ -155,13 +155,13 @@ class Booking(models.Model):
 
     def job_create_change_states(self):
         """Add job for occupied/free states changing"""
-        scheduler.add_job(
-            self.set_booking_active,
-            "date",
-            run_date=self.date_from,
-            misfire_grace_time=900,
-            id="set_booking_active_" + str(self.id)
-        )
+        # scheduler.add_job(
+        #     self.set_booking_active,
+        #     "date",
+        #     run_date=self.date_from,
+        #     misfire_grace_time=900,
+        #     id="set_booking_active_" + str(self.id)
+        # )  # Why we need THIS? Activation is starting when qr code was scanned and then front send request for backend
         scheduler.add_job(
             self.set_booking_over,
             "date",
