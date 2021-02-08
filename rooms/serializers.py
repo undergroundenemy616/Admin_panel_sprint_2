@@ -146,11 +146,19 @@ def table_tags_validator(tags):
             raise ValidationError(f'Table_tag {tag} does not exists.')
 
 
+def type_validatior(type):
+    if not type:
+        return True
+    return RoomType.objects.filter(title=type).exists()
+
+
 class RoomGetSerializer(serializers.Serializer):
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=False)
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
     zone = serializers.PrimaryKeyRelatedField(queryset=OfficeZone.objects.all(), required=False)
-    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+    #type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+    # TODO replace type_title with uuid
+    type = serializers.CharField(validators=[type_validatior], required=False)
     date_to = serializers.DateTimeField(required=False)
     date_from = serializers.DateTimeField(required=False)
     tags = serializers.ListField(validators=[table_tags_validator], required=False)
