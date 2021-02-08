@@ -24,6 +24,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView
+from bookings.views import BookingStatisticsRoomTypes
 from users import views
 from tables.views import TableSlotsView
 
@@ -92,6 +93,7 @@ urlpatterns = [
     path('books', include('bookings.urls_detail')),
     path('book_operator', include('bookings.urls_operator')),
     path('book_list', include('bookings.urls_list')),
+    path('book/room_type_stats', BookingStatisticsRoomTypes.as_view()),
     path('tokens', include('push_tokens.urls')),
     path('send_', include('push_tokens.urls_send')),
     path('password_change', views.PasswordChangeView.as_view()),
