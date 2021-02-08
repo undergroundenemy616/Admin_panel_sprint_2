@@ -1,20 +1,15 @@
-from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD,
-                                             FILES_USERNAME, MEDIA_ROOT,
-                                             MEDIA_URL)
+from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD, FILES_USERNAME)
 from calendar import monthrange
-from collections import Counter
 from datetime import datetime, timezone, timedelta, date
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
-import os
 from pathlib import Path
 import requests
 from rest_framework import status
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin, UpdateModelMixin)
-from rest_framework.pagination import LimitOffsetPagination
+                                   ListModelMixin)
 from rest_framework.response import Response
 from time import strptime
 import ujson
@@ -33,7 +28,8 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   SwaggerBookListActiveParametrs,
                                   SwaggerBookListTableParametrs,
                                   SwaggerBookListRoomTypeStats,
-                                  SwaggerBookingEmployeeStatistics)
+                                  SwaggerBookingEmployeeStatistics,
+                                  chop_microseconds, room_type_statictic_serializer, employee_statistics, most_frequent)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -299,8 +295,7 @@ class BookingsListUserView(BookingsAdminView):
 class BookingStatisticsRoomTypes(GenericAPIView):
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
-    pagination_class = DefaultPagination
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdmin,)
 
     @swagger_auto_schema(query_serializer=SwaggerBookListRoomTypeStats)
     def get(self, request, *args, **kwargs):
@@ -394,8 +389,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 class BookingEmployeeStatistics(GenericAPIView):
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
-    pagination_class = DefaultPagination
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdmin,)
 
     @swagger_auto_schema(query_serializer=SwaggerBookingEmployeeStatistics)
     def get(self, request, *args, **kwargs):
@@ -549,37 +543,3 @@ class BookingEmployeeStatistics(GenericAPIView):
         Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
 
         return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
-
-
-def room_type_statictic_serializer(stats):
-    return {
-        "booking_id": str(stats.id),
-        "room_type_title": stats.title,
-        "office_id": str(stats.office_id)
-    }
-
-
-def employee_statistics(stats):
-    return {
-        "booking_id": str(stats.id),
-        "table_id": str(stats.table_id),
-        "table_title": stats.table_title,
-        "office_id": str(stats.office_id),
-        "office_title": stats.office_title,
-        "floor_title": stats.floor_title,
-        "user_id": str(stats.user_id),
-        "first_name": stats.first_name,
-        "middle_name": stats.middle_name,
-        "last_name": stats.last_name,
-        "date_from": str(stats.date_from),
-        "date_to": str(stats.date_to)
-    }
-
-
-def most_frequent(List):
-    occurence_count = Counter(List)
-    return occurence_count.most_common(1)[0][0]
-
-
-def chop_microseconds(delta):
-    return delta - timedelta(microseconds=delta.microseconds)

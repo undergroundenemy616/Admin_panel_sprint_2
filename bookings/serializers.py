@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from collections import Counter
+from datetime import datetime, timezone, timedelta
 import time
 import random
 
@@ -407,3 +408,37 @@ class BookingSerializerForTableSlots(serializers.ModelSerializer):
         response['user'] = instance.user_id
         response['table'] = instance.table_id
         return response
+
+
+def room_type_statictic_serializer(stats):
+    return {
+        "booking_id": str(stats.id),
+        "room_type_title": stats.title,
+        "office_id": str(stats.office_id)
+    }
+
+
+def employee_statistics(stats):
+    return {
+        "booking_id": str(stats.id),
+        "table_id": str(stats.table_id),
+        "table_title": stats.table_title,
+        "office_id": str(stats.office_id),
+        "office_title": stats.office_title,
+        "floor_title": stats.floor_title,
+        "user_id": str(stats.user_id),
+        "first_name": stats.first_name,
+        "middle_name": stats.middle_name,
+        "last_name": stats.last_name,
+        "date_from": str(stats.date_from),
+        "date_to": str(stats.date_to)
+    }
+
+
+def most_frequent(List):
+    occurence_count = Counter(List)
+    return occurence_count.most_common(1)[0][0]
+
+
+def chop_microseconds(delta):
+    return delta - timedelta(microseconds=delta.microseconds)
