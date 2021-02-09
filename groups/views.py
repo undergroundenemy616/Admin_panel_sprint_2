@@ -1,4 +1,5 @@
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework import filters
 from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
                                      UpdateAPIView, get_object_or_404)
 from rest_framework.mixins import (DestroyModelMixin, Response,
@@ -18,10 +19,12 @@ from users.models import Account, User
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
-    queryset = Group.objects.all().order_by()
+    queryset = Group.objects.all()
     serializer_class = GroupSerializer
     pagination_class = None
     permission_classes = (IsAuthenticated,)
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', ]
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
@@ -34,7 +37,8 @@ class ListCreateGroupAPIView(ListCreateAPIView):
             group = get_object_or_404(Group, pk=request.query_params.get('id'))
             serializer = self.serializer_class(instance=group)
             return Response(serializer.to_representation(group), status=status.HTTP_200_OK)
-        return Response(GroupSerializerLite(instance=self.queryset.all(), many=True).data, status=status.HTTP_200_OK)
+        self.serializer_class = GroupSerializerLite
+        return self.list(request)
 
 
 class DetailGroupView(GenericAPIView,

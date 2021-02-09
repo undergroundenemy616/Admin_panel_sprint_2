@@ -224,7 +224,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         # if not room_type:
         #     raise ValidationError(f'RoomType {room_type} does not exists.')
         # validated_data['type'] = room_type
-        images = validated_data.pop('images')
+        images = validated_data.pop('images', [])
         instance = self.Meta.model.objects.create(**validated_data)
         if len(images) != 0:
             for image in images:

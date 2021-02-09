@@ -19,6 +19,8 @@ class Room(models.Model):
     seats_amount = models.IntegerField(default=1, null=False, blank=False)
     # is_bookable = models.BooleanField(default=True, null=False, blank=False)
 
+    class Meta:
+        ordering = ['floor__title']
 
 # capacity_meeting - floor, office
 # capacity_tables - количество столов на floor, office
