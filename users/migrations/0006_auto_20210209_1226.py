@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('files', '0001_initial'),
-        ('users', '0005_remove_user_is_deleted'),
+        ('users', '0003_auto_20210209_0938'),
     ]
 
     operations = [
