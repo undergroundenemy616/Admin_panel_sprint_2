@@ -1,6 +1,8 @@
 import os
 import random
 
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+
 from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
 from django.core.mail import send_mail
@@ -197,7 +199,7 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
 
     def delete(self, request, pk=None, *args, **kwargs):
         instance = get_object_or_404(Account, pk=pk)
-        if instance.id == request.user.account.id:
+        if instance.id == self.request.user.account.id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         flag = 0
         for group in instance.groups.all():
@@ -206,6 +208,10 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
         if flag != 0:
             return Response(status=status.HTTP_403_FORBIDDEN)
         return self.destroy(self, request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        instance.user.delete()
+
 
 
 class RegisterStaffView(GenericAPIView):

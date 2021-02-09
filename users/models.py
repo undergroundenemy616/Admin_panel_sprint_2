@@ -114,6 +114,10 @@ class User(AbstractBaseUser):
         """Returns email if it exists."""
         return self.email or None
 
+    # def delete(self, *args, **kwargs):
+    #     self.is_deleted = True
+    #     return super().delete(*args, **kwargs)
+
 
 class Account(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -131,7 +135,7 @@ class Account(models.Model):
     first_name = models.CharField(default='', max_length=64, blank=True, null=True)
     last_name = models.CharField(default='', max_length=64, blank=True, null=True)
     middle_name = models.CharField(default='', max_length=64, blank=True, null=True)
-    photo = models.ForeignKey('files.File', on_delete=models.CASCADE, null=True)
+    photo = models.ForeignKey('files.File', on_delete=models.SET_NULL, null=True)
 
     city = models.IntegerField(null=True, default=None)
     region_integer = models.IntegerField(null=True, blank=True)
