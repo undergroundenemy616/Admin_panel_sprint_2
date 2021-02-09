@@ -64,26 +64,16 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
 
     def post(self, request):
         """Register or login view"""
-        # if request.data.get('phone_number'):
-        #     request.data['phone'] = request.data.get('phone_number')
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         phone_number = serializer.data.get('phone', None)
         sms_code = serializer.data.pop('code', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
-        if created:
-            user.is_active = False
-            user.save()
-        # if serializer.data.get('description'):
-        #     account, account_created = Account.objects.get_or_create(user=user,
-        #                                                              description=serializer.data.get('description'))
-        # else:
+        # if created:
+        #     user.is_active = False
+        #     user.save()
         account, account_created = Account.objects.get_or_create(user=user)
-
-        # if account_created:
-        #     user_group = Group.objects.get(access=4)
-        #     account.groups.add(user_group)
         try:
             data = {}
             if not sms_code:  # Register or login user
@@ -91,7 +81,6 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                     send_code(user, created)
                 else:
                     print('SMS service is off, any code is acceptable')
-                # data['status'], data['phone_number'] = 'DONE', user.phone_number
                 # Creating data for response
                 data = {
                     'message': "OK",
@@ -99,7 +88,7 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                     'expires_in': 180,
                 }
             elif sms_code:  # Confirm code  and user.is_active
-                first_login = True if user.last_login is None else False
+                # first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
                     confirm_code(phone_number, sms_code)
@@ -122,9 +111,6 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 raise ValueError('Invalid data!')
         except ValueError as error:
             return Response({'detail': str(error), 'message': 'ERROR'}, status=status.HTTP_400_BAD_REQUEST)
-        # if request.data.get('description'):
-        #     response = AccountSerializer(instance=account).data
-        #     return Response(response, status=status.HTTP_201_CREATED)
         return Response(data, status=status.HTTP_200_OK)
 
 
