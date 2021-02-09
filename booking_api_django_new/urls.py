@@ -66,7 +66,7 @@ urlpatterns = [
     path('user_access/<uuid:pk>', views.UserAccessView.as_view()),
     path('operator_promotion', views.OperatorPromotionView.as_view()),
     path('enter', views.EntranceCollectorView.as_view()),
-    path('reports', include('reports.urls')),
+    path('report', include('reports.urls')),
     path('group_access', include('offices.urls_group_access')),
     path('group', include('groups.urls_detail')),
     path('groups', include('groups.urls')),
