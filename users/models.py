@@ -152,6 +152,8 @@ class Account(models.Model):
 
     updated_at = models.DateTimeField(null=False, auto_now=True)
 
+    class Meta:
+        ordering = ['user__created_at']
 # Add validators
 
 
