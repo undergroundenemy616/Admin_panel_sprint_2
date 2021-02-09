@@ -30,7 +30,7 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   SwaggerBookListRoomTypeStats,
                                   SwaggerBookingEmployeeStatistics,
                                   SwaggerBookingFuture,
-                                  chop_microseconds, room_type_statictic_serializer,
+                                  get_duration, room_type_statictic_serializer,
                                   employee_statistics, most_frequent, bookings_future)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
@@ -460,11 +460,12 @@ class BookingEmployeeStatistics(GenericAPIView):
                             datetime.fromisoformat(result['date_to']).timestamp() -
                             datetime.fromisoformat(result['date_from']).timestamp())
                         employee['places'].append(str(result['table_id']))
-                employee['middle_time'] = str(chop_microseconds(timedelta(days=0,
-                                                                          seconds=employee['time'] / working_days)))
-                employee['middle_booking_time'] = str(chop_microseconds(
-                    timedelta(days=0, seconds=employee['time'] / employee['book_count'])))
-                employee['time'] = str(chop_microseconds(timedelta(days=0, seconds=employee['time'])))
+                employee['middle_time'] = str(get_duration(
+                    timedelta(days=0,seconds=employee['time'] / working_days).total_seconds()
+                ))
+                employee['middle_booking_time'] = str(get_duration(
+                    timedelta(days=0, seconds=employee['time'] / employee['book_count']).total_seconds()))
+                employee['time'] = str(get_duration(timedelta(days=0, seconds=employee['time']).total_seconds()))
 
             set_rows = set()
 
