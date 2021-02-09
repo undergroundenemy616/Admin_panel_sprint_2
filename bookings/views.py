@@ -1,5 +1,6 @@
 from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD, FILES_USERNAME)
 from calendar import monthrange
+from core.handlers import ResponseException
 from datetime import datetime, timezone, timedelta, date
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -31,7 +32,7 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   SwaggerBookingEmployeeStatistics,
                                   SwaggerBookingFuture,
                                   get_duration, room_type_statictic_serializer,
-                                  employee_statistics, most_frequent, bookings_future)
+                                  employee_statistics, most_frequent, bookings_future, date_validation)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -301,6 +302,8 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookListRoomTypeStats)
     def get(self, request, *args, **kwargs):
+        date_validation(request.query_params.get('date_from'))
+        date_validation(request.query_params.get('date_to'))
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
 
@@ -395,6 +398,9 @@ class BookingEmployeeStatistics(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookingEmployeeStatistics)
     def get(self, request, *args, **kwargs):
+        if len(request.query_params.get('month')) > 10 or \
+                int(request.query_params.get('year')) not in range(1970, 2500):
+            return ResponseException("Wrong data")
         if request.query_params.get('month'):
             month = request.query_params.get('month')
             month_num = int(strptime(month, '%B').tm_mon)
@@ -555,6 +561,7 @@ class BookingFuture(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookingFuture)
     def get(self, request, *args, **kwargs):
+        date_validation(request.query_params.get('date'))
         date = request.query_params.get('date')
 
         file_name = "future_" + date + '.xlsx'
