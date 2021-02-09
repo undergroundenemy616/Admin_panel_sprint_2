@@ -465,3 +465,18 @@ def most_frequent(List):
 
 def chop_microseconds(delta):
     return delta - timedelta(microseconds=delta.microseconds)
+
+
+def get_duration(duration):
+    hours = int(duration / 3600)
+    minutes = int(duration % 3600 / 60)
+    seconds = int((duration % 3600) % 60)
+    return '{:02d}:{:02d}:{:02d}'.format(hours, minutes, seconds)
+
+
+def date_validation(date):
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+    except ValueError:
+        raise ResponseException("Wrong date format, should be YYYY-MM-DD")
+    return True

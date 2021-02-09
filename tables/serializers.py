@@ -179,13 +179,14 @@ class CreateTableSerializer(serializers.ModelSerializer):
         response['images'] = FileSerializer(instance=instance.images, many=True).data
         response['tags'] = TableTagSerializer(instance=instance.tags, many=True).data
         response['marker'] = None
+        response['office'] = instance.room.floor.office.id
         return response
 
     def create(self, validated_data):
         model = self.Meta.model
         tags = validated_data.pop('tags', None)
         room = validated_data.pop('room')
-        images = validated_data.pop('images')
+        images = validated_data.pop('images', None)
         instance = model.objects.create(room=room, **validated_data)
         office_id = instance.room.floor.office.id
         if images:
@@ -200,9 +201,7 @@ class UpdateTableSerializer(CreateTableSerializer):
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=False)
     description = serializers.CharField(allow_blank=True, required=False)
     title = serializers.CharField(required=False)
-    tags = serializers.ListField(child=serializers.CharField(required=False),
-                                 validators=[check_table_tags_exists], write_only=True,
-                                 allow_empty=True, allow_null=True, required=False)
+    tags = serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all(), required=False, many=True)
     images = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=File.objects.all()),
                                    write_only=True, allow_empty=True, required=False)
 
@@ -211,13 +210,14 @@ class UpdateTableSerializer(CreateTableSerializer):
         fields = ['room', 'description', 'title', 'tags', 'images']
         depth = 1
 
-    def update(self, instance, validated_data):
-        tags = validated_data.pop('tags')
-        office_id = instance.room.floor.office.id
-        if tags:
-            tags_queryset = TableTag.objects.filter(title__in=tags, office_id=office_id)
-            instance.tags.set(tags_queryset)
-        return super(UpdateTableSerializer, self).update(instance, validated_data)
+    #def update(self, instance, validated_data):
+    #   tags = validated_data.pop('tags')
+    #   office_id = instance.room.floor.office.id
+    #   if tags:
+    #       tags_queryset = TableTag.objects.filter(id__in=tags, office_id=office_id)
+    #       instance.tags.set(tags_queryset)
+    #   return super(UpdateTableSerializer, self).update(instance, validated_data)
+    # Don't need it, cos we used tags_id now, but keep it for safety, mb need back for some reason
 
 
 class TableMarkerSerializer(serializers.ModelSerializer):
