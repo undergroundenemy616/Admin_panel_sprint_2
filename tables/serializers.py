@@ -179,13 +179,14 @@ class CreateTableSerializer(serializers.ModelSerializer):
         response['images'] = FileSerializer(instance=instance.images, many=True).data
         response['tags'] = TableTagSerializer(instance=instance.tags, many=True).data
         response['marker'] = None
+        response['office'] = instance.room.floor.office.id
         return response
 
     def create(self, validated_data):
         model = self.Meta.model
         tags = validated_data.pop('tags', None)
         room = validated_data.pop('room')
-        images = validated_data.pop('images')
+        images = validated_data.pop('images', None)
         instance = model.objects.create(room=room, **validated_data)
         office_id = instance.room.floor.office.id
         if images:
