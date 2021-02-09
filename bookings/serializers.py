@@ -478,5 +478,5 @@ def date_validation(date):
     try:
         datetime.strptime(date, '%Y-%m-%d')
     except ValueError:
-        raise ResponseException("Wrong date format, should be YYYYY-MM-DD")
+        raise ResponseException("Wrong date format, should be YYYY-MM-DD")
     return True
