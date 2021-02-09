@@ -114,8 +114,8 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 data["access_token"] = str(token.access_token)
                 data["account"] = account.id
                 data["activated"] = first_login
-            elif not user.is_active:
-                raise ValueError('User is not active')
+            # elif not user.is_active:
+            #     raise ValueError('User is not active')
             else:
                 raise ValueError('Invalid data!')
         except ValueError as error:
