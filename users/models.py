@@ -50,7 +50,7 @@ class User(AbstractBaseUser):
     password = models.CharField(max_length=512, blank=True, null=True)
     last_code = models.IntegerField(blank=True, null=True, default=activated_code)  # is this work?
     is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     created_at = models.DateTimeField(null=True, auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(null=True, auto_now=True)
 
