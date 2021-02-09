@@ -14,7 +14,7 @@ from rest_framework_jwt.settings import api_settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from core.pagination import DefaultPagination
+from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
 from mail import send_html_email_message
@@ -225,7 +225,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
     serializer_class = AccountSerializer
     queryset = Account.objects.all()
     permission_classes = (IsAdmin, )
-    pagination_class = DefaultPagination
+    pagination_class = LimitStartPagination
 
     @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
