@@ -95,14 +95,14 @@ class BookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
         if validated_data['table'].room.type.unified:
-            return self.Meta.model.objects.save(
+            return self.Meta.model.save(
                 date_to=validated_data['date_to'],
                 date_from=validated_data['date_from'],
                 table=validated_data['table'],
                 user=validated_data['user'],
                 theme=validated_data['theme']
             )
-        return self.Meta.model.objects.save(
+        return self.Meta.model.save(
             date_to=validated_data['date_to'],
             date_from=validated_data['date_from'],
             table=validated_data['table'],
