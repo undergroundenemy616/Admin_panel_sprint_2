@@ -77,3 +77,6 @@ class Group(models.Model):
             response['global_manage'] = False
             response['global_service'] = False
         return response
+
+    class Meta:
+        ordering = ['is_deletable', '-access']
