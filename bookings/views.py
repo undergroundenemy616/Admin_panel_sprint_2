@@ -251,7 +251,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
     Can be filtered by: date,
     """
     serializer_class = BookingPersonalSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().order_by('-is_active', 'date_from')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
     search_fields = ['table__title',
@@ -268,8 +268,10 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
             return self.list(request, *args, **kwargs)
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
-        date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
+        date_from = datetime.strptime(request.query_params.get(
+            'date_from', '0001-01-01T00:00:00.0'), '%Y-%m-%dT%H:%M:%S.%f')
+        date_to = datetime.strptime(request.query_params.get(
+            'date_to', '9999-12-12T12:59:59.9'), '%Y-%m-%dT%H:%M:%S.%f')
         is_over = bool(serializer.data['is_over']) if serializer.data.get('is_over') else 0
         req_booking = self.queryset.filter(user=request.user.account.id).filter(
             Q(is_over=is_over),
