@@ -56,8 +56,6 @@ class BookingManager(models.Manager):
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
         obj = self.model(**kwargs)
-        obj.date_activate_until = obj.calculate_date_activate_until()
-        obj.job_create_oncoming_notification()
         consecutive_booking = obj.get_consecutive_booking()
         if consecutive_booking:
             consecutive_booking.date_to = obj.date_to
