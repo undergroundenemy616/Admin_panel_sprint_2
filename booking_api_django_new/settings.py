@@ -32,6 +32,7 @@ DEBUG = True
 KEY_EXPIRATION = 60 * 3  # 3 minutes
 
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
+BOOKING_TIMEDELTA_CHECK = 15
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.com'
