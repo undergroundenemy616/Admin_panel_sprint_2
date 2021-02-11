@@ -33,9 +33,11 @@ class Table(models.Model):
 
     def set_table_occupied(self):
         self.is_occupied = True
+        self.save()
 
     def set_table_free(self):
         self.is_occupied = False
+        self.save()
 
 
 class Rating(models.Model):

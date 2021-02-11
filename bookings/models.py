@@ -101,6 +101,14 @@ class Booking(models.Model):
         self.is_active = False
         self.is_over = True
         self.table.set_table_free()
+        if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
+            scheduler.remove_job(job_id="notify_about_oncoming_booking_" + str(self.id))
+        if scheduler.get_job(job_id="notify_about_activation_booking_" + str(self.id)):
+            scheduler.remove_job(job_id="notify_about_activation_booking_" + str(self.id))
+        if scheduler.get_job(job_id="check_booking_activate_" + str(self.id)):
+            scheduler.remove_job(job_id="check_booking_activate_" + str(self.id))
+        if scheduler.get_job(job_id="set_booking_over_" + str(self.id)):
+            scheduler.remove_job(job_id="set_booking_over_" + str(self.id))
         super(self.__class__, self).save(*args, **kwargs)
 
     def check_booking_activate(self, *args, **kwargs):
@@ -177,14 +185,16 @@ class Booking(models.Model):
                 "date",
                 run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
                 misfire_grace_time=900,
-                id="notify_about_oncoming_booking_" + str(self.id)
+                id="notify_about_oncoming_booking_" + str(self.id),
+                replace_existing=True
             )
             scheduler.add_job(
                 self.notify_about_booking_activation,
                 "date",
                 run_date=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
                 misfire_grace_time=900,
-                id="notify_about_activation_booking_" + str(self.id)
+                id="notify_about_activation_booking_" + str(self.id),
+                replace_existing=True
             )
 
     def job_create_change_states(self):
@@ -201,12 +211,14 @@ class Booking(models.Model):
             "date",
             run_date=self.date_to,
             misfire_grace_time=900,
-            id="set_booking_over_" + str(self.id)
+            id="set_booking_over_" + str(self.id),
+            replace_existing=True
         )
         scheduler.add_job(
             self.check_booking_activate,
             "date",
             run_date=self.date_from + timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
             misfire_grace_time=900,
-            id="check_booking_activate_" + str(self.id)
+            id="check_booking_activate_" + str(self.id),
+            replace_existing=True
         )
