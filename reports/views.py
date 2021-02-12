@@ -24,6 +24,8 @@ class ReportCreateView(ListModelMixin,
 
     def post(self, request, *args, **kwargs):
         request.data['account'] = request.user.account.id
+        if not request.data.get('images'):
+            request.data['images'] = []
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         attachments = [i.path for i in serializer.validated_data['images']]
