@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from django.db import models
 from django.db.models import Q
 
-from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS
+from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS, BOOKING_TIMEDELTA_CHECK
 from core.scheduler import scheduler
 from push_tokens.send_interface import send_push_message
 from tables.models import Table
@@ -56,8 +56,6 @@ class BookingManager(models.Manager):
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
         obj = self.model(**kwargs)
-        obj.date_activate_until = obj.calculate_date_activate_until()
-        obj.job_create_oncoming_notification()
         consecutive_booking = obj.get_consecutive_booking()
         if consecutive_booking:
             consecutive_booking.date_to = obj.date_to
@@ -86,11 +84,41 @@ class Booking(models.Model):
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
         self.job_create_oncoming_notification()
+        self.job_create_change_states()
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
         self.set_booking_over()
         super(self.__class__, self).delete(using, keep_parents)
+
+    def set_booking_active(self, *args, **kwargs):
+        self.is_active = True
+        self.is_over = False
+        self.table.set_table_occupied()
+        super(self.__class__, self).save(*args, **kwargs)
+
+    def set_booking_over(self, *args, **kwargs):
+        self.is_active = False
+        self.is_over = True
+        self.table.set_table_free()
+        if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
+            scheduler.remove_job(job_id="notify_about_oncoming_booking_" + str(self.id))
+        if scheduler.get_job(job_id="notify_about_activation_booking_" + str(self.id)):
+            scheduler.remove_job(job_id="notify_about_activation_booking_" + str(self.id))
+        if scheduler.get_job(job_id="check_booking_activate_" + str(self.id)):
+            scheduler.remove_job(job_id="check_booking_activate_" + str(self.id))
+        if scheduler.get_job(job_id="set_booking_over_" + str(self.id)):
+            scheduler.remove_job(job_id="set_booking_over_" + str(self.id))
+        super(self.__class__, self).save(*args, **kwargs)
+
+    def check_booking_activate(self, *args, **kwargs):
+        date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        if not self.is_active and self.date_from + timedelta(minutes=BOOKING_TIMEDELTA_CHECK) <= date_now:
+            self.is_active = False
+            self.is_over = True
+            self.table.set_table_free()
+            scheduler.remove_job(job_id="set_booking_over_" + str(self.id))
+            super(self.__class__, self).save(*args, **kwargs)
 
     def get_consecutive_booking(self):
         """Returns previous booking if exists for merging purpose"""
@@ -125,7 +153,7 @@ class Booking(models.Model):
                 and self.user and self.user.push_tokens.all():
             expo_data = {
                 "title": "Уведомление о предстоящем бронировании",
-                "body": f"Ваше бронирование начнется через 15 минут. Не забудьте подтвердить.",
+                "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
                 "data": {
                     "go_booking": True
                 }
@@ -133,15 +161,20 @@ class Booking(models.Model):
             for token in [push_object.token for push_object in self.user.push_tokens.all()]:
                 send_push_message(token, expo_data)
 
-    def set_booking_active(self):
-        self.is_active = True
-        self.is_over = False
-        self.table.set_table_occupied()
-
-    def set_booking_over(self):
-        self.is_active = False
-        self.is_over = True
-        self.table.set_table_free()
+    def notify_about_booking_activation(self):
+        """Send PUSH-notification about opening activation"""
+        if not self.is_over \
+                and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_TIMEDELTA_CHECK \
+                and self.user and self.user.push_tokens.all():
+            expo_data = {
+                "title": "Открыто подтверждение!",
+                "body": f"Вы можете подтвердить бронирование QR-кодом в течении 30 минут.",
+                "data": {
+                    "go_booking": True
+                }
+            }
+            for token in [push_object.token for push_object in self.user.push_tokens.all()]:
+                send_push_message(token, expo_data)
 
     def job_create_oncoming_notification(self):
         """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
@@ -152,7 +185,16 @@ class Booking(models.Model):
                 "date",
                 run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
                 misfire_grace_time=900,
-                id="notify_about_oncoming_booking_" + str(self.id)
+                id="notify_about_oncoming_booking_" + str(self.id),
+                replace_existing=True
+            )
+            scheduler.add_job(
+                self.notify_about_booking_activation,
+                "date",
+                run_date=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
+                misfire_grace_time=900,
+                id="notify_about_activation_booking_" + str(self.id),
+                replace_existing=True
             )
 
     def job_create_change_states(self):
@@ -169,5 +211,14 @@ class Booking(models.Model):
             "date",
             run_date=self.date_to,
             misfire_grace_time=900,
-            id="set_booking_over_" + str(self.id)
+            id="set_booking_over_" + str(self.id),
+            replace_existing=True
+        )
+        scheduler.add_job(
+            self.check_booking_activate,
+            "date",
+            run_date=self.date_from + timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
+            misfire_grace_time=900,
+            id="check_booking_activate_" + str(self.id),
+            replace_existing=True
         )

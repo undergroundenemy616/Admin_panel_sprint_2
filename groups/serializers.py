@@ -58,7 +58,7 @@ class GroupSerializerLite(serializers.ModelSerializer):
         response.update(legacy_access)
         users_in_group = User.objects.filter(account__groups=response['id'])
         response['count'] = len(users_in_group)
-        response['users'] = [user.account.id for user in users_in_group]
+        # response['users'] = [user.account.id for user in users_in_group]
         for key in ['is_deletable', 'access']:
             response.pop(key)
         return response
