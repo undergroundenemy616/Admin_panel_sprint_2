@@ -14,7 +14,7 @@ from files.serializers import BaseFileSerializer
 from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
 from offices.models import Office, OfficeZone
-from users.models import Account, User, AppEntrances
+from users.models import Account, User, AppEntrances, InfoPanel
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -268,3 +268,12 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
             attrs['country'] = details.all.get("country_name")
             attrs['city'] = details.all.get("city")
         return attrs
+
+
+# class InfoPanelCreateSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = InfoPanel
+#         fields = '__all__'
+#
+#     def create(self, validated_data):
+#         pass

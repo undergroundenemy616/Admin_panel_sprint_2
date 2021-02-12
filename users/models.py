@@ -8,7 +8,9 @@ from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
+from floors.models import Floor
 from groups.models import Group
+from offices.models import Office
 
 
 def activated_code():
@@ -167,3 +169,12 @@ class AppEntrances(models.Model):
     feed_view = models.BooleanField(default=False)
     user = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='entrance')
     device_info = JSONField(encoder=DjangoJSONEncoder)
+
+
+# class InfoPanel(models.Model):
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4(), editable=False)
+#     title = models.CharField(max_length=64)
+#     user = models.OneToOneField('User', on_delete=models.CASCADE)
+#     office = models.ForeignKey(Office, on_delete=models.CASCADE, blank=False, null=False)
+#     floor = models.ForeignKey(Floor, on_delete=models.CASCADE, blank=False, null=False)
+
