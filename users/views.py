@@ -199,7 +199,6 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
         instance.user.delete()
 
 
-
 class RegisterStaffView(GenericAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()

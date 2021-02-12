@@ -5,6 +5,7 @@ import pytz
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import status
+import ujson
 
 from files.models import File
 from files.serializers import (BaseFileSerializer, FileSerializer,
@@ -207,17 +208,11 @@ class UpdateTableSerializer(CreateTableSerializer):
 
     class Meta:
         model = Table
-        fields = ['room', 'description', 'title', 'tags', 'images']
+        fields = '__all__'
         depth = 1
 
-    #def update(self, instance, validated_data):
-    #   tags = validated_data.pop('tags')
-    #   office_id = instance.room.floor.office.id
-    #   if tags:
-    #       tags_queryset = TableTag.objects.filter(id__in=tags, office_id=office_id)
-    #       instance.tags.set(tags_queryset)
-    #   return super(UpdateTableSerializer, self).update(instance, validated_data)
-    # Don't need it, cos we used tags_id now, but keep it for safety, mb need back for some reason
+    def to_representation(self, instance):
+        return TableSerializer(instance=instance).data
 
 
 class TableMarkerSerializer(serializers.ModelSerializer):
