@@ -161,11 +161,10 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        date_from = pytz.UTC.localize(datetime.strptime(serializer.data["date_from"].replace("Z", ""), '%Y-%m-%dT%H:%M:%S'))
-        date_to = pytz.UTC.localize(datetime.strptime(serializer.data["date_to"].replace("Z", ""), '%Y-%m-%dT%H:%M:%S'))
-        if now < date_from and now < date_to:
+        booking = serializer.validated_data['booking']
+        if now < booking.date_from and now < booking.date_to:
             return self.destroy(request, *args, **kwargs)
-        serializer.save(user=request.user)
+        serializer.save()
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
