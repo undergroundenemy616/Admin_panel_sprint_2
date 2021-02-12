@@ -232,7 +232,7 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
         fields = ['booking']
 
     def to_representation(self, instance):
-        response = BaseBookingSerializer(instance).data
+        response = BaseBookingSerializer(instance=instance).to_representation(instance=instance)
         return response
 
     def update(self, instance, validated_data):

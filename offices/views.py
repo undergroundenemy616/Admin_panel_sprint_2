@@ -49,6 +49,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                 return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
             return Response(ujson.loads(ujson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
         for office in self.queryset.all():
+            print("Office: ", office)
             response.append(office_base_serializer(office=office))
         response = {'results': response}
         return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)

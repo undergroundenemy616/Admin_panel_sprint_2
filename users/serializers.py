@@ -268,3 +268,12 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
             attrs['country'] = details.all.get("country_name")
             attrs['city'] = details.all.get("city")
         return attrs
+
+
+# class InfoPanelCreateSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = InfoPanel
+#         fields = '__all__'
+#
+#     def create(self, validated_data):
+#         pass

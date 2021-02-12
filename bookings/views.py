@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta, date
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from pathlib import Path
+import pytz
 import requests
 from rest_framework import status
 from rest_framework.filters import SearchFilter
@@ -160,9 +161,10 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        if now < serializer.data["date_from"] and now < serializer.data["date_to"]:
+        booking = serializer.validated_data['booking']
+        if now < booking.date_from and now < booking.date_to:
             return self.destroy(request, *args, **kwargs)
-        serializer.save(user=request.user)
+        serializer.save()
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
