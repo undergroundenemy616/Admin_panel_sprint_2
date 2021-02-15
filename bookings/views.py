@@ -760,6 +760,20 @@ class BookingStatisticsDashboard(GenericAPIView):
         active_users = all_accounts.count()
         total_tables = all_tables.count()
         tables_with_markers = TableMarker.objects.all().count()
+
+        tables_from_booking = self.queryset.only('table_id')
+
+        list_of_booked_tables = []
+        for table in tables_from_booking:
+            list_of_booked_tables.append(table.table_id)
+
+        list_of_booked_tables = list(set(list_of_booked_tables))
+
+        try:
+            percentage_of_tables_available_for_booking = tables_available_for_booking / total_tables * 100
+        except ZeroDivisionError:
+            percentage_of_tables_available_for_booking = 0
+
         try:
             share_of_confirmed_bookings = number_of_activated_bookings / number_of_bookings * 100
         except ZeroDivisionError:
@@ -782,10 +796,17 @@ class BookingStatisticsDashboard(GenericAPIView):
         except ZeroDivisionError:
             percentage_of_registered_tables = 0
 
+        try:
+            percent_of_tables_booked_at_least_once = len(list_of_booked_tables) / total_tables * 100
+        except ZeroDivisionError:
+            percent_of_tables_booked_at_least_once = 0
+
         response = {
             "tables_available_for_booking": tables_available_for_booking,
+            "percentage_of_tables_available_for_booking": percentage_of_tables_available_for_booking.__round__(2),
             "active_users": active_users,
             "number_of_bookings": number_of_bookings,
+            "percent_of_tables_booked_at_least_once": percent_of_tables_booked_at_least_once.__round__(2),
             "share_of_confirmed_bookings": share_of_confirmed_bookings.__round__(2),
             "recycling_percentage_for_all_workplaces": recycling_percentage_for_all_workplaces.__round__(2),
             "percentage_of_registered_tables": percentage_of_registered_tables.__round__(2)
