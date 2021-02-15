@@ -56,7 +56,7 @@ class Group(models.Model):
                     return OWNER_ACCESS
                 return ADMIN_ACCESS
             return EMPLOYEE_ACCESS
-        return EMPLOYEE_ACCESS
+        return GUEST_ACCESS
 
     @staticmethod
     def to_legacy_access(access) -> dict:
