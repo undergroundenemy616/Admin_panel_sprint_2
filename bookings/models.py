@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 
@@ -98,9 +99,14 @@ class Booking(models.Model):
         super(self.__class__, self).save(*args, **kwargs)
 
     def set_booking_over(self, *args, **kwargs):
-        self.is_active = False
-        self.is_over = True
+        try:
+            instance = Booking.objects.get(id=self.id)
+        except ObjectDoesNotExist:
+            return
+        instance.is_active = False
+        instance.is_over = True
         self.table.set_table_free()
+        # instance = super(self.__class__, self)
         if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
             scheduler.remove_job(job_id="notify_about_oncoming_booking_" + str(self.id))
         if scheduler.get_job(job_id="notify_about_activation_booking_" + str(self.id)):
@@ -109,7 +115,7 @@ class Booking(models.Model):
             scheduler.remove_job(job_id="check_booking_activate_" + str(self.id))
         if scheduler.get_job(job_id="set_booking_over_" + str(self.id)):
             scheduler.remove_job(job_id="set_booking_over_" + str(self.id))
-        super(self.__class__, self).save(*args, **kwargs)
+        super(Booking, instance).save()
 
     def check_booking_activate(self, *args, **kwargs):
         if not self.is_active:
@@ -201,6 +207,7 @@ class Booking(models.Model):
         #     misfire_grace_time=900,
         #     id="set_booking_active_" + str(self.id)
         # )  # Why we need THIS? Activation is starting when qr code was scanned and then front send request for backend
+        # date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         scheduler.add_job(
             self.set_booking_over,
             "date",
@@ -212,7 +219,7 @@ class Booking(models.Model):
         scheduler.add_job(
             self.check_booking_activate,
             "date",
-            run_date=self.date_activate_until,
+            run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
             misfire_grace_time=900,
             id="check_booking_activate_" + str(self.id),
             replace_existing=True
