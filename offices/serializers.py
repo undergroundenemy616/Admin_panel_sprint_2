@@ -187,7 +187,7 @@ class CreateUpdateOfficeZoneSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         title = validated_data.pop('title')
         validated_data['title'] = title[0]
-        groups = validated_data.pop('group_whitelist_visit')
+        groups = validated_data.pop('group_whitelist_visit', [])
         validated_data['groups'] = groups
         return super(CreateUpdateOfficeZoneSerializer, self).update(instance,validated_data)
 
