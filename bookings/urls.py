@@ -12,4 +12,5 @@ urlpatterns = [
     path('/room_type_stats', views.BookingStatisticsRoomTypes.as_view()),
     path('/employee_stats', views.BookingEmployeeStatistics.as_view()),
     path('/future', views.BookingFuture.as_view()),
+    path('/dashboard', views.BookingStatisticsDashboard.as_view())
 ]
