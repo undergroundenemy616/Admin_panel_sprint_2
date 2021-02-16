@@ -194,8 +194,8 @@ class TableMarkerView(CreateModelMixin, DestroyModelMixin,
 
 
 class TableSlotsView(ListModelMixin,
-                CreateModelMixin,
-                GenericAPIView):
+                     CreateModelMixin,
+                     GenericAPIView):
     serializer_class = TableSlotsSerializer
     queryset = Table.objects.all()
     pagination_class = DefaultPagination
