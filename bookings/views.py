@@ -32,14 +32,15 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   SwaggerBookListRoomTypeStats,
                                   SwaggerBookingEmployeeStatistics,
                                   SwaggerBookingFuture,
+                                  SwaggerDashboard,
                                   get_duration, room_type_statictic_serializer,
-                                  employee_statistics, most_frequent, bookings_future, date_validation)
+                                  employee_statistics, most_frequent, bookings_future, date_validation, months_between)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from files.models import File
 from files.serializers import BaseFileSerializer
-from tables.serializers import Table, TableSerializer
+from tables.serializers import Table, TableSerializer, TableMarker
 from users.models import Account
 from users.serializers import AccountSerializer
 
@@ -318,9 +319,9 @@ class BookingStatisticsRoomTypes(GenericAPIView):
         SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to
         FROM bookings_booking b
         INNER JOIN tables_table t ON t.id = b.table_id
-        INNER JOIN rooms_room rr on t.room_id = rr.id
+        INNER JOIN rooms_room rr ON t.room_id = rr.id
         INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
-        where (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
+        WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
         (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
         sql_results = []
@@ -471,7 +472,7 @@ class BookingEmployeeStatistics(GenericAPIView):
                             datetime.fromisoformat(result['date_from']).timestamp())
                         employee['places'].append(str(result['table_id']))
                 employee['middle_time'] = str(get_duration(
-                    timedelta(days=0,seconds=employee['time'] / working_days).total_seconds()
+                    timedelta(days=0, seconds=employee['time'] / working_days).total_seconds()
                 ))
                 employee['middle_booking_time'] = str(get_duration(
                     timedelta(days=0, seconds=employee['time'] / employee['book_count']).total_seconds()))
@@ -659,3 +660,156 @@ class BookingFuture(GenericAPIView):
             return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
         else:
             return Response("Not found", status=status.HTTP_404_NOT_FOUND)
+
+
+class BookingStatisticsDashboard(GenericAPIView):
+    serializer_class = BookingSerializer
+    queryset = Booking.objects.all()
+    permission_classes = (IsAdmin,)
+
+    @swagger_auto_schema(query_serializer=SwaggerDashboard)
+    def get(self, request, *args, **kwargs):
+        valid_office_id = None
+        if request.query_params.get('office_id'):
+            try:
+                valid_office_id = uuid.UUID(request.query_params.get('office_id')).hex
+            except ValueError:
+                raise ResponseException("Office ID is not valid", status.HTTP_400_BAD_REQUEST)
+        if request.query_params.get('date_from') and request.query_params.get('date_to'):
+            date_validation(request.query_params.get('date_from'))
+            date_validation(request.query_params.get('date_to'))
+            date_from = request.query_params.get('date_from')
+            date_to = request.query_params.get('date_to')
+        else:
+            date_from, date_to = date.today(), date.today()
+
+        if valid_office_id:
+            all_tables = Table.objects.filter(room__floor__office_id=valid_office_id)
+            number_of_bookings = self.queryset.filter(Q(table__room__floor__office_id=valid_office_id) &
+                                                      (
+                                                              (Q(date_from__gte=date_from) &
+                                                               Q(date_from__lt=date_to))
+                                                              |
+                                                              (Q(date_from__lte=date_from) &
+                                                               Q(date_to__gte=date_to))
+                                                              |
+                                                              (Q(date_to__gt=date_from) &
+                                                               Q(date_to__lte=date_to))
+                                                      )
+                                                      ).count()
+            number_of_activated_bookings = self.queryset.filter(Q(is_active=True) &
+                                                                Q(table__room__floor__office_id=valid_office_id) &
+                                                                (
+                                                                        (Q(date_from__gte=date_from) &
+                                                                         Q(date_from__lt=date_to))
+                                                                        |
+                                                                        (Q(date_from__lte=date_from) &
+                                                                         Q(date_to__gte=date_to))
+                                                                        |
+                                                                        (Q(date_to__gt=date_from) &
+                                                                         Q(date_to__lte=date_to))
+                                                                )
+                                                                ).count()
+            bookings_with_hours = self.queryset.raw(f"""SELECT 
+            DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
+            DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, oo.id as office_id,
+            b.id from bookings_booking b
+            INNER JOIN tables_table tt on tt.id = b.table_id
+            INNER JOIN rooms_room rr on rr.id = tt.room_id
+            INNER JOIN floors_floor ff on ff.id = rr.floor_id
+            INNER JOIN offices_office oo on oo.id = ff.office_id
+            WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
+            (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
+            (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
+            office_id = '{valid_office_id}'""")
+        else:
+            all_tables = Table.objects.all()
+            number_of_bookings = self.queryset.count()
+            number_of_activated_bookings = self.queryset.filter(is_active=True).count()
+            bookings_with_hours = self.queryset.raw(f"""SELECT 
+                        DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
+                        DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from bookings_booking b
+                        WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
+                        (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
+                        (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
+        all_accounts = Account.objects.all()
+
+        working_days = 0
+
+        try:
+            date_from = datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.strptime(date_to, '%Y-%m-%d')
+        except TypeError:
+            pass
+
+        for month in months_between(date_from, date_to):
+
+            num_days = monthrange(year=int(month.strftime("%m %Y").split(" ")[1]),
+                                  month=int(month.strftime("%m %Y").split(" ")[0]))[1]
+
+            working_days += num_days
+
+            cal = Russia()
+
+            for i in range(num_days):
+                if not cal.is_working_day(date(year=int(month.strftime("%m %Y").split(" ")[1]),
+                                               month=int(month.strftime("%m %Y").split(" ")[0]), day=i + 1)):
+                    working_days = working_days - 1
+
+        tables_available_for_booking = all_tables.filter(is_occupied=False).count()
+        active_users = all_accounts.count()
+        total_tables = all_tables.count()
+        tables_with_markers = TableMarker.objects.all().count()
+
+        tables_from_booking = self.queryset.only('table_id')
+
+        list_of_booked_tables = []
+        for table in tables_from_booking:
+            list_of_booked_tables.append(table.table_id)
+
+        list_of_booked_tables = list(set(list_of_booked_tables))
+
+        try:
+            percentage_of_tables_available_for_booking = tables_available_for_booking / total_tables * 100
+        except ZeroDivisionError:
+            percentage_of_tables_available_for_booking = 0
+
+        try:
+            share_of_confirmed_bookings = number_of_activated_bookings / number_of_bookings * 100
+        except ZeroDivisionError:
+            share_of_confirmed_bookings = 0
+
+        sum_of_booking_hours = 0
+
+        for booking in bookings_with_hours:
+            sum_of_booking_hours += booking.hours
+
+        table_hours = working_days * 8 * total_tables
+
+        try:
+            recycling_percentage_for_all_workplaces = sum_of_booking_hours / table_hours * 100
+        except ZeroDivisionError:
+            recycling_percentage_for_all_workplaces = 0
+
+        try:
+            percentage_of_registered_tables = tables_with_markers / total_tables * 100
+        except ZeroDivisionError:
+            percentage_of_registered_tables = 0
+
+        try:
+            percent_of_tables_booked_at_least_once = len(list_of_booked_tables) / total_tables * 100
+        except ZeroDivisionError:
+            percent_of_tables_booked_at_least_once = 0
+
+        response = {
+            "tables_available_for_booking": tables_available_for_booking,
+            "percentage_of_tables_available_for_booking": percentage_of_tables_available_for_booking.__round__(2),
+            "active_users": active_users,
+            "number_of_bookings": number_of_bookings,
+            "percent_of_tables_booked_at_least_once": percent_of_tables_booked_at_least_once.__round__(2),
+            "share_of_confirmed_bookings": share_of_confirmed_bookings.__round__(2),
+            "recycling_percentage_for_all_workplaces": recycling_percentage_for_all_workplaces.__round__(2),
+            "percentage_of_registered_tables": percentage_of_registered_tables.__round__(2)
+        }
+
+        return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)

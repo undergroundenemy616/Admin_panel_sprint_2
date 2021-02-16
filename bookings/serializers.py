@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 import time
 import random
 
@@ -39,6 +39,12 @@ class SwaggerBookingEmployeeStatistics(serializers.Serializer):
 
 class SwaggerBookingFuture(serializers.Serializer):
     date = serializers.DateField(required=False, format='%Y-%m-%d')
+
+
+class SwaggerDashboard(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
 
 
 class BaseBookingSerializer(serializers.ModelSerializer):
@@ -480,3 +486,21 @@ def date_validation(date):
     except ValueError:
         raise ResponseException("Wrong date format, should be YYYY-MM-DD")
     return True
+
+
+def months_between(start_date, end_date):
+    if start_date > end_date:
+        raise ResponseException(f"Start date {start_date} is not before end date {end_date}",
+                                status.HTTP_400_BAD_REQUEST)
+
+    year = start_date.year
+    month = start_date.month
+
+    while (year, month) <= (end_date.year, end_date.month):
+        yield date(year, month, 1)
+
+        if month == 12:
+            month = 1
+            year += 1
+        else:
+            month += 1

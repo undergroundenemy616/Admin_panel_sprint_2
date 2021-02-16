@@ -72,8 +72,9 @@ class UpdateUsersGroupView(GenericAPIView):
         group = get_object_or_404(Group, id=serializer.data['id'])
         accounts_for_inactive = Account.objects.filter(groups=group).exclude(id__in=serializer.data['users'])
         for account in accounts_for_inactive:
-            account.user.is_active = False
-            account.user.save()
+            if account.groups.count() == 1:
+                account.user.is_active = False
+                account.user.save()
         group.accounts.set(Account.objects.filter(id__in=serializer.data['users']))
         for account in Account.objects.select_related("user").filter(id__in=serializer.data['users']):
             if not account.user.is_active and account.groups:
