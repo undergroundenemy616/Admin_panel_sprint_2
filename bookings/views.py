@@ -98,6 +98,32 @@ class BookingsAdminView(BookingsView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+class CreateFastBookingsView(GenericAPIView):
+    """
+    Admin route. Fast booking for any user.
+    """
+    serializer_class = BookingFastSerializer
+    queryset = Booking.objects.all()
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        request.data['user'] = request.user.account.id
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user.account)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class FastBookingAdminView(CreateFastBookingsView):
+    permission_classes = (IsAdmin,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 class ActionCheckAvailableSlotsView(GenericAPIView):
     serializer_class = BookingSlotsSerializer
     queryset = Booking.objects.all()
@@ -180,32 +206,6 @@ class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
         if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         return self.destroy(request, *args, **kwargs)
-
-
-class CreateFastBookingsView(GenericAPIView):
-    """
-    Admin route. Fast booking for any user.
-    """
-    serializer_class = BookingFastSerializer
-    queryset = Booking.objects.all()
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request, *args, **kwargs):
-        request.data['user'] = request.user.account.id
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user.account)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-class FastBookingAdminView(CreateFastBookingsView):
-    permission_classes = (IsAdmin,)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class BookingListTablesView(GenericAPIView, ListModelMixin):
