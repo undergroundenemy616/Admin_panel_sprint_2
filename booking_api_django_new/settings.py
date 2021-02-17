@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 from datetime import timedelta
 import os
 
+import orjson
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH', default='master') + '.env')
@@ -50,13 +51,21 @@ AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
-        'drf_ujson.renderers.UJSONRenderer',
+        'drf_orjson_renderer.renderers.ORJSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'ORJSON_RENDERER_OPTIONS': (
+        orjson.OPT_NON_STR_KEYS,
+        orjson.OPT_SERIALIZE_DATACLASS,
+        orjson.OPT_SERIALIZE_NUMPY,
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'drf_orjson_renderer.parsers.ORJSONParser',
+    ),
     'PAGE_SIZE': 100,
 }
 

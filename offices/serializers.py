@@ -354,7 +354,7 @@ class ListOfficeSerializer(serializers.ModelSerializer):
         response['capacity_tables'] = Table.objects.filter(room__floor__office_id=instance.id).count()
         response['occupied_tables'] = Table.objects.filter(room__floor__office_id=instance.id, is_occupied=True).count()
         response['license'] = LicenseSerializer(instance=instance.license).data
-        response['zones'] = [BaseOfficeZoneSerializer(instance=zone).data for zone in instance.zones.all()]
+        response['zones'] = BaseOfficeZoneSerializer(instance=instance.zones.all(), many=True).data
         return response
 
 

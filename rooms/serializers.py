@@ -126,7 +126,7 @@ class RoomSerializer(serializers.ModelSerializer):
         response['room_type_unified'] = room_type['unified']
         response['is_bookable'] = room_type['bookable']
         response['room_type_icon'] = room_type['icon']  #[FileSerializer(instance=room_type['icon']).data]
-        response['tables'] = [TableSerializer(instance=table).data for table in instance.tables.all()]
+        response['tables'] = TableSerializer(instance=instance.tables.all(), many=True).data
         response['capacity'] = instance.tables.count()
         response['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
             hasattr(instance, 'room_marker') else None
@@ -206,7 +206,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data['seats_amount'] = instance.seats_amount
         data['marker'] = None
         tables_nested = Table.objects.filter(room=instance.id)
-        data['tables'] = [TableSerializer(instance=table).data for table in tables_nested]
+        data['tables'] = TableSerializer(instance=tables_nested, many=True).data
         data['floor'] = FloorSerializer(instance=instance.floor).data
         data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
@@ -256,7 +256,7 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         data['seats_amount'] = instance.seats_amount
         data['marker'] = None
         tables_nested = Table.objects.filter(room=instance.id)
-        data['tables'] = [TableSerializer(instance=table).data for table in tables_nested]
+        data['tables'] = TableSerializer(instance=tables_nested, many=True).data
         data['floor'] = FloorSerializer(instance=instance.floor).data
         data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
