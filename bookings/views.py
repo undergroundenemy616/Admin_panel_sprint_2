@@ -14,7 +14,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin)
 from rest_framework.response import Response
 from time import strptime
-import ujson
+import orjson
 import uuid
 from workalendar.europe import Russia
 import xlsxwriter
@@ -379,7 +379,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
 
-        response_dict = ujson.loads(response.text)
+        response_dict = orjson.loads(response.text)
         file_attrs = {
             "path": FILES_HOST + str(response_dict.get("path")),
             "title": secure_file_name,
@@ -481,12 +481,12 @@ class BookingEmployeeStatistics(GenericAPIView):
             set_rows = set()
 
             for employee in employees:
-                set_rows.add(ujson.dumps(employee, sort_keys=True))
+                set_rows.add(orjson.dumps(employee, sort_keys=True))
 
             list_rows = []
 
             for set_row in set_rows:
-                list_rows.append(ujson.loads(set_row))
+                list_rows.append(orjson.loads(set_row))
 
             for row in list_rows:
                 row['places'] = most_frequent(row['places'])
@@ -542,7 +542,7 @@ class BookingEmployeeStatistics(GenericAPIView):
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
 
-        response_dict = ujson.loads(response.text)
+        response_dict = orjson.loads(response.text)
         file_attrs = {
             "path": FILES_HOST + str(response_dict.get("path")),
             "title": secure_file_name,
@@ -643,7 +643,7 @@ class BookingFuture(GenericAPIView):
             except requests.exceptions.RequestException:
                 return {"message": "Error occured during file upload"}, 500
 
-            response_dict = ujson.loads(response.text)
+            response_dict = orjson.loads(response.text)
             file_attrs = {
                 "path": FILES_HOST + str(response_dict.get("path")),
                 "title": secure_file_name,
@@ -812,4 +812,4 @@ class BookingStatisticsDashboard(GenericAPIView):
             "percentage_of_registered_tables": percentage_of_registered_tables.__round__(2)
         }
 
-        return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+        return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)

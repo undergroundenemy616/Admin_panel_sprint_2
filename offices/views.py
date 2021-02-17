@@ -8,7 +8,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    UpdateModelMixin)
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-import ujson
+import orjson
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -47,12 +47,12 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                 office = self.queryset.get(id=request.query_params.get('id'))
             except ObjectDoesNotExist:
                 return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
-            return Response(ujson.loads(ujson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
+            return Response(orjson.loads(orjson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
         for office in self.queryset.all():
             print("Office: ", office)
             response.append(office_base_serializer(office=office))
         response = {'results': response}
-        return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+        return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

@@ -5,7 +5,7 @@ import pytz
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import status
-import ujson
+import orjson
 
 from files.models import File
 from files.serializers import (BaseFileSerializer, FileSerializer,

@@ -1,6 +1,5 @@
-import ujson
+import orjson, decimal
 from drf_yasg import openapi
-from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from datetime import datetime
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -14,7 +13,6 @@ from bookings.serializers import BookingSerializer, BookingSerializerForTableSlo
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
-import pytz
 from tables.models import Rating, Table, TableTag,  TableMarker
 from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
                                 TableMarkerSerializer, TableSlotsSerializer,
@@ -69,7 +67,7 @@ class TableView(ListModelMixin,
         response_dict = {
             'results': response
         }
-        return Response(ujson.loads(ujson.dumps(response_dict)), status=status.HTTP_200_OK)
+        return Response(orjson.loads(orjson.dumps(response_dict, default=default)), status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
@@ -230,3 +228,9 @@ class TableSlotsView(ListModelMixin,
                 return Response("Please, select filter", status.HTTP_400_BAD_REQUEST)
         else:
             return Response(BookingSerializerForTableSlots(instance=bookings, many=True).data, status=status.HTTP_200_OK)
+
+
+def default(obj):
+    if isinstance(obj, decimal.Decimal):
+        return str(obj)
+    raise TypeError
