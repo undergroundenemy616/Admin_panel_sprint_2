@@ -32,7 +32,7 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
                                SwaggerAccountParametr, user_access_serializer,
-                               EntranceCollectorSerializer, TestAccountSerializer, test_base_account_serializer)
+                               EntranceCollectorSerializer, TestAccountSerializer)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):
