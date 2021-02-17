@@ -239,9 +239,6 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
                     | Q(user__phone_number__icontains=search[0])
                     | Q(user__email__icontains=search[0])
                 )
-            else:
-                # Get all account to response
-                self.queryset = Account.objects.all()
             account_type = request.query_params.get('account_type')
             if account_type != 'user':
                 # Added because of needs to handle kiosk account_type in future
