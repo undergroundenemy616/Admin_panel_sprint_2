@@ -1,4 +1,4 @@
-import ujson
+import orjson
 from drf_yasg import openapi
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -69,7 +69,7 @@ class TableView(ListModelMixin,
         response_dict = {
             'results': response
         }
-        return Response(ujson.loads(ujson.dumps(response_dict)), status=status.HTTP_200_OK)
+        return Response(orjson.loads(orjson.dumps(response_dict)), status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

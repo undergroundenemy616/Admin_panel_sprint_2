@@ -23,6 +23,7 @@ ipinfo==4.1.0
 itypes==1.2.0
 Jinja2==2.11.2
 MarkupSafe==1.1.1
+orjson==3.4.8
 packaging==20.4
 Pillow==8.0.1
 psycopg2==2.8.5

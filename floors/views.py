@@ -1,4 +1,4 @@
-import ujson
+import orjson
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView, get_object_or_404
@@ -58,19 +58,19 @@ class ListCreateFloorView(ListModelMixin,
                     for floor in floors_by_office:
                         serialized_floor = base_floor_serializer(floor=floor)
                         response.append(serialized_floor)
-                    return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+                    return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
                 else:
                     response = []
                     for floor in floors_by_office:
                         serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                         response.append(serialized_floor)
-                    return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+                    return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
             except TypeError:
                 response = []
                 for floor in floors_by_office:
                     serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                     response.append(serialized_floor)
-                return Response(ujson.loads(ujson.dumps(response)), status=status.HTTP_200_OK)
+                return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
 
         return self.list(request, *args, **kwargs)
 
