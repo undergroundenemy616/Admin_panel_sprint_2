@@ -15,7 +15,6 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    status)
 from rest_framework.request import Request
 
-from booking_api_django_new.uuid_encoder import UUIDEncoder
 from groups.models import Group, GUEST_ACCESS, ADMIN_ACCESS
 from bookings.models import Booking
 from core.pagination import DefaultPagination
