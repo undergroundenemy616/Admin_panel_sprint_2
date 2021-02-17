@@ -223,6 +223,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': os.environ.get('HOST') or '2.59.41.133',
         'PORT': os.environ.get('PORT') or '5432',
+        'CONN_MAX_AGE': 1
     }
 }
 
