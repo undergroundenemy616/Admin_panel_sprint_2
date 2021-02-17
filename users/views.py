@@ -1,6 +1,7 @@
 import os
 import random
 
+import orjson
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from booking_api_django_new.settings import EMAIL_HOST_USER
@@ -31,7 +32,7 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
                                SwaggerAccountParametr, user_access_serializer,
-                               EntranceCollectorSerializer)
+                               EntranceCollectorSerializer, TestAccountSerializer, test_base_account_serializer)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):
@@ -213,7 +214,7 @@ class RegisterStaffView(GenericAPIView):
 
 
 class AccountListView(GenericAPIView, mixins.ListModelMixin):
-    serializer_class = AccountSerializer
+    serializer_class = TestAccountSerializer    # TestAccountSerializer AccountSerializer
     queryset = Account.objects.all()
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
@@ -255,8 +256,13 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             self.pagination_class = None
             all_accounts = self.list(self, request, *args, **kwargs)
             response = dict()
+            # accounts = Account.objects.all()
+            # result = []
+            # for account in accounts:
+            #     result.append(test_base_account_serializer(account))
             response['results'] = all_accounts.data
-            return Response(data=response, status=status.HTTP_200_OK)
+            # otvet = orjson.loads(orjson.dumps(response))
+            return Response(response, status=status.HTTP_200_OK)
 
 
 class ServiceEmailView(GenericAPIView):

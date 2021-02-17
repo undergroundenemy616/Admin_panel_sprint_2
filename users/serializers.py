@@ -1,6 +1,7 @@
 import random
 import ipinfo
 from smtplib import SMTPException
+from typing import Any, Dict
 
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Q
@@ -47,6 +48,7 @@ class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
         fields = '__all__'
+        # read_only_fields = fields
 
     def to_representation(self, instance):
         instance: Account
@@ -61,6 +63,89 @@ class AccountSerializer(serializers.ModelSerializer):
             response['photo'] = BaseFileSerializer(instance=instance.photo).data
         response['has_cp_access'] = True if instance.user.email else False
         return response
+
+
+class TestAccountSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    description = serializers.CharField()
+    gender = serializers.CharField()
+    city = serializers.IntegerField()
+    region_integer = serializers.IntegerField()
+    district_integer = serializers.IntegerField()
+    region_string = serializers.CharField()
+    district_string = serializers.CharField()
+    account_type = serializers.CharField()
+    groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), many=True)
+
+    def to_representation(self, instance):
+        response = super(TestAccountSerializer, self).to_representation(instance)
+        # response = {}
+        # response['id'] = instance.id,
+        # response['user'] = instance.user.id,
+        # response['description'] = instance.description,
+        # response['gender'] = instance.gender,
+        # response['city'] = instance.city,
+        # response['region_integer'] = instance.region_integer,
+        # response['district_integer'] = instance.district_integer,
+        # response['region_string'] = instance.region_integer,
+        # response['district_string'] = instance.district_string,
+        # response['account_type'] = instance.account_type,
+        # response['groups'] = instance.groups.all(),
+        response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
+        response['firstname'] = instance.first_name
+        response['lastname'] = instance.last_name
+        response['middlename'] = instance.middle_name
+        response['birthday'] = instance.birth_date
+        response['email'] = instance.user.email if instance.user.email else instance.email
+        if instance.photo:
+            response['photo'] = BaseFileSerializer(instance=instance.photo).data
+        response['has_cp_access'] = True if instance.user.email else False
+        return response
+
+
+# def test_base_account_serializer(instance: Account) -> Dict[str, Any]:
+#     return {
+#         'id': str(instance.id),
+#         'user': str(instance.user.id),
+#         'description': instance.description,
+#         'gender': instance.gender,
+#         'city': instance.city,
+#         'region_integer': instance.region_integer,
+#         'district_integer': instance.district_integer,
+#         'account_type': instance.account_type,
+#         'groups': [str(group.id) for group in instance.groups.all()],
+#         'phone_number': instance.user.phone_number if instance.user.phone_number else instance.phone_number,
+#         'firstname': instance.first_name,
+#         'lastname': instance.last_name,
+#         'middlename': instance.middle_name,
+#         'birthday': instance.birth_date,
+#         'email': instance.user.email if instance.user.email else instance.email,
+#         'photo': BaseFileSerializer(instance=instance.photo).data if instance.photo else None,
+#         'has_cp_access': True if instance.user.email else False
+#     }
+    # response = {}
+    # response['id'] = instance.id,
+    # response['user'] = instance.user.id,
+    # response['description'] = instance.description,
+    # response['gender'] = instance.gender,
+    # response['city'] = instance.city,
+    # response['region_integer'] = instance.region_integer,
+    # response['district_integer'] = instance.district_integer,
+    # response['region_string'] = instance.region_integer,
+    # response['district_string'] = instance.district_string,
+    # response['account_type'] = instance.account_type,
+    # response['groups'] = instance.groups.all(),
+    # response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
+    # response['firstname'] = instance.first_name
+    # response['lastname'] = instance.last_name
+    # response['middlename'] = instance.middle_name
+    # response['birthday'] = instance.birth_date
+    # response['email'] = instance.user.email if instance.user.email else instance.email
+    # if instance.photo:
+    #     response['photo'] = BaseFileSerializer(instance=instance.photo).data
+    # response['has_cp_access'] = True if instance.user.email else False
+    # return response
 
 
 class LoginOrRegisterSerializer(serializers.Serializer):
