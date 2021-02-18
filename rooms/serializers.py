@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -334,7 +335,10 @@ class RoomSerializerCSV(serializers.ModelSerializer):
                                         type=RoomType.objects.filter(title=room[2], office=floor.office).first(),
                                         zone=OfficeZone.objects.filter(title=room[3], office=floor.office).first(),
                                         seats_amount=room[4] or 1))
-        Room.objects.bulk_create(rooms_to_create)
+        try:
+            Room.objects.bulk_create(rooms_to_create)
+        except IntegrityError:
+            raise ValidationError(detail={"detail": "Invalid CSV file format!"}, code=400)
         return ({
             "message": "OK",
             "result": RoomSerializer(instance=Room.objects.all(), many=True).data
