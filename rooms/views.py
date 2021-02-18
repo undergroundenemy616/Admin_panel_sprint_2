@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Dict, Optional
 
 import orjson
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -24,7 +25,7 @@ from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                RoomMarkerSerializer, RoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
                                base_serialize_room, table_serializer_for_room,
-                               RoomGetSerializer)
+                               RoomGetSerializer, RoomSerializerCSV)
 from tables.serializers import Table, TableSerializer
 
 
@@ -253,3 +254,17 @@ class RoomMarkerView(CreateModelMixin,
         room_instance = get_object_or_404(Room, pk=request.data['room'])  # Need to fix to improve performance
         serializer = self.serializer_class(instance=room_instance)
         return Response(serializer.to_representation(instance=room_instance), status=status.HTTP_200_OK)
+
+
+class ListCreateRoomCsvView(GenericAPIView):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializerCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rooms = serializer.save()
+        return Response(rooms, status=status.HTTP_200_OK)
