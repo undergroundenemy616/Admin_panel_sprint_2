@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters
 from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
@@ -19,7 +20,7 @@ from users.models import Account, User
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
-    queryset = Group.objects.all()
+    queryset = Group.objects.all().prefetch_related('accounts__user')
     serializer_class = GroupSerializer
     pagination_class = None
     permission_classes = (IsAuthenticated,)
@@ -34,7 +35,10 @@ class ListCreateGroupAPIView(ListCreateAPIView):
     @swagger_auto_schema(query_serializer=SwaggerGroupsParametrs)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('id'):
-            group = get_object_or_404(Group, pk=request.query_params.get('id'))
+            try:
+                group = self.queryset.get(id=request.query_params.get('id'))
+            except ObjectDoesNotExist:
+                return Response("Group not found", status=status.HTTP_404_NOT_FOUND)
             serializer = self.serializer_class(instance=group)
             return Response(serializer.to_representation(group), status=status.HTTP_200_OK)
         self.serializer_class = GroupSerializerLite

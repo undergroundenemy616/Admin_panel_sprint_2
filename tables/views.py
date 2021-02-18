@@ -84,7 +84,6 @@ class DetailTableView(RetrieveModelMixin,
     permission_classes = (IsAuthenticated, )
 
     def put(self, request, *args, **kwargs):
-        print(1)
         self.serializer_class = UpdateTableSerializer
         # return TableSerializer(instance=Table.objects.get(id=))
         return self.update(request, *args, **kwargs)

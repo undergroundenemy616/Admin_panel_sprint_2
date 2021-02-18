@@ -215,7 +215,7 @@ class RegisterStaffView(GenericAPIView):
 
 class AccountListView(GenericAPIView, mixins.ListModelMixin):
     serializer_class = TestAccountSerializer    # TestAccountSerializer AccountSerializer
-    queryset = Account.objects.all()
+    queryset = Account.objects.all().select_related('user')
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
 
@@ -230,7 +230,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
                 self.queryset = Account.objects.filter(
                     Q(first_name__icontains=str(search[0]), last_name__icontains=str(search[1]))
                     | Q(first_name__icontains=str(search[1]), last_name__icontains=str(search[0]))
-                )
+                ).select_related('user')
             elif search:
                 # Search in firstname, lastname, middlename, phone_number, email
                 self.queryset = Account.objects.filter(
@@ -239,7 +239,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
                     | Q(middle_name__icontains=search[0])
                     | Q(user__phone_number__icontains=search[0])
                     | Q(user__email__icontains=search[0])
-                )
+                ).select_related('user')
             account_type = request.query_params.get('account_type')
             if account_type != 'user':
                 # Added because of needs to handle kiosk account_type in future
