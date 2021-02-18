@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 import orjson
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters
@@ -108,6 +108,7 @@ class RoomsView(ListModelMixin,
 
         for room in rooms.prefetch_related('tables'):  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
             response.append(base_serialize_room(room=room).copy())
+        return Response(orjson.loads(orjson.dumps(response)))
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
