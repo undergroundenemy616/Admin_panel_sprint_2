@@ -1,7 +1,5 @@
-import json
 from datetime import datetime
 from typing import Dict, Optional
-from uuid import UUID
 
 import orjson
 from django.db.models import Q
