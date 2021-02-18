@@ -59,7 +59,7 @@ def base_serialize_room(room: Room) -> Dict[str, Any]:
             'thumb': room.type.icon.thumb,
             'size': room.type.icon.size
         } if room.type.icon else None,
-        'tables': [table_serializer_for_room(table=table).copy() for table in room.tables.all()],
+        'tables': [table_serializer_for_room(table=table).copy() for table in room.tables.prefetch_related('tags', 'images').select_related('table_marker')],
         'capacity': room.tables.count(),
         'occupied': room.tables.filter(is_occupied=True).count(),
         'suitable_tables': room.tables.filter(is_occupied=False).count(),
