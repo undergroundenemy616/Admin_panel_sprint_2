@@ -57,7 +57,7 @@ urlpatterns = [
     path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUserFromMobileView.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
-    path('refresh', TokenRefreshView.as_view()),
+    path('refresh', views.RefreshTokenView.as_view()),
     path('register_user', views.RegisterUserFromAdminPanelView.as_view()),
     path('register_employee', views.RegisterStaffView.as_view()),
     path('account', views.AccountView.as_view()),
