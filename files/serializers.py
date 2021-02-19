@@ -1,5 +1,6 @@
-import json
+import orjson
 import os
+import time
 
 import requests
 from rest_framework import serializers
@@ -8,6 +9,32 @@ from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD,
                                              FILES_USERNAME, MEDIA_ROOT,
                                              MEDIA_URL)
 from files.models import File
+
+
+def check_token():
+    print(os.environ.get('FILES_TOKEN'))
+    print(type(os.environ.get('FILES_TOKEN')))
+    if os.environ.get('FILES_TOKEN') == 'None':
+        print("ENTERED")
+        print(FILES_HOST + "/auth")
+        try:
+            token = requests.post(
+                url=FILES_HOST + "/auth",
+                json={
+                    'username': FILES_USERNAME,
+                    'password': FILES_PASSWORD
+                }
+            )
+            time.sleep(1)
+            print(token.text)
+            token = orjson.loads(token.text)
+            print(token)
+            os.environ['FILES_TOKEN'] = str(token.get('access_token'))
+        except requests.exceptions.RequestException:
+            return {"message": "Failed to get access to file storage"}, 401
+
+
+check_token()
 
 
 def create_new_folder(local_dir):
@@ -52,23 +79,23 @@ class FileSerializer(serializers.ModelSerializer):
         return response
 
     def create(self, validated_data):
-        # create_new_folder(MEDIA_ROOT)
         file = validated_data.pop('file')
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
                 files={"file": (file.name, file.file.getvalue(), file.content_type)},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
+                headers=headers,
                 )
         except requests.exceptions.RequestException:
-            return {"message": "Error occured during file upload"}, 500
+            return {"message": "Error occurred during file upload"}, 500
         if response.status_code != 200:
             if response.status_code == 401:
                 return {"message": "Basic Auth required"}, 401
             if response.status_code == 400:
                 return {"message": "Bad request"}, 400
 
-        response_dict = json.loads(response.text)
+        response_dict = orjson.loads(response.text)
         file_attrs = {
             "path": FILES_HOST + str(response_dict.get("path")),
             "title": file.name,
