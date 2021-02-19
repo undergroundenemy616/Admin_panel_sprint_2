@@ -23,7 +23,7 @@ from django.urls import include, path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from users import views
 from tables.views import TableSlotsView
 
@@ -57,6 +57,7 @@ urlpatterns = [
     path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUserFromMobileView.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
+    path('refresh', TokenRefreshView.as_view()),
     path('register_user', views.RegisterUserFromAdminPanelView.as_view()),
     path('register_employee', views.RegisterStaffView.as_view()),
     path('account', views.AccountView.as_view()),
