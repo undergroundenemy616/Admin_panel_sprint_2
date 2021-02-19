@@ -175,10 +175,10 @@ class TestTableSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         response = super(TestTableSerializer, self).to_representation(instance)
-        # response['tags'] = BaseTableTagSerializer(instance.tags.all(), many=True).data
-        # response['images'] = BaseFileSerializer(instance.images.all(), many=True).data
-        # response['marker'] = TableMarkerSerializer(instance=instance.table_marker).data if \
-        #     hasattr(instance, 'table_marker') else None
+        response['tags'] = BaseTableTagSerializer(instance.tags.all(), many=True).data
+        response['images'] = BaseFileSerializer(instance.images.all(), many=True).data
+        response['marker'] = TableMarkerSerializer(instance=instance.table_marker).data if \
+            hasattr(instance, 'table_marker') else None
         return response
 
 
