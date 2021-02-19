@@ -1,10 +1,9 @@
-import json
 from datetime import datetime
 from typing import Dict, Optional
-from uuid import UUID
 
 import orjson
-from django.db.models import Q
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.db.models import Q, Prefetch
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters
@@ -26,7 +25,7 @@ from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                RoomMarkerSerializer, RoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
                                base_serialize_room, table_serializer_for_room,
-                               RoomGetSerializer)
+                               RoomGetSerializer, RoomSerializerCSV)
 from tables.serializers import Table, TableSerializer
 
 
@@ -34,7 +33,7 @@ class RoomsView(ListModelMixin,
                 CreateModelMixin,
                 GenericAPIView):
     serializer_class = RoomSerializer
-    queryset = Room.objects.all()
+    queryset = Room.objects.all().select_related('type', 'floor', 'zone', 'room_marker').prefetch_related('images')
     pagination_class = DefaultPagination
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'type__title', 'description']
@@ -61,31 +60,31 @@ class RoomsView(ListModelMixin,
             del mapped[item]
         return mapped
 
-    def get_queryset(self, *args, **kwargs):
-        queryset = self.queryset
-        account_groups = self.request.user.account.groups.all()
-        kiosk_groups = Group.objects.filter(title='Информационный киоск').first()   # TODO fix title for this
-        access = [access_dict.get('access') for access_dict in account_groups.values('access')]
-        if not access:
-            return self.queryset.none()
-        coworking_zone = OfficeZone.objects.filter(title='Зона коворкинга')
-
-        if kiosk_groups in account_groups:
-            return queryset.filter(zone__in=coworking_zone)
-        elif min(access) <= ADMIN_ACCESS:
-            return queryset.all()
-        else:
-            visitor_group = Group.objects.filter(title='Посетитель', is_deletable=False)
-            account_groups = list(account_groups.values_list('id', flat=True)) + list(
-                visitor_group.values_list('id', flat=True))
-            zones = OfficeZone.objects.filter(groups__id__in=account_groups)
-            return self.queryset.filter(zone__in=zones)
+    # def get_queryset(self, *args, **kwargs):
+    #     queryset = self.queryset
+    #     account_groups = self.request.user.account.groups.all()
+    #     kiosk_groups = Group.objects.filter(title='Информационный киоск').first()   # TODO fix title for this
+    #     access = [access_dict.get('access') for access_dict in account_groups.values('access')]
+    #     if not access:
+    #         return self.queryset.none()
+    #     coworking_zone = OfficeZone.objects.filter(title='Зона коворкинга')
+    #
+    #     if kiosk_groups in account_groups:
+    #         return queryset.filter(zone__in=coworking_zone)
+    #     elif min(access) <= ADMIN_ACCESS:
+    #         return queryset.all()
+    #     else:
+    #         visitor_group = Group.objects.filter(title='Посетитель', is_deletable=False)
+    #         account_groups = list(account_groups.values_list('id', flat=True)) + list(
+    #             visitor_group.values_list('id', flat=True))
+    #         zones = OfficeZone.objects.filter(groups__id__in=account_groups)
+    #         return self.queryset.filter(zone__in=zones)
 
     @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
         serializer = RoomGetSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        self.queryset = self.get_queryset()
+        # self.queryset = self.get_queryset()
         if request.query_params.get('search'):
             by_office = self.queryset.filter(floor__office=request.query_params.get('office'))
             self.queryset = by_office
@@ -93,10 +92,10 @@ class RoomsView(ListModelMixin,
         response = []
         if request.query_params.get('office'):
             rooms = self.queryset.exclude(type_id__isnull=True, type__bookable=False).\
-                filter(floor__office_id=request.query_params.get('office')).select_related('floor__office')
+                filter(floor__office_id=request.query_params.get('office'))
         elif request.query_params.get('floor'):
             rooms = self.queryset.exclude(type_id__isnull=True).\
-                filter(floor_id=request.query_params.get('floor')).select_related('floor')
+                filter(floor_id=request.query_params.get('floor'))
         else:
             return Response({"detail": "You must specify at least on of this fields: " +
                                        "'office' or 'floor'"}, status=status.HTTP_400_BAD_REQUEST)
@@ -107,7 +106,7 @@ class RoomsView(ListModelMixin,
         if request.query_params.get('type'):
             rooms = rooms.filter(type__title=request.query_params.get('type'))
 
-        for room in rooms:  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
+        for room in rooms.prefetch_related('tables'):  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
             response.append(base_serialize_room(room=room).copy())
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
@@ -124,7 +123,7 @@ class RoomsView(ListModelMixin,
                             |
                             (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
                     )
-                )
+                ).select_related('table')
                 for booking in bookings:
                     room_tables = room['tables'][:]
                     for table in room['tables']:
@@ -255,3 +254,17 @@ class RoomMarkerView(CreateModelMixin,
         room_instance = get_object_or_404(Room, pk=request.data['room'])  # Need to fix to improve performance
         serializer = self.serializer_class(instance=room_instance)
         return Response(serializer.to_representation(instance=room_instance), status=status.HTTP_200_OK)
+
+
+class ListCreateRoomCsvView(GenericAPIView):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializerCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rooms = serializer.save()
+        return Response(rooms, status=status.HTTP_200_OK)

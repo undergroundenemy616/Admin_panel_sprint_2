@@ -8,7 +8,7 @@ from rest_framework import serializers, status
 from booking_api_django_new.validate_phone_number import validate_phone_number
 from groups.models import Group
 from users.models import Account, User
-from users.serializers import AccountSerializer
+from users.serializers import AccountSerializer, AccountSerializerLite
 
 
 def validate_csv_file_extension(file):
@@ -35,9 +35,9 @@ class GroupSerializer(serializers.ModelSerializer):
         if not legacy_access:
             raise serializers.ValidationError('Invalid group access')
         response.update(legacy_access)
-        users_in_group = User.objects.filter(account__groups=response['id'])
-        response['count'] = len(users_in_group)
-        response['users'] = [AccountSerializer(instance=user.account).data for user in users_in_group]
+        # users_in_group = User.objects.filter(account__groups=response['id'])
+        response['count'] = len(instance.accounts.all())
+        response['users'] = [AccountSerializerLite(instance=account).data for account in instance.accounts.all()]
         return response
 
 

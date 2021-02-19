@@ -65,6 +65,18 @@ class AccountSerializer(serializers.ModelSerializer):
         return response
 
 
+class AccountSerializerLite(serializers.Serializer):
+    id = serializers.UUIDField()
+    description = serializers.CharField()
+    phone_number = serializers.CharField()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    def to_representation(self, instance):
+        response = super(AccountSerializerLite, self).to_representation(instance)
+        response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
+        return response
+
+
 class TestAccountSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())

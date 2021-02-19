@@ -1,11 +1,13 @@
 from typing import Any, Dict
 
+from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
 from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor
+from groups.serializers import validate_csv_file_extension
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
@@ -58,7 +60,8 @@ def base_serialize_room(room: Room) -> Dict[str, Any]:
             'thumb': room.type.icon.thumb,
             'size': room.type.icon.size
         } if room.type.icon else None,
-        'tables': [table_serializer_for_room(table=table).copy() for table in room.tables.all()],
+        'tables': [table_serializer_for_room(table=table).copy() for table in
+                   room.tables.prefetch_related('tags', 'images').select_related('table_marker')],
         'capacity': room.tables.count(),
         'occupied': room.tables.filter(is_occupied=True).count(),
         'suitable_tables': room.tables.filter(is_occupied=False).count(),
@@ -93,7 +96,7 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
         'images': list(image_serializer(image=table.images.first())) if table.images.first() else [],
         'rating': table.rating,
-        'ratings': Rating.objects.filter(table_id=table.id).count(),
+        # 'ratings': Rating.objects.filter(table_id=table.id).count(),
         'description': table.description,
         'is_occupied': table.is_occupied,
         'room': str(table.room_id),
@@ -121,11 +124,11 @@ class RoomSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = BaseRoomSerializer(instance=instance).data
         room_type = response.pop('type')
-        response['type'] = room_type['title']
-        response['room_type_color'] = room_type['color']
-        response['room_type_unified'] = room_type['unified']
-        response['is_bookable'] = room_type['bookable']
-        response['room_type_icon'] = room_type['icon']  #[FileSerializer(instance=room_type['icon']).data]
+        response['type'] = room_type['title'] if room_type else None
+        response['room_type_color'] = room_type['color'] if room_type else None
+        response['room_type_unified'] = room_type['unified'] if room_type else None
+        response['is_bookable'] = room_type['bookable'] if room_type else None
+        response['room_type_icon'] = room_type['icon'] if room_type else None
         response['tables'] = TableSerializer(instance=instance.tables.all(), many=True).data
         response['capacity'] = instance.tables.count()
         response['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
@@ -294,3 +297,50 @@ class RoomMarkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomMarker
         fields = '__all__'
+
+
+class RoomSerializerCSV(serializers.ModelSerializer):
+    file = serializers.FileField(required=True)
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=True)
+
+    class Meta:
+        model = Room
+        fields = ('floor', 'file')
+
+    def create(self, validated_data):
+        validate_csv_file_extension(file=validated_data['file'])
+
+        file = validated_data.pop('file')
+        floor = validated_data.pop('floor')
+        rooms = []
+
+        for chunk in list(file.read().splitlines()):
+            room = []
+            try:
+                for item in chunk.decode('utf8').split(','):
+                    room.append(item or None)
+                if len(room) < 5:
+                    room.extend([None]*(len(room)-5))
+                rooms.append(room)
+            except UnicodeDecodeError:
+                for item in chunk.decode('cp1251').split(','):
+                    room.append(item or None)
+                if len(room) < 5:
+                    room.extend([None]*(len(room)-5))
+                rooms.append(room)
+
+        rooms_to_create = []
+        for room in rooms:
+            rooms_to_create.append(Room(floor=floor, title=room[0], description=room[1],
+                                        type=RoomType.objects.filter(title=room[2], office=floor.office).first(),
+                                        zone=OfficeZone.objects.filter(title=room[3], office=floor.office).first(),
+                                        seats_amount=room[4] or 1))
+        try:
+            Room.objects.bulk_create(rooms_to_create)
+        except IntegrityError:
+            raise ValidationError(detail={"detail": "Invalid CSV file format!"}, code=400)
+        return ({
+            "message": "OK",
+            "result": RoomSerializer(instance=Room.objects.all(), many=True).data
+        })
+
