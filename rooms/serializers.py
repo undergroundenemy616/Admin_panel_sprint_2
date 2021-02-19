@@ -214,7 +214,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
                          'title': instance.floor.title
                          }  # FloorSerializer(instance=instance.floor).data
         data['zone'] = {'id': instance.zone.id,
-                        'title': instance.zone.id
+                        'title': instance.zone.title
                         }  # OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
