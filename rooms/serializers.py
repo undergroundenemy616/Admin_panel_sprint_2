@@ -115,26 +115,30 @@ def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
 
 
 class RoomSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField()
     tables = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
-    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), required=False)
+    images = serializers.PrimaryKeyRelatedField(read_only=True, many=True, required=False)
+    type = serializers.PrimaryKeyRelatedField(read_only=True, required=False)
 
     class Meta:
         model = Room
-        fields = ['tables', 'images', 'type']
+        fields = '__all__'  # ['tables', 'images', 'type']
 
     def to_representation(self, instance):
-        response = BaseRoomSerializer(instance=instance).data
-        room_type = response.pop('type')
-        response['type'] = room_type['title'] if room_type else None
-        response['room_type_color'] = room_type['color'] if room_type else None
-        response['room_type_unified'] = room_type['unified'] if room_type else None
-        response['is_bookable'] = room_type['bookable'] if room_type else None
-        response['room_type_icon'] = room_type['icon'] if room_type else None
-        response['tables'] = TableSerializer(instance=instance.tables.all(), many=True).data
+        # response = BaseRoomSerializer(instance=instance).data
+        response = super(RoomSerializer, self).to_representation(instance)
+        # room_type = response.pop('type')
+        response['type'] = instance.type.title if instance.type else None
+        response['room_type_color'] = instance.type.color if instance.type else None
+        response['room_type_unified'] = instance.type.unified if instance.type else None
+        response['is_bookable'] = instance.type.bookable if instance.type else None
+        response['room_type_icon'] = instance.type.icon if instance.type else None
+        response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images').select_related('table_marker'), many=True).data
         response['capacity'] = instance.tables.count()
         response['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
             hasattr(instance, 'room_marker') else None
+        response['occupied'] = instance.tables.filter(is_occupied=True).count(),
+        response['suitable_tables'] = instance.tables.filter(is_occupied=False).count()
         return response
 
 
