@@ -24,7 +24,8 @@ class ListCreateFloorView(ListModelMixin,
                           CreateModelMixin,
                           GenericAPIView):
     """Floors API View."""
-    queryset = Floor.objects.all()
+    queryset = Floor.objects.all().prefetch_related('rooms', 'rooms__images',
+                                                    'office__zones').select_related('office')
     pagination_class = None
     serializer_class = NestedFloorSerializer
     permission_classes = (IsAuthenticated, )
@@ -45,7 +46,7 @@ class ListCreateFloorView(ListModelMixin,
 
         if request.query_params.get('office'):
             if Office.objects.filter(id=request.query_params.get('office')):
-                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office')).select_related('office')
+                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office'))
             else:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
 
