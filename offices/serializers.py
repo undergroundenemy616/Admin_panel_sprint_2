@@ -285,7 +285,18 @@ class CreateOfficeSerializer(OfficeSerializer):
         Returns:
             dict as response data
         """
-        response = super().to_representation(instance)
+        # response = super().to_representation(instance)
+        response = dict()
+        response['id'] = instance.id
+        response['created_at'] = instance.created_at
+        response['title'] = instance.title
+        response['description'] = instance.description
+        response['service_email'] = instance.service_email
+        response['floors'] = [floor_serializer_for_office(floor) for floor in instance.floors.all()]
+        response['floors_number'] = len(response['floors'])
+        response['images'] = [image_serializer(image) for image in instance.images.all()]
+        response['zones'] = [zone_serializer_for_office(zone) for zone in instance.zones.all()]
+        response['working_hours'] = instance.working_hours
         response['license'] = LicenseSerializer(instance.license).data
         return response
 
@@ -326,6 +337,14 @@ class CreateOfficeSerializer(OfficeSerializer):
         """Updating existing office without license."""
         validated_data.pop('license', None)
         return super(CreateOfficeSerializer, self).update(instance, validated_data)
+
+def floor_serializer_for_office(floor):
+    return {'id': floor.id,
+            'title': floor.title}
+
+def zone_serializer_for_office(zone):
+    return {'id': zone.id,
+            'title': zone.title}
 
 
 class ListOfficeSerializer(serializers.ModelSerializer):

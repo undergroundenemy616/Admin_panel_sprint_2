@@ -16,6 +16,7 @@ class SwaggerFloorParameters(serializers.Serializer):
     office = serializers.UUIDField(required=False)
     expand = serializers.IntegerField(required=False)
     type = serializers.CharField(required=False)
+    rooms = serializers.IntegerField(required=False)
 
 
 def base_floor_serializer(floor: Floor) -> Dict[str, Any]:
@@ -40,9 +41,34 @@ def base_floor_serializer(floor: Floor) -> Dict[str, Any]:
         'occupied_tables': occupied_tables,
     }
 
+def base_floor_serializer_without_rooms(floor: Floor) -> Dict[str, Any]:
+    table = Table.objects.filter(room__floor_id=floor.id).select_related('room__floor')
+    occupied = table.filter(is_occupied=True).count()
+    capacity = table.count()
+    capacity_meeting = table.filter(room__type__unified=True).count()
+    occupied_meeting = table.filter(room__type__unified=True, is_occupied=True).count()
+    capacity_tables = table.filter(room__type__unified=False).count()
+    occupied_tables = table.filter(room__type__unified=False, is_occupied=True).count()
+    return {
+        'id': str(floor.id),
+        'title': floor.title,
+        'description': floor.description,
+        'office': str(floor.office.id),
+        # 'rooms': [base_serialize_room(room=room).copy() for room in floor.rooms.all()],
+        'occupied': occupied,
+        'capacity': capacity,
+        'capacity_meeting': capacity_meeting,
+        'occupied_meeting': occupied_meeting,
+        'capacity_tables': capacity_tables,
+        'occupied_tables': occupied_tables,
+    }
 
-def base_floor_serializer_with_floor_map(floor: Floor) -> Dict[str, Any]:
-    response_floor = base_floor_serializer(floor=floor)
+
+def base_floor_serializer_with_floor_map(floor: Floor, room_flag=False) -> Dict[str, Any]:
+    if room_flag:
+        response_floor = base_floor_serializer_without_rooms(floor=floor)
+    else:
+        response_floor = base_floor_serializer(floor=floor)
     try:
         floor_map = FloorMap.objects.get(floor=floor.id)
         response_floor['floor_map'] = floor_map_serializer(floor_map=floor_map)
