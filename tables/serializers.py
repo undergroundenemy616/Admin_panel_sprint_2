@@ -2,11 +2,13 @@ from core.handlers import ResponseException
 from datetime import datetime
 from typing import Any, Dict
 import pytz
+from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import status
 import orjson
 
+from groups.serializers import validate_csv_file_extension
 from files.models import File
 from files.serializers import (BaseFileSerializer, FileSerializer,
                                image_serializer)
@@ -229,3 +231,50 @@ class TableSlotsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['date', 'daily', 'monthly']
+
+
+class TableSerializerCSV(serializers.ModelSerializer):
+    file = serializers.FileField(required=True)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
+
+    class Meta:
+        model = Table
+        fields = ('file', 'office', )
+
+    def create(self, validated_data):
+
+        validate_csv_file_extension(file=validated_data['file'])
+
+        file = validated_data.pop('file')
+        office = validated_data.pop('office')
+        tables = []
+
+        for chunk in list(file.read().splitlines()):
+            table = []
+            try:
+                for item in chunk.decode('utf8').split(','):
+                    table.append(item or None)
+                if len(table) < 4:
+                    table.extend([None]*(len(table)-5))
+                tables.append(table)
+            except UnicodeDecodeError:
+                for item in chunk.decode('cp1251').split(','):
+                    table.append(item or None)
+                    if len(table) < 4:
+                        table.extend([None] * (len(table) - 5))
+                    tables.append(table)
+        tables_to_create = []
+        for table in tables:
+            tables_to_create.append(Table(title=table[0], description=table[1],
+                                          room=Room.objects.filter(title=table[2],
+                                          floor__office=office).first()))
+        try:
+            result = Table.objects.bulk_create(tables_to_create)
+        except IntegrityError:
+            raise ValidationError(detail={"detail": "Invalid CSV file format!"}, code=400)
+        for i in range(len(result)):
+            result[i].tags.set(TableTag.objects.filter(title__in=tables[i][3:]))
+        return ({
+            "message": "OK",
+            "result": TableSerializer(instance=Table.objects.filter(room__floor__office=office), many=True).data
+        })

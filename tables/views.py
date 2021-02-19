@@ -2,6 +2,7 @@ import orjson, decimal
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from datetime import datetime
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
@@ -19,7 +20,8 @@ from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
                                 SwaggerTableParameters, SwaggerTableTagParametrs,
                                 TableSerializer, TableTagSerializer,
                                 UpdateTableSerializer, UpdateTableTagSerializer,
-                                SwaggerTableSlotsParametrs, basic_table_serializer)
+                                SwaggerTableSlotsParametrs, basic_table_serializer,
+                                TableSerializerCSV)
 
 
 class TableView(ListModelMixin,
@@ -233,3 +235,17 @@ def default(obj):
     if isinstance(obj, decimal.Decimal):
         return str(obj)
     raise TypeError
+
+
+class ListCreateTableCsvView(GenericAPIView):
+    queryset = Table.objects.all()
+    serializer_class = TableSerializerCSV
+    pagination_class = None
+    permission_classes = (IsAdmin,)
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tables = serializer.save()
+        return Response(tables, status=status.HTTP_200_OK)

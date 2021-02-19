@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -59,7 +60,8 @@ def base_serialize_room(room: Room) -> Dict[str, Any]:
             'thumb': room.type.icon.thumb,
             'size': room.type.icon.size
         } if room.type.icon else None,
-        'tables': [table_serializer_for_room(table=table).copy() for table in room.tables.prefetch_related('tags', 'images').select_related('table_marker')],
+        'tables': [table_serializer_for_room(table=table).copy() for table in
+                   room.tables.prefetch_related('tags', 'images').select_related('table_marker')],
         'capacity': room.tables.count(),
         'occupied': room.tables.filter(is_occupied=True).count(),
         'suitable_tables': room.tables.filter(is_occupied=False).count(),
@@ -94,7 +96,7 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
         'images': list(image_serializer(image=table.images.first())) if table.images.first() else [],
         'rating': table.rating,
-        'ratings': Rating.objects.filter(table_id=table.id).count(),
+        # 'ratings': Rating.objects.filter(table_id=table.id).count(),
         'description': table.description,
         'is_occupied': table.is_occupied,
         'room': str(table.room_id),
@@ -333,7 +335,10 @@ class RoomSerializerCSV(serializers.ModelSerializer):
                                         type=RoomType.objects.filter(title=room[2], office=floor.office).first(),
                                         zone=OfficeZone.objects.filter(title=room[3], office=floor.office).first(),
                                         seats_amount=room[4] or 1))
-        Room.objects.bulk_create(rooms_to_create)
+        try:
+            Room.objects.bulk_create(rooms_to_create)
+        except IntegrityError:
+            raise ValidationError(detail={"detail": "Invalid CSV file format!"}, code=400)
         return ({
             "message": "OK",
             "result": RoomSerializer(instance=Room.objects.all(), many=True).data
