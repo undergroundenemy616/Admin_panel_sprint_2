@@ -13,7 +13,7 @@ from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
 from tables.models import Rating, Table, TableTag
-from tables.serializers import TableSerializer, table_tag_serializer, table_marker_serializer
+from tables.serializers import TableSerializer, table_tag_serializer, table_marker_serializer, TestTableSerializer
 
 
 class SwaggerRoomParameters(serializers.Serializer):
@@ -60,7 +60,7 @@ def base_serialize_room(room: Room) -> Dict[str, Any]:
             'thumb': room.type.icon.thumb,
             'size': room.type.icon.size
         } if room.type.icon else None,
-        'tables': TableSerializer(instance=room.tables.prefetch_related('tags', 'images').select_related('table_marker'), many=True).data,  # [table_serializer_for_room(table=table).copy() for table in
+        'tables': TestTableSerializer(instance=room.tables.prefetch_related('tags', 'images').select_related('table_marker'), many=True).data,  # [table_serializer_for_room(table=table).copy() for table in
                    # room.tables.prefetch_related('tags', 'images').select_related('table_marker')],
         'capacity': room.tables.count(),
         'occupied': room.tables.filter(is_occupied=True).count(),
