@@ -688,29 +688,32 @@ class BookingStatisticsDashboard(GenericAPIView):
                                               Q(room__type__is_deletable=False) &
                                               Q(room__type__bookable=True) &
                                               Q(room__type__office_id=valid_office_id))
+            tables_with_markers = TableMarker.objects.filter(Q(table__room__floor__office_id=valid_office_id) &
+                                                             Q(table__room__type__is_deletable=False) &
+                                                             Q(table__room__type__bookable=True)).count()
             number_of_bookings = self.queryset.filter(Q(table__room__floor__office_id=valid_office_id) &
                                                       (
-                                                              (Q(date_from__gte=date_from) &
-                                                               Q(date_from__lt=date_to))
+                                                              (Q(date_from__date__gte=date_from) &
+                                                               Q(date_from__date__lt=date_to))
                                                               |
-                                                              (Q(date_from__lte=date_from) &
-                                                               Q(date_to__gte=date_to))
+                                                              (Q(date_from__date__lte=date_from) &
+                                                               Q(date_to__date__gte=date_to))
                                                               |
-                                                              (Q(date_to__gt=date_from) &
-                                                               Q(date_to__lte=date_to))
+                                                              (Q(date_to__date__gt=date_from) &
+                                                               Q(date_to__date__lte=date_to))
                                                       )
                                                       ).count()
             number_of_activated_bookings = self.queryset.filter(Q(is_active=True) &
                                                                 Q(table__room__floor__office_id=valid_office_id) &
                                                                 (
-                                                                        (Q(date_from__gte=date_from) &
-                                                                         Q(date_from__lt=date_to))
+                                                                        (Q(date_from__date__gte=date_from) &
+                                                                         Q(date_from__date__lt=date_to))
                                                                         |
-                                                                        (Q(date_from__lte=date_from) &
-                                                                         Q(date_to__gte=date_to))
+                                                                        (Q(date_from__date__lte=date_from) &
+                                                                         Q(date_to__date__gte=date_to))
                                                                         |
-                                                                        (Q(date_to__gt=date_from) &
-                                                                         Q(date_to__lte=date_to))
+                                                                        (Q(date_to__date__gt=date_from) &
+                                                                         Q(date_to__date__lte=date_to))
                                                                 )
                                                                 ).count()
             bookings_with_hours = self.queryset.raw(f"""SELECT 
@@ -727,7 +730,16 @@ class BookingStatisticsDashboard(GenericAPIView):
             office_id = '{valid_office_id}'""")
         else:
             all_tables = Table.objects.filter(Q(room__type__is_deletable=False) & Q(room__type__bookable=True))
-            number_of_bookings = self.queryset.count()
+            tables_with_markers = TableMarker.objects.filter(Q(table__room__type__is_deletable=False) &
+                                                             Q(table__room__type__bookable=True)).count()
+            number_of_bookings = self.queryset.filter((Q(date_from__date__gte=date_from) &
+                                                       Q(date_from__date__lt=date_to))
+                                                      |
+                                                      (Q(date_from__date__lte=date_from) &
+                                                       Q(date_to__date__gte=date_to))
+                                                      |
+                                                      (Q(date_to__date__gt=date_from) &
+                                                       Q(date_to__date__lte=date_to))).count()
             number_of_activated_bookings = self.queryset.filter(is_active=True).count()
             bookings_with_hours = self.queryset.raw(f"""SELECT 
                         DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
@@ -762,7 +774,6 @@ class BookingStatisticsDashboard(GenericAPIView):
         tables_available_for_booking = all_tables.filter(is_occupied=False).count()
         active_users = all_accounts.count()
         total_tables = all_tables.count()
-        tables_with_markers = TableMarker.objects.all().count()
 
         tables_from_booking = self.queryset.only('table_id')
 
