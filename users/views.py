@@ -157,7 +157,7 @@ class LoginStaff(GenericAPIView):
 
 class AccountView(GenericAPIView):
     serializer_class = AccountSerializer
-    queryset = Account.objects.all()
+    queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
     permission_classes = (IsAuthenticated, )
 
     @swagger_auto_schema(query_serializer=SwaggerAccountParametr)
@@ -174,7 +174,7 @@ class AccountView(GenericAPIView):
 
 class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
     serializer_class = AccountUpdateSerializer
-    queryset = Account.objects.all()
+    queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
     permission_classes = (IsAdmin,)
 
     def put(self, request, pk=None, *args, **kwargs):
