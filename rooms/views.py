@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 import orjson
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters
