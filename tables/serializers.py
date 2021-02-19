@@ -204,7 +204,7 @@ class UpdateTableSerializer(CreateTableSerializer):
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=False)
     description = serializers.CharField(allow_blank=True, required=False)
     title = serializers.CharField(required=False)
-    tags = serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all(), required=False, many=True)
+    tags = serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all(), required=False, many=True, allow_null=True)
     images = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=File.objects.all()),
                                    write_only=True, allow_empty=True, required=False)
 
