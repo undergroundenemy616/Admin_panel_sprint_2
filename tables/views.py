@@ -28,7 +28,7 @@ class TableView(ListModelMixin,
                 CreateModelMixin,
                 GenericAPIView):
     serializer_class = TableSerializer
-    queryset = Table.objects.all()
+    queryset = Table.objects.all().prefetch_related('tags', 'images').select_related('table_marker')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 
@@ -82,7 +82,7 @@ class DetailTableView(RetrieveModelMixin,
                       DestroyModelMixin,
                       GenericAPIView):
     serializer_class = TableSerializer
-    queryset = Table.objects.all()
+    queryset = Table.objects.all().prefetch_related('tags', 'images').select_related('table_marker')
     permission_classes = (IsAuthenticated, )
 
     def put(self, request, *args, **kwargs):
@@ -196,7 +196,7 @@ class TableSlotsView(ListModelMixin,
                      CreateModelMixin,
                      GenericAPIView):
     serializer_class = TableSlotsSerializer
-    queryset = Table.objects.all()
+    queryset = Table.objects.all().prefetch_related('tags', 'images').select_related('table_marker')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 
