@@ -9,8 +9,11 @@ def detail_exception_handler(exc, context):
         Get first value in errors dict, and add it to response.
         Values wrapped in list and we extract first value and add it to response dict.
         """
-        error_dict = iter(exc.get_full_details().values())
-        error = next(error_dict)
-        if isinstance(error, list):
-            response.data.update(error[0])
+        try:
+            error_dict = iter(exc.get_full_details().values())
+            error = next(error_dict)
+            if isinstance(error, list):
+                response.data.update(error[0])
+        except AttributeError:
+            pass
     return response
