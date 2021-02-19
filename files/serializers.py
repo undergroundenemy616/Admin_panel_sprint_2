@@ -12,11 +12,7 @@ from files.models import File
 
 
 def check_token():
-    print(os.environ.get('FILES_TOKEN'))
-    print(type(os.environ.get('FILES_TOKEN')))
     if os.environ.get('FILES_TOKEN') == 'None':
-        print("ENTERED")
-        print(FILES_HOST + "/auth")
         try:
             token = requests.post(
                 url=FILES_HOST + "/auth",
@@ -25,10 +21,7 @@ def check_token():
                     'password': FILES_PASSWORD
                 }
             )
-            time.sleep(1)
-            print(token.text)
             token = orjson.loads(token.text)
-            print(token)
             os.environ['FILES_TOKEN'] = str(token.get('access_token'))
         except requests.exceptions.RequestException:
             return {"message": "Failed to get access to file storage"}, 401
