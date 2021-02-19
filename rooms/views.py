@@ -108,7 +108,7 @@ class RoomsView(ListModelMixin,
 
         for room in rooms.prefetch_related('tables'):  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
             response.append(base_serialize_room(room=room).copy())
-        # return Response(orjson.loads(orjson.dumps(response))) Made for test
+        # return Response(orjson.loads(orjson.dumps(response)))   # Made for test
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
