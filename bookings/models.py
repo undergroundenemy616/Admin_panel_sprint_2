@@ -80,6 +80,7 @@ class Booking(models.Model):
     user = models.ForeignKey(Account, null=False, on_delete=models.CASCADE)
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
+    # status = models.CharField(choices=)
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
