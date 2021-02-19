@@ -63,7 +63,7 @@ class ListCreateFloorView(ListModelMixin,
                 else:
                     response = []
                     for floor in floors_by_office:
-                        if request.query_params.get('rooms') == 0:
+                        if int(request.query_params.get('rooms')) == 0:
                             serialized_floor = base_floor_serializer_with_floor_map(floor=floor, room_flag=True)
                         else:
                             serialized_floor = base_floor_serializer_with_floor_map(floor=floor)

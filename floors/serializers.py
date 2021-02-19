@@ -16,6 +16,7 @@ class SwaggerFloorParameters(serializers.Serializer):
     office = serializers.UUIDField(required=False)
     expand = serializers.IntegerField(required=False)
     type = serializers.CharField(required=False)
+    rooms = serializers.IntegerField(required=False)
 
 
 def base_floor_serializer(floor: Floor) -> Dict[str, Any]:
