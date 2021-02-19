@@ -50,6 +50,8 @@ ALLOWED_HOSTS = ['*']
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'core.exception.detail_exception_handler',
+
     'DEFAULT_RENDERER_CLASSES': [
         'drf_orjson_renderer.renderers.ORJSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
