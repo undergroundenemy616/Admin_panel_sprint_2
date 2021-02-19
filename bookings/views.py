@@ -684,7 +684,10 @@ class BookingStatisticsDashboard(GenericAPIView):
             date_from, date_to = date.today(), date.today()
 
         if valid_office_id:
-            all_tables = Table.objects.filter(room__floor__office_id=valid_office_id)
+            all_tables = Table.objects.filter(Q(room__floor__office_id=valid_office_id) &
+                                              Q(room__type__is_deletable=False) &
+                                              Q(room__type__bookable=True) &
+                                              Q(room__type__office_id=valid_office_id))
             number_of_bookings = self.queryset.filter(Q(table__room__floor__office_id=valid_office_id) &
                                                       (
                                                               (Q(date_from__gte=date_from) &
@@ -723,7 +726,7 @@ class BookingStatisticsDashboard(GenericAPIView):
             (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
             office_id = '{valid_office_id}'""")
         else:
-            all_tables = Table.objects.all()
+            all_tables = Table.objects.filter(Q(room__type__is_deletable=False) & Q(room__type__bookable=True))
             number_of_bookings = self.queryset.count()
             number_of_activated_bookings = self.queryset.filter(is_active=True).count()
             bookings_with_hours = self.queryset.raw(f"""SELECT 
