@@ -684,7 +684,6 @@ class BookingStatisticsDashboard(GenericAPIView):
             date_from, date_to = date.today(), date.today()
 
         if valid_office_id:
-            # all_tables = Table.objects.filter(room__floor__office_id=valid_office_id)
             all_tables = Table.objects.filter(Q(room__floor__office_id=valid_office_id) &
                                               Q(room__type__is_deletable=False) &
                                               Q(room__type__bookable=True) &
