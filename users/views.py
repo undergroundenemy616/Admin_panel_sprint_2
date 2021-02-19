@@ -1,5 +1,6 @@
 import os
 import random
+import jwt
 
 import orjson
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
@@ -11,10 +12,11 @@ from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
+from rest_framework.decorators import api_view
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.pagination import DefaultPagination, LimitStartPagination
@@ -157,7 +159,7 @@ class LoginStaff(GenericAPIView):
 
 class AccountView(GenericAPIView):
     serializer_class = AccountSerializer
-    queryset = Account.objects.all()
+    queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
     permission_classes = (IsAuthenticated, )
 
     @swagger_auto_schema(query_serializer=SwaggerAccountParametr)
@@ -174,7 +176,7 @@ class AccountView(GenericAPIView):
 
 class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
     serializer_class = AccountUpdateSerializer
-    queryset = Account.objects.all()
+    queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
     permission_classes = (IsAdmin,)
 
     def put(self, request, pk=None, *args, **kwargs):
@@ -406,3 +408,22 @@ class EntranceCollectorView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"message": "OK"}, status=status.HTTP_200_OK)
+
+
+class RefreshTokenView(GenericAPIView):
+
+    def post(self, request, *args, **kwargs):
+        refresh = request.data.get('refresh')
+        if not refresh:
+            return Response({"detail": "Refresh parametr is required."}, status=400)
+        refresh_ser = TokenRefreshSerializer(data=request.data)
+        refresh_ser.is_valid(raise_exception=True)
+        access = refresh_ser.validated_data['access']
+        payload = jwt.decode(jwt=access, verify=False)
+        user = get_object_or_404(User, id=payload['user_id'])
+        auth_dict = dict()
+        token_serializer = TokenObtainPairSerializer()
+        token = token_serializer.get_token(user=user)
+        auth_dict["refresh_token"] = str(token)
+        auth_dict["access_token"] = str(token.access_token)
+        return Response(auth_dict, status=200)

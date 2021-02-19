@@ -22,7 +22,7 @@ class BookingManager(models.Manager):
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
-                   | Q(date_to__gt=date_from, date_to__lt=date_to))
+                   | Q(date_to__gt=date_from, date_to__lt=date_to)).select_related('table')
         if overflows:
             return True
         return False
@@ -33,7 +33,7 @@ class BookingManager(models.Manager):
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
-                   | Q(date_to__gt=date_from, date_to__lt=date_to))
+                   | Q(date_to__gt=date_from, date_to__lt=date_to)).select_related('table')
         if overflows:
             return overflows
         return []
@@ -49,7 +49,7 @@ class BookingManager(models.Manager):
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
-                   | Q(date_to__gt=date_from, date_to__lt=date_to))
+                   | Q(date_to__gt=date_from, date_to__lt=date_to)).select_related('table')
         if overflows:
             return True
         return False

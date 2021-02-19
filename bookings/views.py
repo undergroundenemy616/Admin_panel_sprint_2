@@ -61,7 +61,7 @@ class BookingsView(GenericAPIView,
               :Theme: - Used only when booking table in room.room_type.unified=True, else used default value
     """
     serializer_class = BookingSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().select_related('table')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 
@@ -104,7 +104,7 @@ class CreateFastBookingsView(GenericAPIView):
     Admin route. Fast booking for any user.
     """
     serializer_class = BookingFastSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
@@ -127,7 +127,7 @@ class FastBookingAdminView(CreateFastBookingsView):
 
 class ActionCheckAvailableSlotsView(GenericAPIView):
     serializer_class = BookingSlotsSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
@@ -143,7 +143,7 @@ class ActionActivateBookingsView(GenericAPIView):
     Authenticated User route. Change status of booking.
     """
     serializer_class = BookingActivateActionSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
@@ -162,7 +162,7 @@ class ActionDeactivateBookingsView(GenericAPIView):
     Admin route. Deactivates any booking
     """
     serializer_class = BookingDeactivateActionSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAdmin, )
 
     def post(self, request, *args, **kwargs):
@@ -178,7 +178,7 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
     User route. Deactivate booking only connected with User
     """
     serializer_class = BookingDeactivateActionSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
@@ -199,7 +199,7 @@ class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
     """
     User route. Delete booking object from DB
     """
-    queryset = Booking.objects.all().prefetch_related('user')
+    queryset = Booking.objects.all().prefetch_related('user').select_related('table')
     permission_classes = (IsAuthenticated, )
 
     def delete(self, request, pk=None, *args, **kwargs):
@@ -215,7 +215,7 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     Can be filtered by date_from-date_to.
     """
     serializer_class = BookingListTablesSerializer
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(query_serializer=SwaggerBookListTableParametrs)
@@ -254,7 +254,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
     Can be filtered by: date,
     """
     serializer_class = BookingPersonalSerializer
-    queryset = Booking.objects.all().order_by('-is_active', 'date_from')
+    queryset = Booking.objects.all().order_by('-is_active', 'date_from').select_related('table')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
     search_fields = ['table__title',
@@ -288,7 +288,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
 
 class BookingsListUserView(BookingsAdminView):
     serializer_class = BookingListSerializer
-    queryset = Booking.objects.all().prefetch_related('user')
+    queryset = Booking.objects.all().prefetch_related('user').select_related('table')
 
     @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):

@@ -254,15 +254,15 @@ class TableSerializerCSV(serializers.ModelSerializer):
             try:
                 for item in chunk.decode('utf8').split(','):
                     table.append(item or None)
-                if len(table) < 4:
+                if len(table) < 3:
                     table.extend([None]*(len(table)-5))
                 tables.append(table)
             except UnicodeDecodeError:
                 for item in chunk.decode('cp1251').split(','):
                     table.append(item or None)
-                    if len(table) < 4:
-                        table.extend([None] * (len(table) - 5))
-                    tables.append(table)
+                if len(table) < 3:
+                    table.extend([None] * (len(table) - 5))
+                tables.append(table)
         tables_to_create = []
         for table in tables:
             tables_to_create.append(Table(title=table[0], description=table[1],

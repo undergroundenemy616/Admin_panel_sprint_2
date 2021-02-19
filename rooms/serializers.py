@@ -210,12 +210,18 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data['marker'] = None
         tables_nested = Table.objects.filter(room=instance.id)
         data['tables'] = TableSerializer(instance=tables_nested, many=True).data
-        data['floor'] = FloorSerializer(instance=instance.floor).data
-        data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
+        data['floor'] = {'id': instance.floor.id,
+                         'title': instance.floor.title
+                         }  # FloorSerializer(instance=instance.floor).data
+        data['zone'] = {'id': instance.zone.id,
+                        'title': instance.zone.id
+                        }  # OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
         data['images'] = FileSerializer(instance=instance.images, many=True).data
         data['type'] = RoomTypeSerializer(instance=instance.type).data
+        data['room_type_color'] = instance.type.color
+        data['room_type_unified'] = instance.type.unified
         data['is_bookable'] = instance.type.bookable
         data['is_occupied'] = False  # TODO: NEED to fix! In Flask: capacity == occupied
 
