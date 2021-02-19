@@ -193,6 +193,16 @@ class FloorMapSerializer(serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
 
+    def create(self, validated_data):
+        if FloorMap.objects.filter(floor=validated_data['floor']).exists():
+            instance = FloorMap.objects.get(floor=validated_data['floor'])
+            instance.image = validated_data['image']
+            if validated_data.get('width'): instance.width = validated_data['width']
+            if validated_data.get('height'): instance.height = validated_data['height']
+            instance.save()
+            return instance
+        return super(FloorMapSerializer, self).create(validated_data)
+
     def to_representation(self, instance):
         # data = super(FloorMapSerializer, self).to_representation(instance)
         # data['image'] = FileSerializer(instance=instance.image).data
