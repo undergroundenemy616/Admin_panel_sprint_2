@@ -39,6 +39,8 @@ class Table(models.Model):
         self.is_occupied = False
         self.save()
 
+    class Meta:
+        ordering = ['title']
 
 class Rating(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

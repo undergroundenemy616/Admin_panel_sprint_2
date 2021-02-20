@@ -87,7 +87,7 @@ class BaseTableTagSerializer(serializers.ModelSerializer):
 
 
 class TestBaseTableTagSerializer(serializers.Serializer):
-    id = serializers.UUIDField
+    id = serializers.UUIDField()
     office = serializers.PrimaryKeyRelatedField(read_only=True)
     title = serializers.CharField()
     icon = serializers.PrimaryKeyRelatedField(read_only=True)

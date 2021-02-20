@@ -22,7 +22,7 @@ class Room(models.Model):
     # is_bookable = models.BooleanField(default=True, null=False, blank=False)
 
     class Meta:
-        ordering = ['floor__title']
+        ordering = ['floor__title', 'title']
 
 # capacity_meeting - floor, office
 # capacity_tables - количество столов на floor, office

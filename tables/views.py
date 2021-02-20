@@ -21,7 +21,7 @@ from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
                                 TableSerializer, TableTagSerializer,
                                 UpdateTableSerializer, UpdateTableTagSerializer,
                                 SwaggerTableSlotsParametrs, basic_table_serializer,
-                                TableSerializerCSV)
+                                TableSerializerCSV, TestTableSerializer)
 
 
 class TableView(ListModelMixin,
@@ -49,8 +49,9 @@ class TableView(ListModelMixin,
             elif int(request.query_params.get('free')) == 0:
                 tables = tables.filter(is_occupied=True)
 
-        for table in tables:
-            response.append(basic_table_serializer(table=table))
+        # for table in tables:
+        #     response.append(basic_table_serializer(table=table))
+        response = TestTableSerializer(instance=tables, many=True).data
 
         if request.query_params.getlist('tags'):
             tables_with_the_right_tags = []
@@ -62,14 +63,14 @@ class TableView(ListModelMixin,
 
             response = list({r['id']: r for r in tables_with_the_right_tags}.values())
 
-        ratings = Rating.objects.all()
-        for table in response:
-            table['ratings'] = ratings.filter(table_id=table['id']).count()
+        # ratings = Rating.objects.all()
+        # for table in response:
+        #     table['ratings'] = ratings.filter(table_id=table['id']).count()
 
         response_dict = {
             'results': response
         }
-        return Response(orjson.loads(orjson.dumps(response_dict, default=default)), status=status.HTTP_200_OK)
+        return Response(response_dict, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

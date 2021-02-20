@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import FileSerializer, image_serializer
+from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
 from floors.models import Floor
 from groups.serializers import validate_csv_file_extension
 from offices.models import Office, OfficeZone
@@ -97,7 +97,7 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'title': table.title,
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
         'images': list(image_serializer(image=table.images.first())) if table.images.first() else [],
-        'rating': table.rating,
+        'rating': 0,
         # 'ratings': Rating.objects.filter(table_id=table.id).count(),
         'description': table.description,
         'is_occupied': table.is_occupied,
@@ -112,6 +112,7 @@ def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
         'x': float(marker.x),
         'y': float(marker.y),
     }
+
 
 class TestRoomSerializer(serializers.Serializer):
     id = serializers.UUIDField()
@@ -143,6 +144,7 @@ class TestRoomSerializer(serializers.Serializer):
         response['occupied'] = instance.tables.filter(is_occupied=True).count(),
         response['suitable_tables'] = instance.tables.filter(is_occupied=False).count()
         return response
+
 
 class RoomSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField()
@@ -302,25 +304,16 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
             OfficeZoneSerializer  # If not like this Import Error calls
         data['seats_amount'] = instance.seats_amount
         data['marker'] = None
-        tables_nested = Table.objects.filter(room=instance.id)
-        data['tables'] = TableSerializer(instance=tables_nested, many=True).data
+        tables_nested = Table.objects.filter(room=instance.id).prefetch_related('tags', 'images').select_related('table_marker')
+        data['tables'] = TestTableSerializer(instance=tables_nested, many=True).data
         data['floor'] = FloorSerializer(instance=instance.floor).data
         data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
-        data['images'] = FileSerializer(instance=instance.images, many=True).data
+        data['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         data['type'] = instance.type.title
 
         return data
-
-    # def update(self, instance, validated_data):
-    #     if validated_data.get('type'):
-    #         room_type = RoomType.objects.filter(title=validated_data['type'],
-    #                                             office_id=validated_data['floor'].office.id).first()
-    #         if not room_type:
-    #             raise ValidationError(f'RoomType {room_type} does not exists.')
-    #         validated_data['type'] = room_type
-    #     return super(UpdateRoomSerializer, self).update(instance, validated_data)
 
 
 class FilterRoomSerializer(serializers.ModelSerializer):
