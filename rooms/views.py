@@ -26,7 +26,7 @@ from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
                                base_serialize_room, table_serializer_for_room,
                                RoomGetSerializer, RoomSerializerCSV, TestRoomSerializer)
-from tables.serializers import Table, TableSerializer
+from tables.serializers import Table, TableSerializer, TestTableSerializer
 
 
 class RoomsView(ListModelMixin,
@@ -168,13 +168,13 @@ class RoomsView(ListModelMixin,
                 response = without_image
 
         if request.query_params.getlist('tags'):
-            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags'))
+            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags')).prefetch_related('tags', 'images').select_related('table_marker')
             for room in response:
                 tables_with_tags = []
-                for table in tables:
-                    serialized_table = table_serializer_for_room(table=table)
-                    if serialized_table['room'] == room['id']:
-                        tables_with_tags.append(serialized_table)
+                serialized_tables = TestTableSerializer(instance=tables, many=True).data
+                for table in serialized_tables:
+                    if str(table['room']) == room['id']:
+                        tables_with_tags.append(table)
                 room['tables'] = tables_with_tags
 
         suitable_tables = 0
