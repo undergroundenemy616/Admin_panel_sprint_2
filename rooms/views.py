@@ -249,7 +249,7 @@ class RoomMarkerView(CreateModelMixin,
     ))
     def delete(self, request, *args, **kwargs):
         room_instance = get_object_or_404(Room, pk=request.data['room'])
-        instance = get_object_or_404(RoomMarker, pk=room_instance.room_marker.id)
+        instance = get_object_or_404(RoomMarker, room=room_instance)
         instance.delete()
         self.serializer_class = RoomSerializer
         room_instance = get_object_or_404(Room, pk=request.data['room'])  # Need to fix to improve performance
