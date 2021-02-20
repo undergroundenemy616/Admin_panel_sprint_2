@@ -50,6 +50,6 @@ class RoomMarker(models.Model):  # todo added by cybertatar
 
     @atomic()
     def delete(self, using=None, keep_parents=False):
-        tabl = tables.models.Table.objects.filter(room=self.room)
-        tables.models.TableMarker.objects.filter(table__in=tabl).delete()
+        table = tables.models.Table.objects.filter(room=self.room)
+        tables.models.TableMarker.objects.filter(table__in=table).delete()
         super(RoomMarker, self).delete()
