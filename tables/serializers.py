@@ -95,7 +95,7 @@ class TestBaseTableTagSerializer(serializers.Serializer):
     def to_representation(self, instance):
         response = super(TestBaseTableTagSerializer, self).to_representation(instance)
         response['icon'] = TestBaseFileSerializer(instance.icon).data if instance.icon else None
-        response['rating'] = 0
+        # response['rating'] = 0
         return response
 
 
@@ -192,6 +192,7 @@ class TestTableSerializer(serializers.Serializer):
         response['images'] = TestBaseFileSerializer(instance.images.all(), many=True).data
         response['marker'] = TestTableMarkerSerializer(instance=instance.table_marker).data if \
             hasattr(instance, 'table_marker') else None
+        response['rating'] = 0
         return response
 
 
