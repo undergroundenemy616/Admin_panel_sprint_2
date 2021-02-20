@@ -15,7 +15,7 @@ def send_code(user, is_created):
     # Check key in redis, if it already exists - raise exception.
     ttl = redis.get_ttl()
     if ttl:
-        raise ValidationError(detail={"detail": f'Message already sent! Please, retry after {ttl}',
+        raise ValidationError(detail={"detail": f'Message already sent!',
                                       "time": ttl}, code=400)
 
     # Send created code to user's phone.
