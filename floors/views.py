@@ -51,7 +51,7 @@ class ListCreateFloorView(ListModelMixin,
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
 
             if request.query_params.get('type'):
-                floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type'))
+                floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type')).distinct('id')
 
             try:
                 if int(request.query_params.get('expand')) == 0:
