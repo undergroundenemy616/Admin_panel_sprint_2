@@ -12,19 +12,18 @@ from files.models import File
 
 
 def check_token():
-    if os.environ.get('FILES_TOKEN') == 'None':
-        try:
-            token = requests.post(
-                url=FILES_HOST + "/auth",
-                json={
-                    'username': FILES_USERNAME,
-                    'password': FILES_PASSWORD
-                }
-            )
-            token = orjson.loads(token.text)
-            os.environ['FILES_TOKEN'] = str(token.get('access_token'))
-        except requests.exceptions.RequestException:
-            return {"message": "Failed to get access to file storage"}, 401
+    try:
+        token = requests.post(
+            url=FILES_HOST + "/auth",
+            json={
+                'username': FILES_USERNAME,
+                'password': FILES_PASSWORD
+            }
+        )
+        token = orjson.loads(token.text)
+        os.environ['FILES_TOKEN'] = str(token.get('access_token'))
+    except requests.exceptions.RequestException:
+        return {"message": "Failed to get access to file storage"}, 401
 
 
 check_token()
