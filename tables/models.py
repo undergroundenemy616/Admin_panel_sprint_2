@@ -24,12 +24,12 @@ class Table(models.Model):
     images = models.ManyToManyField('files.File', related_name='tables', blank=True)
     is_occupied = models.BooleanField(default=False)
 
-    @property
-    def rating(self):
-        queryset = self.ratings.all().aggregate(models.Avg('rating'))
-        if not queryset['rating__avg']:
-            return 0
-        return queryset['rating__avg']
+    # @property
+    # def rating(self):
+    #     queryset = self.ratings.all().aggregate(models.Avg('rating'))
+    #     if not queryset['rating__avg']:
+    #         return 0
+    #     return queryset['rating__avg']
 
     def set_table_occupied(self):
         self.is_occupied = True

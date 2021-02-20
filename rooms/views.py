@@ -25,7 +25,7 @@ from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                RoomMarkerSerializer, RoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
                                base_serialize_room, table_serializer_for_room,
-                               RoomGetSerializer, RoomSerializerCSV)
+                               RoomGetSerializer, RoomSerializerCSV, TestRoomSerializer)
 from tables.serializers import Table, TableSerializer
 
 
@@ -106,8 +106,9 @@ class RoomsView(ListModelMixin,
         if request.query_params.get('type'):
             rooms = rooms.filter(type__title=request.query_params.get('type'))
 
-        for room in rooms.prefetch_related('tables'):  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
-            response.append(base_serialize_room(room=room).copy())
+        # for room in rooms.prefetch_related('tables'):  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
+        #     response.append(base_serialize_room(room=room).copy())
+        response = TestRoomSerializer(instance=rooms.prefetch_related('tables'), many=True).data
         # return Response(orjson.loads(orjson.dumps(response)))   # Made for test
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
@@ -186,7 +187,8 @@ class RoomsView(ListModelMixin,
             'suitable_tables': suitable_tables
         }
 
-        return Response(orjson.loads(orjson.dumps(response_dict)), status=status.HTTP_200_OK)
+        # return Response(orjson.loads(orjson.dumps(response_dict)), status=status.HTTP_200_OK)
+        return Response(response_dict, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

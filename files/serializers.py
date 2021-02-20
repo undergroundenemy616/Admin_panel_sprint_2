@@ -53,6 +53,13 @@ class BaseFileSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class TestBaseFileSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    path = serializers.CharField()
+    thumb = serializers.CharField()
+
+
 class FileSerializer(serializers.ModelSerializer):
     file = serializers.FileField(required=True)
 
