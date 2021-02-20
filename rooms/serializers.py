@@ -113,6 +113,7 @@ def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
         'y': float(marker.y),
     }
 
+
 class TestRoomSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     title = serializers.CharField()
@@ -143,6 +144,7 @@ class TestRoomSerializer(serializers.Serializer):
         response['occupied'] = instance.tables.filter(is_occupied=True).count(),
         response['suitable_tables'] = instance.tables.filter(is_occupied=False).count()
         return response
+
 
 class RoomSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField()
@@ -312,15 +314,6 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         data['type'] = instance.type.title
 
         return data
-
-    # def update(self, instance, validated_data):
-    #     if validated_data.get('type'):
-    #         room_type = RoomType.objects.filter(title=validated_data['type'],
-    #                                             office_id=validated_data['floor'].office.id).first()
-    #         if not room_type:
-    #             raise ValidationError(f'RoomType {room_type} does not exists.')
-    #         validated_data['type'] = room_type
-    #     return super(UpdateRoomSerializer, self).update(instance, validated_data)
 
 
 class FilterRoomSerializer(serializers.ModelSerializer):
