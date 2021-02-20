@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import FileSerializer, image_serializer
+from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
 from floors.models import Floor
 from groups.serializers import validate_csv_file_extension
 from offices.models import Office, OfficeZone
@@ -308,7 +308,7 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
-        data['images'] = FileSerializer(instance=instance.images, many=True).data
+        data['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         data['type'] = instance.type.title
 
         return data
