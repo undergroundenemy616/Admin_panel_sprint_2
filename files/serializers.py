@@ -62,21 +62,22 @@ class TestBaseFileSerializer(serializers.Serializer):
 
 class FileSerializer(serializers.ModelSerializer):
     file = serializers.FileField(required=True)
+    title = serializers.CharField(required=False)
 
     class Meta:
         model = File
-        fields = ['file']
-        depth = 1
+        fields = ['file', 'title']
+        # depth = 1
 
-    def to_representation(self, instance):
-        response = dict()
-        response['id'] = instance.id
-        response['title'] = instance.title
-        response['path'] = instance.path
-        response['thumb'] = instance.thumb
-        response['width'] = instance.width
-        response['height'] = instance.height
-        return response
+    # def to_representation(self, instance):
+    #     response = dict()
+    #     response['id'] = instance.id
+    #     response['title'] = instance.title
+    #     response['path'] = instance.path
+    #     response['thumb'] = instance.thumb
+    #     response['width'] = instance.width
+    #     response['height'] = instance.height
+    #     return response
 
     def create(self, validated_data):
         file = validated_data.pop('file')
