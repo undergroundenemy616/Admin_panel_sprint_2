@@ -2,10 +2,12 @@ import uuid
 
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.transaction import atomic
 
 from files.models import File
 from floors.models import Floor
 from room_types.models import RoomType
+import tables
 
 
 class Room(models.Model):
@@ -45,3 +47,9 @@ class RoomMarker(models.Model):  # todo added by cybertatar
         null=False,
         blank=False
     )
+
+    @atomic()
+    def delete(self, using=None, keep_parents=False):
+        table = tables.models.Table.objects.filter(room=self.room)
+        tables.models.TableMarker.objects.filter(table__in=table).delete()
+        super(RoomMarker, self).delete()
