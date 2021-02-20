@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
+from rest_framework.exceptions import ValidationError
 
 from users.broadcasts import SMSBroadcast
 from users.models import activated_code
@@ -14,7 +15,8 @@ def send_code(user, is_created):
     # Check key in redis, if it already exists - raise exception.
     ttl = redis.get_ttl()
     if ttl:
-        raise ValueError(f'Message already sent! Please, retry after {ttl}')
+        raise ValidationError(detail={"detail": f'Message already sent! Please, retry after {ttl}',
+                                      "time": ttl}, code=400)
 
     # Send created code to user's phone.
     broadcast = SMSBroadcast(phone_number=user.phone_number)
