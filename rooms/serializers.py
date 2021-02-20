@@ -130,6 +130,8 @@ class TestRoomSerializer(serializers.Serializer):
         response['type'] = instance.type.title if instance.type else None
         response['room_type_color'] = instance.type.color if instance.type else None
         response['room_type_unified'] = instance.type.unified if instance.type else None
+        response['zone'] = {'id': instance.zone.id,
+                            'title': instance.zone.title}
         response['is_bookable'] = instance.type.bookable if instance.type else None
         response['room_type_icon'] = instance.type.icon if instance.type else None
         response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images').select_related('table_marker'), many=True).data
