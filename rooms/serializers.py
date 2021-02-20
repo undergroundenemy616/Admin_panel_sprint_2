@@ -156,6 +156,8 @@ class RoomSerializer(serializers.ModelSerializer):
         # response = BaseRoomSerializer(instance=instance).data
         response = super(RoomSerializer, self).to_representation(instance)
         # room_type = response.pop('type')
+        response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}
+        response['zone'] = {"id": instance.zone.id, "title": instance.zone.title}
         response['type'] = instance.type.title if instance.type else None
         response['room_type_color'] = instance.type.color if instance.type else None
         response['room_type_unified'] = instance.type.unified if instance.type else None
