@@ -113,6 +113,32 @@ def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
         'y': float(marker.y),
     }
 
+class TestRoomSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    type = serializers.PrimaryKeyRelatedField(read_only=True)
+    zone = serializers.PrimaryKeyRelatedField(read_only=True)
+    images = serializers.PrimaryKeyRelatedField(read_only=True)
+    floor = serializers.PrimaryKeyRelatedField(read_only=True)
+    seats_amount = serializers.IntegerField()
+
+    def to_representation(self, instance):
+        # response = BaseRoomSerializer(instance=instance).data
+        response = super(TestRoomSerializer, self).to_representation(instance)
+        # room_type = response.pop('type')
+        response['type'] = instance.type.title if instance.type else None
+        response['room_type_color'] = instance.type.color if instance.type else None
+        response['room_type_unified'] = instance.type.unified if instance.type else None
+        response['is_bookable'] = instance.type.bookable if instance.type else None
+        response['room_type_icon'] = instance.type.icon if instance.type else None
+        response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images').select_related('table_marker'), many=True).data
+        response['capacity'] = instance.tables.count()
+        response['marker'] = TestRoomMarkerSerializer(instance=instance.room_marker).data if \
+            hasattr(instance, 'room_marker') else None
+        response['occupied'] = instance.tables.filter(is_occupied=True).count(),
+        response['suitable_tables'] = instance.tables.filter(is_occupied=False).count()
+        return response
 
 class RoomSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField()
@@ -309,6 +335,14 @@ class RoomMarkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomMarker
         fields = '__all__'
+
+
+class TestRoomMarkerSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    room = serializers.PrimaryKeyRelatedField(read_only=True)
+    icon = serializers.CharField()
+    x = serializers.DecimalField(max_digits=4, decimal_places=2)
+    y = serializers.DecimalField(max_digits=4, decimal_places=2)
 
 
 class RoomSerializerCSV(serializers.ModelSerializer):

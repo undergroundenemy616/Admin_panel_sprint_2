@@ -11,7 +11,7 @@ import orjson
 from groups.serializers import validate_csv_file_extension
 from files.models import File
 from files.serializers import (BaseFileSerializer, FileSerializer,
-                               image_serializer)
+                               image_serializer, TestBaseFileSerializer)
 from offices.models import Office
 from rooms.models import Room
 from bookings.models import Booking
@@ -84,6 +84,19 @@ class BaseTableTagSerializer(serializers.ModelSerializer):
         model = TableTag
         fields = '__all__'
         depth = 1
+
+
+class TestBaseTableTagSerializer(serializers.Serializer):
+    id = serializers.UUIDField
+    office = serializers.PrimaryKeyRelatedField(read_only=True)
+    title = serializers.CharField()
+    icon = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    def to_representation(self, instance):
+        response = super(TestBaseTableTagSerializer, self).to_representation(instance)
+        response['icon'] = TestBaseFileSerializer(instance.icon).data if instance.icon else None
+        response['rating'] = 0
+        return response
 
 
 class TableTagSerializer(serializers.ModelSerializer):
@@ -168,16 +181,16 @@ class TestTableSerializer(serializers.Serializer):
     description = serializers.CharField()
     title = serializers.CharField()
     is_occupied = serializers.BooleanField()
-    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=True)
-    tags = serializers.PrimaryKeyRelatedField(queryset=TableTag.objects.all(), required=False, many=True)
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, many=True)
+    room = serializers.PrimaryKeyRelatedField(read_only=True)
+    tags = serializers.PrimaryKeyRelatedField(read_only=True, required=False, many=True)
+    images = serializers.PrimaryKeyRelatedField(read_only=True, required=False, many=True)
     rating = serializers.ReadOnlyField()
 
     def to_representation(self, instance):
         response = super(TestTableSerializer, self).to_representation(instance)
-        response['tags'] = BaseTableTagSerializer(instance.tags.all(), many=True).data
-        response['images'] = BaseFileSerializer(instance.images.all(), many=True).data
-        response['marker'] = TableMarkerSerializer(instance=instance.table_marker).data if \
+        response['tags'] = TestBaseTableTagSerializer(instance.tags.all(), many=True).data
+        response['images'] = TestBaseFileSerializer(instance.images.all(), many=True).data
+        response['marker'] = TestTableMarkerSerializer(instance=instance.table_marker).data if \
             hasattr(instance, 'table_marker') else None
         return response
 
@@ -240,6 +253,13 @@ class TableMarkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = TableMarker
         fields = ['x', 'y', 'table']
+
+
+class TestTableMarkerSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    x = serializers.DecimalField(max_digits=4, decimal_places=2)
+    y = serializers.DecimalField(max_digits=4, decimal_places=2)
+    table = serializers.PrimaryKeyRelatedField(read_only=True)
 
 
 class TableSlotsSerializer(serializers.ModelSerializer):
