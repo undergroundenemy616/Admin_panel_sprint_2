@@ -17,5 +17,5 @@ class ListCreateFilesView(ListCreateAPIView):
         serializer = self.serializer_class(data=request.FILES)
         serializer.is_valid(raise_exception=True)
         saved_file = serializer.save()
-        return Response(TestBaseFileSerializer(instance=saved_file).data,
+        return Response(TestBaseFileSerializer(instance=saved_file, many=True).data,
                         status=status.HTTP_201_CREATED)
