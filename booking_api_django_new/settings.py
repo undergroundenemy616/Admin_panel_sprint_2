@@ -28,7 +28,7 @@ SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
 LOCAL = True if os.getenv('LOCAL') == 'True' else False
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 KEY_EXPIRATION = 60 * 3  # 3 minutes
 
@@ -133,11 +133,11 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.postgres',
+    'django.contrib.sessions',
+    'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
 # 'django.contrib.admin',
-# 'django.contrib.sessions',
-# 'django.contrib.messages',
 REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
 
 CACHES = {
@@ -179,11 +179,11 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 # 'django.contrib.messages.middleware.MessageMiddleware',
-# 'django.contrib.sessions.middleware.SessionMiddleware',
 if LOCAL:
     MIDDLEWARE += ['booking_api_django_new.debug.PrintSqlQuery']
 
