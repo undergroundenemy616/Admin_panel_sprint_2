@@ -779,7 +779,7 @@ class BookingStatisticsDashboard(GenericAPIView):
 
         tables_available_for_booking = all_tables.filter(is_occupied=False).count()
         active_users = all_accounts.count()
-        total_tables = all_tables.count()
+        total_tables = Table.objects.filter(room__floor__office_id=valid_office_id).count()
 
         list_of_booked_tables = []
         for table in tables_from_booking:
