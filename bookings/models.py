@@ -73,6 +73,12 @@ class BookingManager(models.Manager):
 
 
 class Booking(models.Model):
+    STATUS = (
+        ('waiting', 'waiting'),
+        ('active', 'active'),
+        ('canceled', 'canceled'),
+        ('auto_canceled', 'auto_canceled')
+    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date_from = models.DateTimeField(default=datetime.utcnow)
     date_to = models.DateTimeField()
@@ -82,7 +88,7 @@ class Booking(models.Model):
     user = models.ForeignKey(Account, null=False, on_delete=models.CASCADE)
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
-    # status = models.CharField(choices=)
+    status = models.CharField(choices=STATUS, null=False, max_length=20, default='waiting')
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
@@ -96,10 +102,15 @@ class Booking(models.Model):
         super(self.__class__, self).delete(using, keep_parents)
 
     def set_booking_active(self, *args, **kwargs):
-        self.is_active = True
-        self.is_over = False
-        self.table.set_table_occupied()
-        super(self.__class__, self).save(*args, **kwargs)
+        try:
+            instance = Booking.objects.get(id=self.id)
+        except ObjectDoesNotExist:
+            return
+        instance.is_active = True
+        instance.is_over = False
+        instance.status = 'active'
+        instance.table.set_table_occupied()
+        super(Booking, instance).save(*args, **kwargs)
 
     def set_booking_over(self, *args, **kwargs):
         try:
@@ -108,7 +119,11 @@ class Booking(models.Model):
             return
         instance.is_active = False
         instance.is_over = True
-        self.table.set_table_free()
+        if kwargs.get('status'):
+            instance.status = 'auto_canceled'
+        else:
+            instance.status = 'canceled'
+        instance.table.set_table_free()
         # instance = super(self.__class__, self)
         if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
             scheduler.remove_job(job_id="notify_about_oncoming_booking_" + str(self.id))
@@ -126,7 +141,8 @@ class Booking(models.Model):
         except ObjectDoesNotExist:
             return
         if not instance.is_active:
-            instance.set_booking_over()
+            flag = {'status': 'auto_canceled'}
+            instance.set_booking_over(kwargs=flag)
 
     def get_consecutive_booking(self):
         """Returns previous booking if exists for merging purpose"""
