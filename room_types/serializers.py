@@ -23,6 +23,7 @@ class RoomTypeSerializer(serializers.ModelSerializer):
         response = super(RoomTypeSerializer, self).to_representation(instance)
         response['icon'] = TestBaseFileSerializer(instance.icon).data if instance.icon else None
         response['pre_defined'] = not instance.is_deletable
+        response['icon'] = TestBaseFileSerializer(instance=instance.icon).data if instance.icon else None
         return response
 
 
