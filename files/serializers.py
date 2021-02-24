@@ -26,9 +26,6 @@ def check_token():
         return {"message": "Failed to get access to file storage"}, 401
 
 
-check_token()
-
-
 def create_new_folder(local_dir):
     newpath = local_dir
     if not os.path.exists(newpath):
@@ -63,7 +60,7 @@ class TestBaseFileSerializer(serializers.Serializer):
 
 
 class FileSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(required=True)
+    file = serializers.FileField(required=False)
     title = serializers.CharField(required=False)
 
     class Meta:
@@ -83,6 +80,7 @@ class FileSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         file = validated_data.pop('file')
+        check_token()
         headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
         try:
             response = requests.post(
