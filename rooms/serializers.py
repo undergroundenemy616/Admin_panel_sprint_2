@@ -12,7 +12,7 @@ from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
-from tables.models import Rating, Table, TableTag
+from tables.models import Rating, Table, TableTag, TableMarker
 from tables.serializers import TableSerializer, table_tag_serializer, table_marker_serializer, TestTableSerializer
 
 
@@ -334,6 +334,19 @@ class RoomMarkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomMarker
         fields = '__all__'
+
+    def save(self, **kwargs):
+        if self.validated_data['room'].type.unified:
+            table_marker = TableMarker.objects.filter(table=self.validated_data['room'].tables.first()).first()
+            if table_marker:
+                table_marker.x = self.validated_data['x']
+                table_marker.y = self.validated_data['y']
+                table_marker.save()
+            else:
+                TableMarker.objects.create(table=self.validated_data['room'].tables.first(),
+                                           x=self.validated_data['x'],
+                                           y=self.validated_data['y'])
+        return super(RoomMarkerSerializer, self).save()
 
 
 class TestRoomMarkerSerializer(serializers.Serializer):
