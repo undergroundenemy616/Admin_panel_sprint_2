@@ -121,8 +121,12 @@ class Booking(models.Model):
         super(Booking, instance).save()
 
     def check_booking_activate(self, *args, **kwargs):
-        if not self.is_active:
-            self.set_booking_over()
+        try:
+            instance = Booking.objects.get(id=self.id)
+        except ObjectDoesNotExist:
+            return
+        if not instance.is_active:
+            instance.set_booking_over()
 
     def get_consecutive_booking(self):
         """Returns previous booking if exists for merging purpose"""
