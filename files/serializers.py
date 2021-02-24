@@ -12,19 +12,18 @@ from files.models import File
 
 
 def check_token():
-    if os.environ.get('FILES_TOKEN') == 'None':
-        try:
-            token = requests.post(
-                url=FILES_HOST + "/auth",
-                json={
-                    'username': FILES_USERNAME,
-                    'password': FILES_PASSWORD
-                }
-            )
-            token = orjson.loads(token.text)
-            os.environ['FILES_TOKEN'] = str(token.get('access_token'))
-        except requests.exceptions.RequestException:
-            return {"message": "Failed to get access to file storage"}, 401
+    try:
+        token = requests.post(
+            url=FILES_HOST + "/auth",
+            json={
+                'username': FILES_USERNAME,
+                'password': FILES_PASSWORD
+            }
+        )
+        token = orjson.loads(token.text)
+        os.environ['FILES_TOKEN'] = str(token.get('access_token'))
+    except requests.exceptions.RequestException:
+        return {"message": "Failed to get access to file storage"}, 401
 
 
 check_token()
@@ -92,7 +91,7 @@ class FileSerializer(serializers.ModelSerializer):
             return {"message": "Error occurred during file upload"}, 500
         if response.status_code != 200:
             if response.status_code == 401:
-                return {"message": "Basic Auth required"}, 401
+                return {"message": "Problems with authorization"}, 401
             if response.status_code == 400:
                 return {"message": "Bad request"}, 400
 
