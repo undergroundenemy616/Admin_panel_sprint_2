@@ -54,7 +54,7 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Current urls
-    path('admin', admin.site.urls),
+    # path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUserFromMobileView.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
     path('refresh', views.RefreshTokenView.as_view()),

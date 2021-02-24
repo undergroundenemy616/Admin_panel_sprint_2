@@ -130,15 +130,14 @@ INSTALLED_APPS = [
     'drf_yasg',
     'mail',
     'django_apscheduler',
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.postgres',
-    'django.contrib.sessions',
-    'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
-
+# 'django.contrib.admin',
+# 'django.contrib.sessions',
+# 'django.contrib.messages',
 REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
 
 CACHES = {
@@ -177,15 +176,14 @@ MIDDLEWARE = [
     'core.middlewares.CorsMiddleware',
     'core.middlewares.RequestTimeMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+# 'django.contrib.messages.middleware.MessageMiddleware',
+# 'django.contrib.sessions.middleware.SessionMiddleware',
 if LOCAL:
     MIDDLEWARE += ['booking_api_django_new.debug.PrintSqlQuery']
 
