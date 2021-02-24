@@ -1,11 +1,13 @@
+import os
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 
-from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS, BOOKING_TIMEDELTA_CHECK
+from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS, BOOKING_TIMEDELTA_CHECK, PUSH_HOST
 from core.scheduler import scheduler
 from push_tokens.send_interface import send_push_message
 from tables.models import Table
@@ -151,8 +153,9 @@ class Booking(models.Model):
     def notify_about_oncoming_booking(self):
         """Send PUSH-notification about oncoming booking to every user devices"""
         #  and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_PUSH_NOTIFY_UNTIL_MINS + 5 \
-        if not self.is_over \
-                and self.user and self.user.push_tokens.all():
+        push_group = os.environ.get("PUSH_GROUP")
+        if push_group and not self.is_over \
+                and self.user:
             expo_data = {
                 "title": "Уведомление о предстоящем бронировании",
                 "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
@@ -160,14 +163,21 @@ class Booking(models.Model):
                     "go_booking": True
                 }
             }
-            for token in [push_object.token for push_object in self.user.push_tokens.all()]:
-                send_push_message(token, expo_data)
+            response = requests.post(
+                PUSH_HOST + "/send_push",
+                json=expo_data,
+                headers={'content-type': 'application/json'}
+                # auth=(FILES_USERNAME, FILES_PASSWORD),
+            )
+            if response.status_code != 200:
+                print(f"Unable to send push message for {str(self.user.id)}: {response.json().get('message')}")
 
     def notify_about_booking_activation(self):
         """Send PUSH-notification about opening activation"""
         #  and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_TIMEDELTA_CHECK \
-        if not self.is_over \
-                and self.user and self.user.push_tokens.all():
+        push_group = os.environ.get("PUSH_GROUP")
+        if push_group and not self.is_over \
+                and self.user:
             expo_data = {
                 "title": "Открыто подтверждение!",
                 "body": f"Вы можете подтвердить бронирование QR-кодом в течении 30 минут.",
@@ -175,8 +185,16 @@ class Booking(models.Model):
                     "go_booking": True
                 }
             }
-            for token in [push_object.token for push_object in self.user.push_tokens.all()]:
-                send_push_message(token, expo_data)
+            response = requests.post(
+                PUSH_HOST + "/send_push",
+                json=expo_data,
+                headers={'content-type': 'application/json'}
+                # auth=(FILES_USERNAME, FILES_PASSWORD),
+            )
+            if response.status_code != 200:
+                print(f"Unable to send push message for {str(self.user.id)}: {response.json().get('message')}")
+            # for token in [push_object.token for push_object in self.user.push_tokens.all()]:
+            #     send_push_message(token, expo_data)
 
     def job_create_oncoming_notification(self):
         """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
