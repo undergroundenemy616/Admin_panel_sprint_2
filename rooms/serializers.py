@@ -137,14 +137,6 @@ class TestRoomSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         # response = BaseRoomSerializer(instance=instance).data
-        ratings = Rating.objects.raw(f"""
-        select table_id as id, 
-        cast(sum(rating) as decimal)/count(rating) as table_rating, 
-        count(rating) as number_of_votes
-        from tables_rating
-        where table_id = '{instance.id}'
-        group by table_id
-        """)
         response = super(TestRoomSerializer, self).to_representation(instance)
         # room_type = response.pop('type')
         response['type'] = instance.type.title if instance.type else None
@@ -162,9 +154,6 @@ class TestRoomSerializer(serializers.Serializer):
             hasattr(instance, 'room_marker') else None
         response['occupied'] = instance.tables.filter(is_occupied=True).count(),
         response['suitable_tables'] = instance.tables.filter(is_occupied=False).count()
-        for rating in ratings:
-            response['rating'] = rating.table_rating
-            response['ratings'] = rating.number_of_votes
         return response
 
 
