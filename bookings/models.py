@@ -20,7 +20,7 @@ MINUTES_TO_ACTIVATE = 15
 class BookingManager(models.Manager):
     def is_overflowed(self, table, date_from, date_to):
         """Check for booking availability"""
-        overflows = self.model.objects.filter(table=table, is_over=False). \
+        overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
@@ -31,7 +31,7 @@ class BookingManager(models.Manager):
 
     def is_overflowed_with_data(self, table, date_from, date_to):
         """Check for booking availability"""
-        overflows = self.model.objects.filter(table=table, is_over=False). \
+        overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
@@ -47,7 +47,7 @@ class BookingManager(models.Manager):
             access = [EMPLOYEE_ACCESS]
         if min(access) < EMPLOYEE_ACCESS:
             return False
-        overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False). \
+        overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False, status__in=['waiting', 'active']). \
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
