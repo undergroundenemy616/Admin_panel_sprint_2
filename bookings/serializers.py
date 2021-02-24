@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime, timezone, timedelta, date
+import tables
 import time
 import random
 
@@ -73,6 +74,7 @@ class BookingSerializer(serializers.ModelSerializer):
         response = BaseBookingSerializer(instance).data
         response['active'] = response['is_active']
         del response['is_active']
+        response['table'] = tables.serializers.TestTableSerializer(instance=instance.table).data
         response['room'] = {"id": instance.table.room.id,
                             "title": instance.table.room.title,
                             "type": instance.table.room.type.title,

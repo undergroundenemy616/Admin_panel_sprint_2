@@ -57,6 +57,9 @@ class TestBaseFileSerializer(serializers.Serializer):
     title = serializers.CharField()
     path = serializers.CharField()
     thumb = serializers.CharField()
+    height = serializers.IntegerField()
+    width = serializers.IntegerField()
+    size = serializers.CharField()
 
 
 class FileSerializer(serializers.ModelSerializer):
