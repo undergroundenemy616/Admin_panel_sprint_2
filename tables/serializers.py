@@ -115,7 +115,7 @@ class TableTagSerializer(serializers.ModelSerializer):
         else:
             response = BaseTableTagSerializer(instance=instance).data
             if instance.icon:
-                response['icon'] = FileSerializer(instance=instance.icon).data
+                response['icon'] = FileSerializer(instance=instance.icon.first()).data
             response = [response]
             return response
 
