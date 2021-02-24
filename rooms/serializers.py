@@ -92,13 +92,24 @@ def floor_serializer_for_room(floor: Floor) -> Dict[str, Any]:
 def table_serializer_for_room(table: Table) -> Dict[str, Any]:
     # tags = table.tags.all()
     # images = table.images.first()
+    ratings = Rating.objects.raw(f"""select table_id as id, cast(sum(rating) as decimal)/count(rating) as table_rating, 
+        count(rating) as number_of_votes
+        from tables_rating
+        where table_id = '{table.id}'
+        group by table_id""")
+    table_rating = 0
+    table_ratings = 0
+    for result in table_ratings:
+        table_rating = result.table_rating
+        table_ratings = result.number_of_votes
     return {
         'id': str(table.id),
         'title': table.title,
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
         'images': list(image_serializer(image=table.images.first())) if table.images.first() else [],
-        'rating': 0,
+        'rating': table_rating,
         # 'ratings': Rating.objects.filter(table_id=table.id).count(),
+        'ratings': table_ratings,
         'description': table.description,
         'is_occupied': table.is_occupied,
         'room': str(table.room_id),

@@ -137,7 +137,6 @@ class DetailTableTagView(GenericAPIView,
     permission_classes = (IsAdmin, )
 
     def put(self, request, pk=None, *args, **kwargs):
-        print(2)
         instance = get_object_or_404(TableTag, pk=pk)
         self.serializer_class = UpdateTableTagSerializer
         serializer = self.serializer_class(data=request.data, instance=instance)
@@ -165,7 +164,6 @@ class TableMarkerView(CreateModelMixin, DestroyModelMixin,
         return Response(table_serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request, *args, **kwargs):
-        print(3)
         table = get_object_or_404(Table, pk=request.data['table'])
         if hasattr(table, 'table_marker'):
             serializer = self.serializer_class(data=request.data,
