@@ -91,7 +91,7 @@ class FileSerializer(serializers.ModelSerializer):
             return {"message": "Error occurred during file upload"}, 500
         if response.status_code != 200:
             if response.status_code == 401:
-                return {"message": "Basic Auth required"}, 401
+                return {"message": "Problems with authorization"}, 401
             if response.status_code == 400:
                 return {"message": "Bad request"}, 400
 
