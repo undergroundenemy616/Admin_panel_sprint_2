@@ -728,6 +728,9 @@ class BookingStatisticsDashboard(GenericAPIView):
             (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
             (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
             office_id = '{valid_office_id}'""")
+            tables_from_booking = self.queryset.filter(Q(table__room__floor__office_id=valid_office_id) &
+                                                       Q(table__room__type__is_deletable=False) &
+                                                       Q(table__room__type__bookable=True)).only('table_id')
         else:
             all_tables = Table.objects.filter(Q(room__type__is_deletable=False) & Q(room__type__bookable=True))
             tables_with_markers = TableMarker.objects.filter(Q(table__room__type__is_deletable=False) &
@@ -747,6 +750,8 @@ class BookingStatisticsDashboard(GenericAPIView):
                         WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
                         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                         (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
+            tables_from_booking = self.queryset.filter(Q(table__room__type__is_deletable=False) &
+                                                       Q(table__room__type__bookable=True)).only('table_id')
         all_accounts = Account.objects.all()
 
         working_days = 0
@@ -774,8 +779,6 @@ class BookingStatisticsDashboard(GenericAPIView):
         tables_available_for_booking = all_tables.filter(is_occupied=False).count()
         active_users = all_accounts.count()
         total_tables = all_tables.count()
-
-        tables_from_booking = self.queryset.only('table_id')
 
         list_of_booked_tables = []
         for table in tables_from_booking:
