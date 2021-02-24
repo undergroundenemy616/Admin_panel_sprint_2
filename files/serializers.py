@@ -60,7 +60,7 @@ class TestBaseFileSerializer(serializers.Serializer):
 
 
 class FileSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(required=False)
+    file = serializers.FileField(required=True)
     title = serializers.CharField(required=False)
 
     class Meta:

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from files.models import File
+from files.serializers import TestBaseFileSerializer
 from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
@@ -21,6 +22,7 @@ class RoomTypeSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(RoomTypeSerializer, self).to_representation(instance)
         response['pre_defined'] = not instance.is_deletable
+        response['icon'] = TestBaseFileSerializer(instance=instance.icon).data if instance.icon else None
         return response
 
 
