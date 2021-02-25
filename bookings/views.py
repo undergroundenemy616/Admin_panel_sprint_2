@@ -720,7 +720,7 @@ class BookingStatisticsDashboard(GenericAPIView):
                                                                Q(date_to__date__lte=date_to))
                                                       )
                                                       ).count()
-            number_of_activated_bookings = self.queryset.filter(Q(is_active=True) &
+            number_of_activated_bookings = self.queryset.filter(Q(status__in=['active', 'over']) &
                                                                 Q(table__room__floor__office_id=valid_office_id) &
                                                                 (
                                                                         (Q(date_from__date__gte=date_from) &
@@ -760,7 +760,7 @@ class BookingStatisticsDashboard(GenericAPIView):
                                                       |
                                                       (Q(date_to__date__gt=date_from) &
                                                        Q(date_to__date__lte=date_to))).count()
-            number_of_activated_bookings = self.queryset.filter(is_active=True).count()
+            number_of_activated_bookings = self.queryset.filter(status__in=['active', 'over']).count()
             bookings_with_hours = self.queryset.raw(f"""SELECT 
                         DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
                         DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from bookings_booking b
