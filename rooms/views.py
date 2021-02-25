@@ -82,7 +82,6 @@ class RoomsView(ListModelMixin,
 
     @swagger_auto_schema(query_serializer=SwaggerRoomParameters)
     def get(self, request, *args, **kwargs):
-        print(123)
         serializer = RoomGetSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         # self.queryset = self.get_queryset()
@@ -111,8 +110,6 @@ class RoomsView(ListModelMixin,
         #     response.append(base_serialize_room(room=room).copy())
         response = TestRoomSerializer(instance=rooms.prefetch_related('tables'), many=True).data
         # return Response(orjson.loads(orjson.dumps(response)))   # Made for test
-        for room in response:
-            print(room)
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
