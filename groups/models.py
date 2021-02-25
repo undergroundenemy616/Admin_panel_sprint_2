@@ -71,7 +71,12 @@ class Group(models.Model):
             response['global_write'] = True
             response['global_manage'] = True
             response['global_service'] = False
-        elif access in [GUEST_ACCESS, EMPLOYEE_ACCESS]:
+        elif access == EMPLOYEE_ACCESS:
+            response['global_read'] = True
+            response['global_write'] = True
+            response['global_manage'] = False
+            response['global_service'] = False
+        elif access == GUEST_ACCESS:
             response['global_read'] = True
             response['global_write'] = False
             response['global_manage'] = False

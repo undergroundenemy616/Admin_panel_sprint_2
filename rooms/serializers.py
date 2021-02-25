@@ -148,7 +148,7 @@ class TestRoomSerializer(serializers.Serializer):
                              'title': instance.floor.title}
         response['is_bookable'] = instance.type.bookable if instance.type else None
         response['room_type_icon'] = instance.type.icon if instance.type else None
-        response['tables'] = TestTableSerializer(instance=instance.tables, many=True).data
+        response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images', 'tags__icon').select_related('table_marker'), many=True).data
         response['capacity'] = instance.tables.count()
         response['marker'] = TestRoomMarkerSerializer(instance=instance.room_marker).data if \
             hasattr(instance, 'room_marker') else None
