@@ -154,6 +154,7 @@ class TestRoomSerializer(serializers.Serializer):
             hasattr(instance, 'room_marker') else None
         response['occupied'] = instance.tables.filter(is_occupied=True).count(),        # Take additional queries
         response['suitable_tables'] = instance.tables.filter(is_occupied=False).count() # Take additional queries
+        response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         return response
 
 
