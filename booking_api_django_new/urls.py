@@ -37,7 +37,7 @@ def get_swagger() -> Any:
             description="Test description",
             terms_of_service="https://www.google.com/policies/terms/",
             contact=openapi.Contact(email="support@liis.su"),
-            license=openapi.License(name="MTI License"),
+            license=openapi.License(name="MIT License"),
         ),
         public=True,
         permission_classes=(permissions.AllowAny,)
