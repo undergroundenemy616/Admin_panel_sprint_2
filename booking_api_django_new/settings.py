@@ -292,3 +292,8 @@ MEDIA_URL = '/media/'
 FILES_USERNAME = os.environ.get('FILES_USERNAME')
 FILES_PASSWORD = os.environ.get('FILES_PASSWORD')
 FILES_HOST = os.environ.get('FILES_HOST')
+
+HARDCODED_PHONE_NUMBER = (
+    "+13371337133"  # hardcoded phone number for passing AppStore and PlayMarket tests
+)
+HARDCODED_SMS_CODE = 4832
