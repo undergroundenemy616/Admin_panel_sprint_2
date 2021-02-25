@@ -230,6 +230,8 @@ class CreateTableSerializer(serializers.ModelSerializer):
         response['tags'] = TableTagSerializer(instance=instance.tags, many=True).data
         response['marker'] = None
         response['office'] = instance.room.floor.office.id
+        response['rating'] = 0
+        response['ratings'] = 0
         return response
 
     def create(self, validated_data):
