@@ -197,7 +197,7 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
 
 class ActionCancelBookingsView(GenericAPIView):
     """
-    User route. Delete booking object from DB
+    User route. Set booking over
     """
     queryset = Booking.objects.all().select_related('table', 'user')
     serializer_class = BookingDeactivateActionSerializer
@@ -214,8 +214,8 @@ class ActionCancelBookingsView(GenericAPIView):
         request.data['booking'] = existing_booking.id
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
+        instance = serializer.save()
+        return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 
 class BookingListTablesView(GenericAPIView, ListModelMixin):
@@ -720,7 +720,7 @@ class BookingStatisticsDashboard(GenericAPIView):
                                                                Q(date_to__date__lte=date_to))
                                                       )
                                                       ).count()
-            number_of_activated_bookings = self.queryset.filter(Q(is_active=True) &
+            number_of_activated_bookings = self.queryset.filter(Q(status__in=['active', 'over']) &
                                                                 Q(table__room__floor__office_id=valid_office_id) &
                                                                 (
                                                                         (Q(date_from__date__gte=date_from) &
@@ -760,7 +760,7 @@ class BookingStatisticsDashboard(GenericAPIView):
                                                       |
                                                       (Q(date_to__date__gt=date_from) &
                                                        Q(date_to__date__lte=date_to))).count()
-            number_of_activated_bookings = self.queryset.filter(is_active=True).count()
+            number_of_activated_bookings = self.queryset.filter(status__in=['active', 'over']).count()
             bookings_with_hours = self.queryset.raw(f"""SELECT 
                         DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
                         DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from bookings_booking b

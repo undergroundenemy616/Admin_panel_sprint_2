@@ -148,6 +148,14 @@ class Booking(models.Model):
             flag = {'status': 'auto_canceled'}
             instance.set_booking_over(kwargs=flag)
 
+    def make_booking_over(self, *args, **kwargs):
+        try:
+            instance = Booking.objects.get(id=self.id)
+        except ObjectDoesNotExist:
+            return
+        flag = {'status': 'over'}
+        instance.set_booking_over(kwargs=flag)
+
     def get_consecutive_booking(self):
         """Returns previous booking if exists for merging purpose"""
         try:
@@ -252,7 +260,7 @@ class Booking(models.Model):
         # )  # Why we need THIS? Activation is starting when qr code was scanned and then front send request for backend
         # date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         scheduler.add_job(
-            self.set_booking_over(kwargs={'status': 'over'}),
+            self.make_booking_over,
             "date",
             run_date=self.date_to,
             misfire_grace_time=900,
