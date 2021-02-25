@@ -310,7 +310,7 @@ class BookingsListUserView(BookingsAdminView):
     @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.query_params['user'])
-        by_user = self.queryset.filter(user=account.id)
+        by_user = self.queryset.filter(user=account.id, status__in=['waiting', 'active'])
         self.queryset = by_user
         response = self.list(request, *args, **kwargs)
         response.data['user'] = AccountSerializer(instance=account).data
