@@ -207,6 +207,7 @@ class ActionCancelBookingsView(GenericAPIView):
         existing_booking = get_object_or_404(Booking, pk=pk)
         if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
+        request.data['booking'] = existing_booking.id
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
         serializer.save()
