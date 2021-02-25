@@ -84,7 +84,8 @@ class BookingSerializer(serializers.ModelSerializer):
         response['floor'] = {"id": instance.table.room.floor.id,
                              "title": instance.table.room.floor.title}
         response['office'] = {"id": instance.table.room.floor.office.id,
-                              "title": instance.table.room.floor.office.title}
+                              "title": instance.table.room.floor.office.title,
+                              "description": instance.table.room.floor.office.description}
         response['user'] = instance.user_id
         return response
 

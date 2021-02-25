@@ -196,8 +196,8 @@ class TestTableSerializer(serializers.Serializer):
                 group by table_id
                 """)
         response = super(TestTableSerializer, self).to_representation(instance)
-        response['tags'] = TestBaseTableTagSerializer(instance.tags.all(), many=True).data
-        response['images'] = TestBaseFileSerializer(instance.images.all(), many=True).data
+        response['tags'] = TestBaseTableTagSerializer(instance.tags, many=True).data
+        response['images'] = TestBaseFileSerializer(instance.images, many=True).data
         response['marker'] = TestTableMarkerSerializer(instance=instance.table_marker).data if \
             hasattr(instance, 'table_marker') else None
         response['rating'] = 0

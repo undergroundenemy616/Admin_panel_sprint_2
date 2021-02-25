@@ -131,7 +131,7 @@ class TestRoomSerializer(serializers.Serializer):
     description = serializers.CharField()
     type = serializers.PrimaryKeyRelatedField(read_only=True)
     zone = serializers.PrimaryKeyRelatedField(read_only=True)
-    images = serializers.PrimaryKeyRelatedField(read_only=True)
+    images = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     floor = serializers.PrimaryKeyRelatedField(read_only=True)
     seats_amount = serializers.IntegerField()
 
@@ -148,12 +148,12 @@ class TestRoomSerializer(serializers.Serializer):
                              'title': instance.floor.title}
         response['is_bookable'] = instance.type.bookable if instance.type else None
         response['room_type_icon'] = instance.type.icon if instance.type else None
-        response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images').select_related('table_marker'), many=True).data
+        response['tables'] = TestTableSerializer(instance=instance.tables, many=True).data
         response['capacity'] = instance.tables.count()
         response['marker'] = TestRoomMarkerSerializer(instance=instance.room_marker).data if \
             hasattr(instance, 'room_marker') else None
-        response['occupied'] = instance.tables.filter(is_occupied=True).count(),
-        response['suitable_tables'] = instance.tables.filter(is_occupied=False).count()
+        response['occupied'] = instance.tables.filter(is_occupied=True).count(),        # Take additional queries
+        response['suitable_tables'] = instance.tables.filter(is_occupied=False).count() # Take additional queries
         return response
 
 
