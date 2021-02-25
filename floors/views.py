@@ -47,12 +47,12 @@ class ListCreateFloorView(ListModelMixin,
 
         if request.query_params.get('office'):
             if Office.objects.filter(id=request.query_params.get('office')):
-                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office')).distinct('id')
+                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office'))
             else:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
 
             if request.query_params.get('type'):
-                floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type'))
+                floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type')).distinct('id')
             try:
                 if int(request.query_params.get('expand')) == 0:
                     response = TestFloorSerializer(instance=floors_by_office, many=True).data
