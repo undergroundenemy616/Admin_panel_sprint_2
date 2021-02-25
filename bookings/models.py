@@ -223,7 +223,7 @@ class Booking(models.Model):
         scheduler.add_job(
             self.notify_about_oncoming_booking,
             "date",
-            run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > date_now else date_now + timedelta(minutes=2),
+            run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(minutes=2),
             misfire_grace_time=900,
             id="notify_about_oncoming_booking_" + str(self.id),
             replace_existing=True
