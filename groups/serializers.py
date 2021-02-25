@@ -309,5 +309,6 @@ class UpdateGroupUsersSerializer(serializers.Serializer):
 def base_group_serializer(group: Group):
     return {
         'id': str(group.id),
-        'title': group.title
+        'title': group.title,
+        'count': group.accounts.count()
     }
