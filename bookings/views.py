@@ -182,24 +182,25 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        # now = datetime.utcnow().replace(tzinfo=timezone.utc)
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
         if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        booking = serializer.validated_data['booking']
-        if now < booking.date_from and now < booking.date_to:
-            return self.destroy(request, *args, **kwargs)
+        # booking = serializer.validated_data['booking']
+        # if now < booking.date_from and now < booking.date_to:
+        #     return self.destroy(request, *args, **kwargs)
         serializer.save()
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
-class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
+class ActionCancelBookingsView(GenericAPIView):
     """
     User route. Delete booking object from DB
     """
-    queryset = Booking.objects.all().prefetch_related('user').select_related('table')
+    queryset = Booking.objects.all().select_related('table', 'user')
+    serializer_class = BookingDeactivateActionSerializer
     permission_classes = (IsAuthenticated, )
 
     def delete(self, request, pk=None, *args, **kwargs):
@@ -210,7 +211,11 @@ class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
                 user_is_admin = True
         if existing_booking.user.id != request.user.account.id and not user_is_admin:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        return self.destroy(request, *args, **kwargs)
+        request.data['booking'] = existing_booking.id
+        serializer = self.serializer_class(data=request.data, instance=existing_booking)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
 class BookingListTablesView(GenericAPIView, ListModelMixin):

@@ -211,6 +211,7 @@ class TableSlotsView(ListModelMixin,
         if request.query_params.get('date'):
             occupied = []
             date = datetime.strptime(request.query_params.get('date'), '%Y-%m-%d')
+            # !!!!!!!!Monthly never used!!!!!!!
             if request.query_params.get('monthly'):
                 if int(request.query_params.get('monthly')) == 1:
                     for booking in bookings:
@@ -221,7 +222,7 @@ class TableSlotsView(ListModelMixin,
             elif request.query_params.get('daily'):
                 if int(request.query_params.get('daily')) == 1:
                     for booking in bookings:
-                        if booking.date_from.date() <= date.date() <= booking.date_to.date():
+                        if booking.date_from.date() <= date.date() <= booking.date_to.date() and booking.status in ['active', 'waiting']:
                             occupied.append(booking)
                 return Response(BookingSerializerForTableSlots(instance=occupied, many=True).data, status=status.HTTP_200_OK)
             else:
