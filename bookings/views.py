@@ -134,7 +134,7 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
         request.data['user'] = request.user.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        response = serializer.save(user=request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -205,7 +205,11 @@ class ActionCancelBookingsView(GenericAPIView):
 
     def delete(self, request, pk=None, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=pk)
-        if existing_booking.user.id != request.user.account.id:
+        user_is_admin = False
+        for group in request.user.account.groups.all():
+            if group.title == 'Администратор' and not group.is_deletable:
+                user_is_admin = True
+        if existing_booking.user.id != request.user.account.id and not user_is_admin:
             return Response(status=status.HTTP_403_FORBIDDEN)
         request.data['booking'] = existing_booking.id
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
