@@ -173,6 +173,8 @@ class TableSerializer(serializers.ModelSerializer):
         response['images'] = BaseFileSerializer(instance.images.all(), many=True).data
         response['marker'] = TableMarkerSerializer(instance=instance.table_marker).data if \
             hasattr(instance, 'table_marker') else None
+        response['rating'] = ''
+        response['ratings'] = ''
         return response
 
 
