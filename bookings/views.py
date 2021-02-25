@@ -197,7 +197,7 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
 
 class ActionCancelBookingsView(GenericAPIView):
     """
-    User route. Delete booking object from DB
+    User route. Set booking over
     """
     queryset = Booking.objects.all().select_related('table', 'user')
     serializer_class = BookingDeactivateActionSerializer
@@ -214,8 +214,8 @@ class ActionCancelBookingsView(GenericAPIView):
         request.data['booking'] = existing_booking.id
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
+        instance = serializer.save()
+        return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 
 class BookingListTablesView(GenericAPIView, ListModelMixin):
