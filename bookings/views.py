@@ -285,11 +285,18 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
         date_to = datetime.strptime(request.query_params.get(
             'date_to', '9999-12-12T12:59:59.9'), '%Y-%m-%dT%H:%M:%S.%f')
         is_over = bool(serializer.data['is_over']) if serializer.data.get('is_over') else 0
-        req_booking = self.queryset.filter(user=request.user.account.id).filter(
-            Q(is_over=is_over),
-            Q(date_from__gte=date_from, date_from__lt=date_to)
-            | Q(date_from__lte=date_from, date_to__gte=date_to)
-            | Q(date_to__gt=date_from, date_to__lte=date_to))
+        if is_over == 1:
+            req_booking = self.queryset.filter(user=request.user.account.id).filter(
+                Q(status__in=['canceled', 'auto_canceled', 'over']),
+                Q(date_from__gte=date_from, date_from__lt=date_to)
+                | Q(date_from__lte=date_from, date_to__gte=date_to)
+                | Q(date_to__gt=date_from, date_to__lte=date_to))
+        else:
+            req_booking = self.queryset.filter(user=request.user.account.id).filter(
+                Q(status__in=['waiting', 'active']),
+                Q(date_from__gte=date_from, date_from__lt=date_to)
+                | Q(date_from__lte=date_from, date_to__gte=date_to)
+                | Q(date_to__gt=date_from, date_to__lte=date_to))
         self.queryset = req_booking
         self.serializer_class = BookingSerializer
         return self.list(request, *args, **kwargs)
