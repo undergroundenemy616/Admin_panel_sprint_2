@@ -214,7 +214,8 @@ class ActionCancelBookingsView(GenericAPIView):
         request.data['booking'] = existing_booking.id
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
+        serializer.save()
+        instance = get_object_or_404(Booking, pk=pk)
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 

@@ -244,10 +244,10 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        # now = datetime.utcnow().replace(tzinfo=timezone.utc)
         instance.set_booking_over()
-        validated_data['date_to'] = now
-        return super(BookingDeactivateActionSerializer, self).update(instance, validated_data)
+        # validated_data['date_to'] = now
+        return instance
 
 
 class BookingFastSerializer(serializers.ModelSerializer):
