@@ -73,8 +73,6 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
 
         phone_number = serializer.data.get('phone', None)
         sms_code = serializer.data.pop('code', None)
-        if phone_number == HARDCODED_PHONE_NUMBER:
-            sms_code = HARDCODED_SMS_CODE
         user, created = User.objects.get_or_create(phone_number=phone_number)
         # if created:
         #     user.is_active = False
@@ -97,7 +95,9 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 # first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
-                    if sms_code != HARDCODED_SMS_CODE:
+                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code != HARDCODED_SMS_CODE:
+                        confirm_code(phone_number, sms_code)
+                    else:
                         confirm_code(phone_number, sms_code)
                 else:
                     print('SMS service is off, any code is acceptable')
