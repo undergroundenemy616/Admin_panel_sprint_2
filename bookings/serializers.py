@@ -145,11 +145,11 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
         """OMG: actually it's not create but 'GET available tables at this time periods (= slots)' method"""
         reference_object = validated_data.get('room') or validated_data.get('floor') or validated_data.get('table')
         # TODO: protected filter for user
-        user = validated_data['user']
+        # user = validated_data['user']
         if isinstance(reference_object, Room):
             tables = list(reference_object.tables)
         elif isinstance(reference_object, Floor):
-            tables = list(Table.objects.filter(room__in=list(reference_object.rooms)))
+            tables = list(Table.objects.filter(room__in=reference_object.rooms))
         elif isinstance(reference_object, Table):
             tables = [reference_object, ]
         else:
