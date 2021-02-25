@@ -189,8 +189,8 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
         booking = serializer.validated_data['booking']
-        if now < booking.date_from and now < booking.date_to:
-            return self.destroy(request, *args, **kwargs)
+        # if now < booking.date_from and now < booking.date_to:
+        #     return self.destroy(request, *args, **kwargs)
         serializer.save()
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 

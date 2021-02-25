@@ -117,7 +117,7 @@ class RoomsView(ListModelMixin,
             if date_from > date_to:
                 return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
             for room in response:
-                bookings = Booking.objects.filter(
+                bookings = Booking.objects.filter(status__in=['active', 'waiting']).filter(
                     (
                             (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
                             |
