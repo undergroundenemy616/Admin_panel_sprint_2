@@ -19,6 +19,7 @@ from rest_framework_jwt.settings import api_settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
@@ -94,7 +95,10 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 # first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
-                    confirm_code(phone_number, sms_code)
+                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code != HARDCODED_SMS_CODE:
+                        confirm_code(phone_number, sms_code)
+                    else:
+                        confirm_code(phone_number, sms_code)
                 else:
                     print('SMS service is off, any code is acceptable')
 
