@@ -70,14 +70,14 @@ class ListCreateFloorView(ListModelMixin,
                     #     # else:
                     #     serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                     #     response.append(serialized_floor)
-                    return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
+                    return Response(response, status=status.HTTP_200_OK)
             except TypeError:
                 response = TestFloorSerializerWithMap(instance=floors_by_office, many=True).data
                 # response = []
                 # for floor in floors_by_office:
                 #     serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
                 #     response.append(serialized_floor)
-                return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
+                return Response(response, status=status.HTTP_200_OK)
 
         return self.list(request, *args, **kwargs)
 

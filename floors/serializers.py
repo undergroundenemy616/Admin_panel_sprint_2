@@ -251,7 +251,10 @@ class TestFloorSerializerWithMap(serializers.Serializer):
                                 'tables__tags__icon', 'tables__table_marker', 'tables__images').select_related(
                                 'room_marker', 'type', 'floor', 'zone'), many=True).data
         tables = Table.objects.filter(room__floor=instance)
-        response['floor_map'] = floor_map_serializer(floor_map=FloorMap.objects.get(floor=instance))
+        try:
+            response['floor_map'] = floor_map_serializer(floor_map=FloorMap.objects.get(floor=instance))
+        except ObjectDoesNotExist:
+            response['floor_map'] = None
         response['occupied'] = tables.filter(is_occupied=True).count()
         response['capacity'] = tables.count()
         response['capacity_meeting'] = tables.filter(room__type__unified=True).count()
