@@ -77,7 +77,8 @@ class Booking(models.Model):
         ('waiting', 'waiting'),
         ('active', 'active'),
         ('canceled', 'canceled'),
-        ('auto_canceled', 'auto_canceled')
+        ('auto_canceled', 'auto_canceled'),
+        ('over', 'over')
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date_from = models.DateTimeField(default=datetime.utcnow)
@@ -120,7 +121,10 @@ class Booking(models.Model):
         instance.is_active = False
         instance.is_over = True
         if kwargs.get('status'):
-            instance.status = 'auto_canceled'
+            if kwargs.get('status') == 'auto_canceled':
+                instance.status = 'auto_canceled'
+            elif kwargs.get('status') == 'over':
+                instance.status = 'over'
         else:
             instance.status = 'canceled'
         instance.table.set_table_free()
@@ -248,7 +252,7 @@ class Booking(models.Model):
         # )  # Why we need THIS? Activation is starting when qr code was scanned and then front send request for backend
         # date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         scheduler.add_job(
-            self.set_booking_over,
+            self.set_booking_over(kwargs={'status': 'over'}),
             "date",
             run_date=self.date_to,
             misfire_grace_time=900,
