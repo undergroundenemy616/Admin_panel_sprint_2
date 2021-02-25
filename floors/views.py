@@ -47,7 +47,7 @@ class ListCreateFloorView(ListModelMixin,
 
         if request.query_params.get('office'):
             if Office.objects.filter(id=request.query_params.get('office')):
-                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office'))
+                floors_by_office = self.queryset.all().filter(office=request.query_params.get('office')).distinct('id')
             else:
                 return Response({"message": "Office not found"}, status=status.HTTP_404_NOT_FOUND)
 
