@@ -287,7 +287,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
         is_over = bool(serializer.data['is_over']) if serializer.data.get('is_over') else 0
         if is_over == 1:
             req_booking = self.queryset.filter(user=request.user.account.id).filter(
-                Q(status__in=['canceled', 'auto_canceled']),
+                Q(status__in=['canceled', 'auto_canceled', 'over']),
                 Q(date_from__gte=date_from, date_from__lt=date_to)
                 | Q(date_from__lte=date_from, date_to__gte=date_to)
                 | Q(date_to__gt=date_from, date_to__lte=date_to))
