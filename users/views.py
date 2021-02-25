@@ -95,8 +95,8 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 # first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
-                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code != HARDCODED_SMS_CODE:
-                        confirm_code(phone_number, sms_code)
+                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
+                        pass
                     else:
                         confirm_code(phone_number, sms_code)
                 else:
