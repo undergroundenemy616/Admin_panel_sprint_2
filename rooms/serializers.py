@@ -270,7 +270,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
                         }  # OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
-        data['images'] = FileSerializer(instance=instance.images, many=True).data
+        data['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         data['type'] = RoomTypeSerializer(instance=instance.type).data
         data['room_type_color'] = instance.type.color
         data['room_type_unified'] = instance.type.unified
