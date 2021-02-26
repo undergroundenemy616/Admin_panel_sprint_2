@@ -36,3 +36,23 @@ pipelines:
               && cd /home/simpleoffice
               && docker-compose -p django pull
               && docker-compose -p django down && docker-compose -p django up -d"
+    prod_gpn:
+      - step:
+          name: Build and load
+          image: python:latest
+          deployment: production
+          services:
+            - docker
+          caches:
+            - docker
+            - pip
+          script:
+            - export DOCKER_CLIENT_TIMEOUT=120
+            - export COMPOSE_HTTP_TIMEOUT=120
+            - docker login $DOCKER_REG -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            - docker build -t $DOCKER_REG/simple-office/backend:latest -f Dockerfile-compile .
+            - docker push $DOCKER_REG/simple-office/backend:latest
+            - ssh -o StrictHostKeyChecking=no $USER@$SERVER "echo $DOCKER_PASSWORD | docker login --username=$DOCKER_USERNAME --password-stdin $DOCKER_REG
+              && cd /home/simpleoffice
+              && docker-compose -p django pull
+              && docker-compose -p django down && docker-compose -p django up -d"
