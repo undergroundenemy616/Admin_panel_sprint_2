@@ -74,6 +74,7 @@ class BookingSerializer(serializers.ModelSerializer):
         response = BaseBookingSerializer(instance).data
         response['active'] = response['is_active']
         del response['is_active']
+        response['date_activate_until'] = instance.date_to if instance.is_active else instance.date_activate_until
         response['table'] = tables.serializers.TestTableSerializer(instance=instance.table).data
         response['room'] = {"id": instance.table.room.id,
                             "title": instance.table.room.title,
