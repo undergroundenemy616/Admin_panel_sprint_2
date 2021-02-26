@@ -365,7 +365,7 @@ class RoomMarkerSerializer(serializers.ModelSerializer):
 class TestRoomMarkerSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     room = serializers.PrimaryKeyRelatedField(read_only=True)
-    icon = serializers.CharField()
+    icon = serializers.CharField(allow_null=True)
     x = serializers.DecimalField(max_digits=4, decimal_places=2)
     y = serializers.DecimalField(max_digits=4, decimal_places=2)
 
