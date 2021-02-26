@@ -226,7 +226,7 @@ class CreateTableSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         instance: Table
         response = super(CreateTableSerializer, self).to_representation(instance)
-        response['images'] = FileSerializer(instance=instance.images, many=True).data
+        response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         response['tags'] = TableTagSerializer(instance=instance.tags, many=True).data
         response['marker'] = None
         response['office'] = instance.room.floor.office.id
