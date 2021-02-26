@@ -150,7 +150,7 @@ class TestRoomSerializer(serializers.Serializer):
         response['room_type_icon'] = TestBaseFileSerializer(instance=instance.type.icon).data if instance.type.icon else None
         response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images', 'tags__icon').select_related('table_marker'), many=True).data
         response['capacity'] = instance.tables.count()
-        response['marker'] = TestRoomMarkerSerializer(instance=instance.room_marker).data if \
+        response['marker'] = room_marker_serializer(instance.room_marker) if \
             hasattr(instance, 'room_marker') else None
         response['occupied'] = instance.tables.filter(is_occupied=True).count(),        # Take additional queries
         response['suitable_tables'] = instance.tables.filter(is_occupied=False).count() # Take additional queries
