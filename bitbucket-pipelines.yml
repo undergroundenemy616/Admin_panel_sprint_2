@@ -28,7 +28,7 @@ definitions:
         script:
 #          - git clone -b $BITBUCKET_BRANCH git@bitbucket.org:liis_software/simpleoffice-deploy.git $BITBUCKET_BRANCH
           - ssh -o StrictHostKeyChecking=no $USER@$SERVER "mkdir -p ~/bitbucket/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH"
-          - ssh -o StrictHostKeyChecking=no $USER@$SERVER "rm -rf ~/bitbucket/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/*"
+#          - ssh -o StrictHostKeyChecking=no $USER@$SERVER "rm -rf ~/bitbucket/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/*"
           - rsync -au --relative -e "ssh -o StrictHostKeyChecking=no" $BITBUCKET_BRANCH $USER@$SERVER:~/bitbucket/$BITBUCKET_PROJECT_KEY
           - ssh -o StrictHostKeyChecking=no $USER@$SERVER "echo $DOCKER_PASSWORD
             | docker login --username=$DOCKER_USERNAME --password-stdin $DOCKER_REG
