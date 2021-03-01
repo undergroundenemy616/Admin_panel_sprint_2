@@ -58,11 +58,11 @@ pipelines:
           <<: *Build
       - step:
           <<: *Deploy
-          deployment: $DEPLOYMENT
+          deployment: master
 
     prod_gpn:
       - step:
           <<: *Build
       - step:
           <<: *Deploy
-          deployment: $DEPLOYMENT
+          deployment: prod_gpn
