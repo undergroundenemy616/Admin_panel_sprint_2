@@ -31,7 +31,7 @@ definitions:
               BITBUCKET_USERNAME: $BITBUCKET_USERNAME
               BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
               REPOSITORY: 'simpleoffice-deploy'
-              CUSTOM_PIPELINE_NAME: 'development-workspace'
+              CUSTOM_PIPELINE_NAME: $DEPLOYMENT
               WAIT: true
 
     - step: &Compile
