@@ -14,6 +14,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    status)
 from rest_framework.request import Request
 
+import uuid
 from groups.models import Group, GUEST_ACCESS, ADMIN_ACCESS
 from bookings.models import Booking
 from core.pagination import DefaultPagination
@@ -114,6 +115,7 @@ class RoomsView(ListModelMixin,
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
             date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
+
             if date_from > date_to:
                 return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
             for room in response:
@@ -125,13 +127,18 @@ class RoomsView(ListModelMixin,
                             |
                             (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
                     )
-                ).select_related('table')
-                for booking in bookings:
-                    room_tables = room['tables'][:]
-                    for table in room['tables']:
-                        if table.get('id') == str(booking.table_id):
-                            room_tables.remove(table)
-                    room['tables'] = room_tables
+                ).select_related('table').values_list('table__id', flat=True)
+                room_tables = room['tables'][:]
+                for table in room['tables']:
+                    if not table.get('marker') or uuid.UUID(table.get('id')) in bookings:
+                        room_tables.remove(table)
+                room['tables'] = room_tables
+                # for booking in bookings:
+                #     room_tables = room['tables'][:]
+                #     for table in room['tables']:
+                #         if table.get('id') == str(booking.table_id):
+                #             room_tables.remove(table)
+                #     room['tables'] = room_tables
 
         if request.query_params.get('range_to') and request.query_params.get('range_from'):
             not_in_range = []
