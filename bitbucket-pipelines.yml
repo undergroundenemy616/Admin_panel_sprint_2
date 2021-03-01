@@ -9,8 +9,6 @@ definitions:
     - step: &Build
         name: Create Docker image
         image: python:3.8
-        services:
-          - docker
         caches:
           - docker
           - pip
@@ -31,8 +29,8 @@ definitions:
               BITBUCKET_USERNAME: $BITBUCKET_USERNAME
               BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
               REPOSITORY: 'simpleoffice-deploy'
-              CUSTOM_PIPELINE_NAME: 'development-workspace'
-              WAIT: true
+              CUSTOM_PIPELINE_NAME: $DEPLOYMENT
+              WAIT: 'true'
 
     - step: &Compile
       name: Compile
