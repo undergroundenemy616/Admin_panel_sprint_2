@@ -54,9 +54,15 @@ pipelines:
       - step: *Compile
 
     master:
-      - step: *Build
-      - step: *Deploy
+      - step:
+          <<: *Build
+      - step:
+          <<: *Deploy
+          deployment: $DEPLOYMENT
 
     prod_gpn:
-      - step: *Build
-      - step: *Deploy
+      - step:
+          <<: *Build
+      - step:
+          <<: *Deploy
+          deployment: $DEPLOYMENT
