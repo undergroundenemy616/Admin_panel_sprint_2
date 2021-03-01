@@ -315,7 +315,8 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         from offices.serializers import \
             OfficeZoneSerializer  # If not like this Import Error calls
         data['seats_amount'] = instance.seats_amount
-        data['marker'] = None
+        data['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
+            hasattr(instance, 'room_marker') else None
         tables_nested = Table.objects.filter(room=instance.id).prefetch_related('tags', 'images').select_related('table_marker')
         data['tables'] = TestTableSerializer(instance=tables_nested, many=True).data
         data['floor'] = FloorSerializer(instance=instance.floor).data
