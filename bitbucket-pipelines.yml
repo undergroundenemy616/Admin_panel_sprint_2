@@ -58,11 +58,11 @@ pipelines:
           <<: *Build
       - step:
           <<: *Deploy
-          deployment: master
+          deployment: test
 
     prod_gpn:
       - step:
           <<: *Build
       - step:
           <<: *Deploy
-          deployment: prod_gpn
+          deployment: production
