@@ -1,17 +1,18 @@
 from datetime import datetime
 from typing import Any, Dict
 
+from django.db.models import Count, Case, When, Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import FileSerializer, image_serializer
+from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
 from floors.models import Floor
 from floors.serializers import FloorSerializer
 from groups.models import Group
 from groups.serializers import GroupSerializer, base_group_serializer
 from licenses.models import License
-from licenses.serializers import LicenseSerializer
+from licenses.serializers import LicenseSerializer, TestLicenseSerializer
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from rooms.serializers import RoomMarkerSerializer
@@ -26,6 +27,61 @@ class SwaggerOfficeParametrs(serializers.Serializer):
 
 class SwaggerZonesParametrs(serializers.Serializer):
     id = serializers.UUIDField()
+
+
+class TestBaseGroupSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    count = serializers.SerializerMethodField()
+
+    def get_count(self, obj):
+        return obj.accounts.count()
+
+
+class TestOfficeZoneSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    is_deletable = serializers.BooleanField()
+    groups = TestBaseGroupSerializer(many=True)
+
+
+class TestOfficeFloorSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+
+
+class TestOfficeBaseSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    working_hours = serializers.CharField()
+    service_email = serializers.CharField()
+    floors_number = serializers.SerializerMethodField()
+    zones = TestOfficeZoneSerializer(many=True)
+    floors = TestOfficeFloorSerializer(many=True)
+    images = TestBaseFileSerializer(many=True)
+    license = TestLicenseSerializer()
+
+    def get_floors_number(self, obj):
+        return obj.floors.count()
+
+    def to_representation(self, instance):
+        response = super(TestOfficeBaseSerializer, self).to_representation(instance)
+        tables = Table.objects.filter(room__floor__office_id=instance.id).aggregate(
+            occupied=Count(Case(When(is_occupied=True, then=1))),
+            capacity=Count('*'),
+            capacity_meeting=Count(Case(When(room__type__unified=True, then=1))),
+            occupied_meeting=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=True), then=1))),
+            capacity_tables=Count(Case(When(room__type__unified=False, then=1))),
+            occupied_tables=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=False), then=1)))
+            )
+        response['capacity'] = tables['capacity']
+        response['occupied'] = tables['occupied']
+        response['capacity_meeting'] = tables['capacity_meeting']
+        response['occupied_meeting'] = tables['occupied_meeting']
+        response['capacity_tables'] = tables['capacity_tables']
+        response['occupied_tables'] = tables['occupied_tables']
+        return response
 
 
 def office_base_serializer(office: Office) -> Dict[str, Any]:
