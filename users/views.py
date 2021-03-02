@@ -5,6 +5,7 @@ import jwt
 import orjson
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
+from django.http import JsonResponse
 from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
 from django.core.mail import send_mail
@@ -431,3 +432,10 @@ class RefreshTokenView(GenericAPIView):
         auth_dict["refresh_token"] = str(token)
         auth_dict["access_token"] = str(token.access_token)
         return Response(auth_dict, status=200)
+
+
+def custom404(request, exception=None):
+    return JsonResponse({
+        'status_code': 404,
+        'error': 'The resource was not found'
+    }, status=404)

@@ -26,7 +26,9 @@ from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from users import views
 from tables.views import TableSlotsView
+from users.views import custom404
 
+handler404 = custom404
 
 def get_swagger() -> Any:
     """Returns current swagger class from `drf_yasg`"""
