@@ -1,3 +1,4 @@
+import os
 import random
 import ipinfo
 from smtplib import SMTPException
@@ -218,7 +219,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         if not group:
             raise ValidationError('Unable to find admin group')
         email = validated_data.get('email')
-        host_domain = validated_data.pop('host_domain', '')
+        host_domain = os.environ.get('ADMIN_HOST', default='Please write ADMIN_HOST')
         is_exists = User.objects.filter(email=email).exists()
         if is_exists:
             raise ValidationError('Admin already exists.')
@@ -240,8 +241,8 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
 
 
 class AccountUpdateSerializer(serializers.ModelSerializer):
-    firstname = serializers.CharField(source='first_name', required=False)
-    lastname = serializers.CharField(source='last_name', required=False)
+    firstname = serializers.CharField(source='first_name', required=False, allow_blank=True)
+    lastname = serializers.CharField(source='last_name', required=False, allow_blank=True)
     middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False)
