@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict
 
+from django.db.models import Count, Case, When, Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -66,13 +67,20 @@ class TestOfficeBaseSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         response = super(TestOfficeBaseSerializer, self).to_representation(instance)
-        tables = Table.objects.filter(room__floor__office_id=instance.id)
-        response['capacity'] = tables.count()
-        response['occupied'] = tables.filter(is_occupied=True).count()
-        response['capacity_meeting'] = tables.filter(room__type__unified=True).count()
-        response['occupied_meeting'] = tables.filter(room__type__unified=True, is_occupied=True).count()
-        response['capacity_tables'] = tables.filter(room__type__unified=False).count()
-        response['occupied_tables'] = tables.filter(room__type__unified=False, is_occupied=True).count()
+        tables = Table.objects.filter(room__floor__office_id=instance.id).aggregate(
+            occupied=Count(Case(When(is_occupied=True, then=1))),
+            capacity=Count('*'),
+            capacity_meeting=Count(Case(When(room__type__unified=True, then=1))),
+            occupied_meeting=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=True), then=1))),
+            capacity_tables=Count(Case(When(room__type__unified=False, then=1))),
+            occupied_tables=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=False), then=1)))
+            )
+        response['capacity'] = tables['capacity']
+        response['occupied'] = tables['occupied']
+        response['capacity_meeting'] = tables['capacity_meeting']
+        response['occupied_meeting'] = tables['occupied_meeting']
+        response['capacity_tables'] = tables['capacity_tables']
+        response['occupied_tables'] = tables['occupied_tables']
         return response
 
 
