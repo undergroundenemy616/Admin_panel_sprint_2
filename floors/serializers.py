@@ -227,8 +227,10 @@ class TestFloorSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         response = super(TestFloorSerializer, self).to_representation(instance)
-        response['rooms'] = TestRoomSerializer(instance=instance.rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker', 'type__icon', 'images').select_related(
-                                'room_marker', 'type', 'floor', 'zone'), many=True).data
+        response['rooms'] = TestRoomSerializer(
+            instance=instance.rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
+                                                     'type__icon', 'images').select_related(
+                'room_marker', 'type', 'floor', 'zone'), many=True).data
         tables = Table.objects.filter(room__floor=instance)
         response['occupied'] = tables.filter(is_occupied=True).count()
         response['capacity'] = tables.count()
@@ -247,9 +249,10 @@ class TestFloorSerializerWithMap(serializers.Serializer):
 
     def to_representation(self, instance):
         response = super(TestFloorSerializerWithMap, self).to_representation(instance)
-        response['rooms'] = TestRoomSerializer(instance=instance.rooms.prefetch_related('tables', 'tables__tags',
-                                'tables__tags__icon', 'tables__table_marker', 'tables__images').select_related(
-                                'room_marker', 'type', 'floor', 'zone'), many=True).data
+        response['rooms'] = TestRoomSerializer(
+            instance=instance.rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
+                                                     'type__icon', 'images').select_related(
+                'room_marker', 'type', 'floor', 'zone'), many=True).data
         tables = Table.objects.filter(room__floor=instance)
         try:
             response['floor_map'] = floor_map_serializer(floor_map=FloorMap.objects.get(floor=instance))
