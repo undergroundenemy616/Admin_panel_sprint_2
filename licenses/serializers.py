@@ -14,3 +14,10 @@ class LicenseSerializer(serializers.ModelSerializer):
         model = License
         fields = '__all__'
         depth = 1
+
+
+class TestLicenseSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    forever = serializers.BooleanField()
+    issued_at = serializers.DateField()
+    tables_infinite = serializers.BooleanField()
