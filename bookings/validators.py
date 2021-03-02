@@ -1,7 +1,5 @@
 from datetime import datetime, timezone
 
-from rest_framework.exceptions import ValidationError
-
 
 class BookingTimeValidator:
     """

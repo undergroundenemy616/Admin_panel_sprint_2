@@ -1,11 +1,11 @@
-from collections import Counter
-from datetime import datetime, timezone, timedelta, date
-import tables
-import time
 import random
+import time
+from collections import Counter
+from datetime import date, datetime, timezone
 
 from rest_framework import serializers, status
 
+import tables
 from bookings.models import Booking, Table
 from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
@@ -14,7 +14,7 @@ from floors.models import Floor
 from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
-from users.models import Account, User
+from users.models import Account
 
 
 class SwaggerBookListActiveParametrs(serializers.Serializer):
@@ -188,8 +188,6 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
 class BookingActivateActionSerializer(serializers.ModelSerializer):
     booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
 
-    # table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all())
-
     class Meta:
         model = Booking
         fields = ["booking"]
@@ -230,10 +228,6 @@ class BookingListSerializer(BookingSerializer, BaseBookingSerializer):
         return response
 
 
-class BookingActionSerializer(serializers.ModelSerializer):
-    booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all(), required=True)
-
-
 class BookingDeactivateActionSerializer(serializers.ModelSerializer):
     booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all())
 
@@ -246,9 +240,7 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        # now = datetime.utcnow().replace(tzinfo=timezone.utc)
         instance.set_booking_over()
-        # validated_data['date_to'] = now
         return instance
 
 
@@ -302,70 +294,6 @@ class BookingFastSerializer(serializers.ModelSerializer):
         raise serializers.ValidationError('No table found for fast booking')
 
 
-# Not needed in Django version
-class BookingMobileSerializer(serializers.ModelSerializer):
-    # It's hard to explain, but this shit is for create multiply booking on one table
-    # You send some datetime intervals and then book table on this values
-    slots = SlotsSerializer(many=True, required=True)
-    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
-    theme = serializers.CharField(required=False)
-
-    class Meta:
-        model = Booking
-        fields = ['slots', 'table', 'theme']
-
-    # def to_representation(self, instance):
-    #     # TODO rewrite according to create and existing in Flask
-    #     response = {'result': 'OK',
-    #                 'slot': self.slots,  # TODO send only choosen slot
-    #                 'booking': BaseBookingSerializer(instance).data}
-    #     return response
-
-    def create(self, validated_data):
-        table = validated_data.pop('table')
-        response = []
-        # booking_allowed_to_create = []
-        # Cycle for checking overflowing on datetimes in slots and booking if not
-        # Creating response for view
-        for slot in validated_data['slots']:
-            date_from = slot.get('date_from')
-            date_to = slot.get('date_to')
-            slot_response = {}
-            if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
-                slot_response['result'] = 'error'
-                slot_response['message'] = 'Date range is overflowed by existing booking'
-            else:
-                slot_response['result'] = 'OK'
-                # TODO override method bulk_create, handle theme field,
-                #  make comments for all my code, make merge of slots
-                new_booking = Booking.objects.create(date_from=date_from,
-                                                     date_to=date_to,
-                                                     table=table,
-                                                     user=validated_data['user'])
-                # booking_allowed_to_create.append(new_booking)
-                slot_response['booking'] = BaseBookingSerializer(new_booking).data
-            slot_response['slot'] = {"date_from": date_from.isoformat(),
-                                     "date_to": date_to.isoformat()}
-
-            response.append(slot_response)
-        # Booking.objects.bulk_create(booking_allowed_to_create)
-        return response
-
-
-# Not needed in Django version
-class BookingFastMultiplySerializer(serializers.ModelSerializer):
-    slots = SlotsSerializer(many=True, required=True)
-    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=False)
-    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
-    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=False)
-    theme = serializers.CharField(max_length=200, required=False)
-    sms_report = serializers.BooleanField(default=False, required=False)
-
-    class Meta:
-        model = Booking
-        fields = ['slots', 'room', 'floor', 'table', 'theme', 'sms_report']
-
-
 class BookingListTablesSerializer(serializers.ModelSerializer):
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
@@ -377,17 +305,6 @@ class BookingListTablesSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
-
-
-class BookListTableSerializer(serializers.ModelSerializer):
-    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
-
-    class Meta:
-        model = Booking
-        fields = ['table', ]
-
-    def to_representation(self, instance):
-        pass
 
 
 class BookingPersonalSerializer(serializers.ModelSerializer):
@@ -471,10 +388,6 @@ def bookings_future(stats):
 def most_frequent(List):
     occurence_count = Counter(List)
     return occurence_count.most_common(1)[0][0]
-
-
-def chop_microseconds(delta):
-    return delta - timedelta(microseconds=delta.microseconds)
 
 
 def get_duration(duration):

@@ -1,27 +1,33 @@
-import orjson, decimal
+import decimal
+from datetime import datetime
+
+import orjson
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from datetime import datetime
-from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
+from rest_framework.parsers import FormParser, MultiPartParser
 
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer, BookingSerializerForTableSlots
+from bookings.serializers import (BookingSerializer,
+                                  BookingSerializerForTableSlots)
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
-from tables.models import Rating, Table, TableTag,  TableMarker
+from tables.models import Rating, Table, TableMarker, TableTag
 from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
-                                TableMarkerSerializer, TableSlotsSerializer,
-                                SwaggerTableParameters, SwaggerTableTagParametrs,
-                                TableSerializer, TableTagSerializer,
-                                UpdateTableSerializer, UpdateTableTagSerializer,
-                                SwaggerTableSlotsParametrs, basic_table_serializer,
-                                TableSerializerCSV, TestTableSerializer)
+                                SwaggerTableParameters,
+                                SwaggerTableSlotsParametrs,
+                                SwaggerTableTagParametrs,
+                                TableMarkerSerializer, TableSerializer,
+                                TableSerializerCSV, TableSlotsSerializer,
+                                TableTagSerializer, TestTableSerializer,
+                                UpdateTableSerializer,
+                                UpdateTableTagSerializer,
+                                basic_table_serializer)
 
 
 class TableView(ListModelMixin,

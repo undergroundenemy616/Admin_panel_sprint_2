@@ -1,9 +1,9 @@
+import uuid
 from datetime import datetime
 from typing import Dict, Optional
 
 import orjson
-from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Q, Prefetch
+from django.db.models import Prefetch, Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters
@@ -12,21 +12,22 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.request import Request
 
-import uuid
-from groups.models import Group, GUEST_ACCESS, ADMIN_ACCESS
 from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from floors.models import Floor
+from groups.models import ADMIN_ACCESS, GUEST_ACCESS, Group
 from offices.models import Office, OfficeZone
 from rooms.models import Room, RoomMarker
 from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
-                               RoomMarkerSerializer, RoomSerializer,
-                               SwaggerRoomParameters, UpdateRoomSerializer,
-                               base_serialize_room, table_serializer_for_room,
-                               RoomGetSerializer, RoomSerializerCSV, TestRoomSerializer)
+                               RoomGetSerializer, RoomMarkerSerializer,
+                               RoomSerializer, RoomSerializerCSV,
+                               SwaggerRoomParameters, TestRoomSerializer,
+                               UpdateRoomSerializer, base_serialize_room,
+                               table_serializer_for_room)
 from tables.serializers import Table, TableSerializer, TestTableSerializer
 
 

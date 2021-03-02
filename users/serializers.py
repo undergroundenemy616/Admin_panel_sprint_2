@@ -1,8 +1,8 @@
 import random
-import ipinfo
 from smtplib import SMTPException
 from typing import Any, Dict
 
+import ipinfo
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Q
 from rest_framework import serializers
@@ -15,7 +15,7 @@ from files.serializers import BaseFileSerializer
 from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
 from offices.models import Office, OfficeZone
-from users.models import Account, User, AppEntrances
+from users.models import Account, AppEntrances, User
 
 
 class SwaggerAccountParametr(serializers.Serializer):

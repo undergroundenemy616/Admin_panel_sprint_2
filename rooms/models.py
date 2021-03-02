@@ -4,10 +4,10 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.transaction import atomic
 
+import tables
 from files.models import File
 from floors.models import Floor
 from room_types.models import RoomType
-import tables
 
 
 class Room(models.Model):

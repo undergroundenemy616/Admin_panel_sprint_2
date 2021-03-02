@@ -1,25 +1,25 @@
-from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD, FILES_USERNAME)
+import uuid
 from calendar import monthrange
-from core.handlers import ResponseException
-from datetime import datetime, timezone, timedelta, date
-from django.db.models import Q
-from drf_yasg.utils import swagger_auto_schema
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from time import strptime
+
+import orjson
 import pytz
 import requests
+import xlsxwriter
+from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin)
 from rest_framework.response import Response
-from time import strptime
-import orjson
-import uuid
 from workalendar.europe import Russia
-import xlsxwriter
 
-
+from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD,
+                                             FILES_USERNAME)
 from bookings.models import Booking
 from bookings.serializers import (BookingActivateActionSerializer,
                                   BookingDeactivateActionSerializer,
@@ -27,20 +27,21 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   BookingListTablesSerializer,
                                   BookingPersonalSerializer, BookingSerializer,
                                   BookingSlotsSerializer,
-                                  SwaggerBookListActiveParametrs,
-                                  SwaggerBookListTableParametrs,
-                                  SwaggerBookListRoomTypeStats,
                                   SwaggerBookingEmployeeStatistics,
                                   SwaggerBookingFuture,
-                                  SwaggerDashboard,
-                                  get_duration, room_type_statictic_serializer,
-                                  employee_statistics, most_frequent, bookings_future, date_validation, months_between)
+                                  SwaggerBookListActiveParametrs,
+                                  SwaggerBookListRoomTypeStats,
+                                  SwaggerBookListTableParametrs,
+                                  SwaggerDashboard, bookings_future,
+                                  date_validation, employee_statistics,
+                                  get_duration, months_between, most_frequent,
+                                  room_type_statictic_serializer)
+from core.handlers import ResponseException
 from core.pagination import DefaultPagination, LimitStartPagination
-from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from files.models import File
 from files.serializers import BaseFileSerializer
-from tables.serializers import Table, TableSerializer, TableMarker
+from tables.serializers import Table, TableMarker, TableSerializer
 from users.models import Account
 from users.serializers import AccountSerializer
 
@@ -147,7 +148,6 @@ class ActionActivateBookingsView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
-        # request.data['user'] = request.user
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
         if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -182,15 +182,11 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
-        # now = datetime.utcnow().replace(tzinfo=timezone.utc)
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
         if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        # booking = serializer.validated_data['booking']
-        # if now < booking.date_from and now < booking.date_to:
-        #     return self.destroy(request, *args, **kwargs)
         serializer.save()
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 

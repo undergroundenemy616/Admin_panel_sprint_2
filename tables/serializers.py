@@ -1,22 +1,23 @@
-from core.handlers import ResponseException
 from datetime import datetime
 from typing import Any, Dict
+
+import orjson
 import pytz
 from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import status
-import orjson
 
-from groups.serializers import validate_csv_file_extension
-from files.models import File
-from files.serializers import (BaseFileSerializer, FileSerializer,
-                               image_serializer, TestBaseFileSerializer)
-from offices.models import Office
-from rooms.models import Room
 from bookings.models import Booking
 from bookings.serializers import BookingSerializer
-from tables.models import Table, TableTag, TableMarker, Rating
+from core.handlers import ResponseException
+from files.models import File
+from files.serializers import (BaseFileSerializer, FileSerializer,
+                               TestBaseFileSerializer, image_serializer)
+from groups.serializers import validate_csv_file_extension
+from offices.models import Office
+from rooms.models import Room
+from tables.models import Rating, Table, TableMarker, TableTag
 
 
 class SwaggerTableParameters(serializers.Serializer):
