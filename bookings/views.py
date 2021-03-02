@@ -276,9 +276,6 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
 
     @swagger_auto_schema(query_serializer=BookingPersonalSerializer)
     def get(self, request, *args, **kwargs):
-        if request.query_params.get('search'):
-            self.serializer_class = BookingSerializer
-            return self.list(request, *args, **kwargs)
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         date_from = datetime.strptime(request.query_params.get(
