@@ -352,9 +352,11 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
         account = Account.objects.get(user=self.context['request'].user)
         attrs['device_info'] = self.context['request'].data['device_info']
         attrs['user'] = account
-        ip_address = self.context['request'].META['HTTP_HOST'] \
-            if self.context['request'].META['HTTP_HOST'] != '127.0.0.1:8000' and \
-               self.context['request'].META['HTTP_HOST'] != '0.0.0.0:5022' else '95.161.222.237'
+        x_forwarded_for = self.context['request'].META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip_address = x_forwarded_for.split(',')[0]
+        else:
+            ip_address = self.context['request'].META.get('REMOTE_ADDR')
         if ip_address:
             attrs['ip_address'] = ip_address
             handler = ipinfo.getHandler(access_token="e11640aca14e4d")
@@ -363,8 +365,8 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
             longitude = details.all.get("longitude")
             if latitude and longitude:
                 attrs["location"] = str(latitude) + " " + str(longitude)
-            attrs['country'] = details.all.get("country_name")
-            attrs['city'] = details.all.get("city")
+            attrs['country'] = details.all.get("country_name") or "undefined"
+            attrs['city'] = details.all.get("city") or "undefined"
         return attrs
 
 

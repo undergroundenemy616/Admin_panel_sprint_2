@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from django.db import IntegrityError
+from django.db.models import Q, Count, Case, When
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -139,6 +140,11 @@ class TestRoomSerializer(serializers.Serializer):
         # response = BaseRoomSerializer(instance=instance).data
         response = super(TestRoomSerializer, self).to_representation(instance)
         # room_type = response.pop('type')
+        tables = instance.tables.aggregate(
+            capacity=Count('*'),
+            occupied=Count(Case(When(is_occupied=True, then=1))),
+            suitable_tables=Count(Case(When(is_occupied=False, then=1)))
+        )
         response['type'] = instance.type.title if instance.type else None
         response['room_type_color'] = instance.type.color if instance.type else None
         response['room_type_unified'] = instance.type.unified if instance.type else None
@@ -148,12 +154,12 @@ class TestRoomSerializer(serializers.Serializer):
                              'title': instance.floor.title}
         response['is_bookable'] = instance.type.bookable if instance.type else None
         response['room_type_icon'] = TestBaseFileSerializer(instance=instance.type.icon).data if instance.type.icon else None
-        response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images', 'tags__icon').select_related('table_marker'), many=True).data
-        response['capacity'] = instance.tables.count()
+        response['tables'] = TestTableSerializer(instance=instance.tables, many=True).data
+        response['capacity'] = tables['capacity']
         response['marker'] = room_marker_serializer(instance.room_marker) if \
-            hasattr(instance, 'room_marker') else None
-        response['occupied'] = instance.tables.filter(is_occupied=True).count(),        # Take additional queries
-        response['suitable_tables'] = instance.tables.filter(is_occupied=False).count() # Take additional queries
+             hasattr(instance, 'room_marker') else None
+        response['occupied'] = tables['occupied']
+        response['suitable_tables'] = tables['suitable_tables']
         response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         return response
 

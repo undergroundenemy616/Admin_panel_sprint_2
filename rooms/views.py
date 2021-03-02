@@ -109,7 +109,8 @@ class RoomsView(ListModelMixin,
 
         # for room in rooms.prefetch_related('tables'):  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
         #     response.append(base_serialize_room(room=room).copy())
-        response = TestRoomSerializer(instance=rooms.prefetch_related('tables'), many=True).data
+        response = TestRoomSerializer(instance=rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker', 'type__icon', 'images').select_related(
+                                'room_marker', 'type', 'floor', 'zone'), many=True).data
         # return Response(orjson.loads(orjson.dumps(response)))   # Made for test
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
@@ -130,7 +131,7 @@ class RoomsView(ListModelMixin,
                 ).select_related('table').values_list('table__id', flat=True)
                 room_tables = room['tables'][:]
                 for table in room['tables']:
-                    if not table.get('marker') or uuid.UUID(table.get('id')) in bookings:
+                    if (not table.get('marker') and not room['room_type_unified']) or uuid.UUID(table.get('id')) in bookings:
                         room_tables.remove(table)
                 room['tables'] = room_tables
                 # for booking in bookings:
@@ -246,7 +247,7 @@ class RoomMarkerView(CreateModelMixin,
             serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        self.serializer_class = RoomSerializer
+        self.serializer_class = TestRoomSerializer
         serializer = self.serializer_class(instance=instance.room)
         return Response(serializer.to_representation(instance=instance.room), status=status.HTTP_201_CREATED)
 
