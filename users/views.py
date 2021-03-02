@@ -53,11 +53,13 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
         user, created = User.objects.get_or_create(phone_number=phone_number)
         # Fix if we have user we dont need any actions
 
-        account, account_created = Account.objects.get_or_create(user=user,
-                                                                 description=serializer.data.get('description'))
+        account, account_created = Account.objects.get_or_create(user=user)
         if account_created:
             user_group = Group.objects.get(access=4)
             account.groups.add(user_group)
+        if request.data.get('description'):
+            account.description = request.data.get('description')
+            account.save()
         response = AccountSerializer(instance=account).data
         return Response(response, status=status.HTTP_201_CREATED)
 
