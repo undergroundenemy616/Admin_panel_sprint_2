@@ -1,12 +1,15 @@
 import os
 import random
-
 import jwt
+
 import orjson
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+
+from django.http import JsonResponse
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
 from django.core.mail import send_mail
 from django.db.models import Q
-from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
@@ -14,15 +17,10 @@ from rest_framework.decorators import api_view
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
-from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
-                                                  TokenRefreshSerializer)
-from rest_framework_simplejwt.token_blacklist.models import (BlacklistedToken,
-                                                             OutstandingToken)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from booking_api_django_new.settings import (EMAIL_HOST_USER,
-                                             HARDCODED_PHONE_NUMBER,
-                                             HARDCODED_SMS_CODE)
+from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
@@ -30,7 +28,6 @@ from mail import send_html_email_message
 from users.models import Account, User
 from users.registration import confirm_code, send_code
 from users.serializers import (AccountSerializer, AccountUpdateSerializer,
-                               EntranceCollectorSerializer,
                                LoginOrRegisterSerializer,
                                LoginOrRegisterStaffSerializer,
                                PasswordChangeSerializer,
@@ -38,8 +35,8 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                RegisterStaffSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, TestAccountSerializer,
-                               user_access_serializer)
+                               SwaggerAccountParametr, user_access_serializer,
+                               EntranceCollectorSerializer, TestAccountSerializer)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):

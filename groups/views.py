@@ -6,16 +6,16 @@ from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
 from rest_framework.mixins import (DestroyModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
-                                GroupSerializerCSV, GroupSerializerLite,
-                                GroupSerializerOnlyAccountsCSV,
-                                GroupSerializerWithAccountsCSV,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
-                                UpdateGroupUsersSerializer)
+                                UpdateGroupUsersSerializer, GroupSerializerCSV,
+                                GroupSerializerWithAccountsCSV, GroupSerializerOnlyAccountsCSV,
+                                GroupSerializerLite)
 from users.models import Account, User
 
 

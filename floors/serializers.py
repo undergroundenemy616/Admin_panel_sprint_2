@@ -1,16 +1,15 @@
-from typing import Any, Dict
-
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from typing import Any, Dict
 
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from files.models import File
 from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor, FloorMap
 from offices.models import Office
 from rooms.models import Room
-from rooms.serializers import (RoomSerializer, TestRoomSerializer,
-                               base_serialize_room)
+from rooms.serializers import RoomSerializer, base_serialize_room, TestRoomSerializer
 from tables.models import Table
 
 

@@ -14,10 +14,9 @@ from floors.models import Floor, FloorMap
 from floors.serializers import (DetailFloorSerializer, EditFloorSerializer,
                                 FloorMapSerializer, FloorSerializer,
                                 NestedFloorSerializer, SwaggerFloorParameters,
-                                TestFloorSerializer,
-                                TestFloorSerializerWithMap,
                                 base_floor_serializer,
-                                base_floor_serializer_with_floor_map)
+                                base_floor_serializer_with_floor_map, TestFloorSerializer,
+                                TestFloorSerializerWithMap)
 from offices.models import Office
 from rooms.models import RoomMarker
 

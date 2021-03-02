@@ -1,22 +1,20 @@
 from typing import Any, Dict
 
 from django.db import IntegrityError
-from django.db.models import Case, Count, Q, When
+from django.db.models import Q, Count, Case, When
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import (FileSerializer, TestBaseFileSerializer,
-                               image_serializer)
+from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
 from floors.models import Floor
 from groups.serializers import validate_csv_file_extension
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
-from tables.models import Rating, Table, TableMarker, TableTag
-from tables.serializers import (TableSerializer, TestTableSerializer,
-                                table_marker_serializer, table_tag_serializer)
+from tables.models import Rating, Table, TableTag, TableMarker
+from tables.serializers import TableSerializer, table_tag_serializer, table_marker_serializer, TestTableSerializer
 
 
 class SwaggerRoomParameters(serializers.Serializer):

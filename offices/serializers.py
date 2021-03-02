@@ -1,13 +1,12 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from django.db.models import Case, Count, Q, When
+from django.db.models import Count, Case, When, Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import (FileSerializer, TestBaseFileSerializer,
-                               image_serializer)
+from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
 from floors.models import Floor
 from floors.serializers import FloorSerializer
 from groups.models import Group

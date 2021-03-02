@@ -7,13 +7,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 
-from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
-                                             BOOKING_TIMEDELTA_CHECK,
-                                             PUSH_HOST)
+from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS, BOOKING_TIMEDELTA_CHECK, PUSH_HOST
 from core.scheduler import scheduler
-from groups.models import EMPLOYEE_ACCESS
+from push_tokens.send_interface import send_push_message
 from tables.models import Table
-from users.models import Account
+from groups.models import EMPLOYEE_ACCESS
+from users.models import Account, User
 
 MINUTES_TO_ACTIVATE = 15
 
@@ -129,6 +128,7 @@ class Booking(models.Model):
         else:
             instance.status = 'canceled'
         instance.table.set_table_free()
+        # instance = super(self.__class__, self)
         if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
             scheduler.remove_job(job_id="notify_about_oncoming_booking_" + str(self.id))
         if scheduler.get_job(job_id="notify_about_activation_booking_" + str(self.id)):
@@ -184,6 +184,7 @@ class Booking(models.Model):
 
     def notify_about_oncoming_booking(self):
         """Send PUSH-notification about oncoming booking to every user devices"""
+        #  and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_PUSH_NOTIFY_UNTIL_MINS + 5 \
         push_group = os.environ.get("PUSH_GROUP")
         if push_group and not self.is_over \
                 and self.user:
@@ -205,6 +206,7 @@ class Booking(models.Model):
 
     def notify_about_booking_activation(self):
         """Send PUSH-notification about opening activation"""
+        #  and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_TIMEDELTA_CHECK \
         push_group = os.environ.get("PUSH_GROUP")
         if push_group and not self.is_over \
                 and self.user:
@@ -219,13 +221,17 @@ class Booking(models.Model):
                 PUSH_HOST + "/send_push",
                 json=expo_data,
                 headers={'content-type': 'application/json'}
+                # auth=(FILES_USERNAME, FILES_PASSWORD),
             )
             if response.status_code != 200:
                 print(f"Unable to send push message for {str(self.user.id)}: {response.json().get('message')}")
+            # for token in [push_object.token for push_object in self.user.push_tokens.all()]:
+            #     send_push_message(token, expo_data)
 
     def job_create_oncoming_notification(self):
         """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        # if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
         scheduler.add_job(
             self.notify_about_oncoming_booking,
             "date",
@@ -245,6 +251,14 @@ class Booking(models.Model):
 
     def job_create_change_states(self):
         """Add job for occupied/free states changing"""
+        # scheduler.add_job(
+        #     self.set_booking_active,
+        #     "date",
+        #     run_date=self.date_from,
+        #     misfire_grace_time=900,
+        #     id="set_booking_active_" + str(self.id)
+        # )  # Why we need THIS? Activation is starting when qr code was scanned and then front send request for backend
+        # date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         scheduler.add_job(
             self.make_booking_over,
             "date",
@@ -256,7 +270,7 @@ class Booking(models.Model):
         scheduler.add_job(
             self.check_booking_activate,
             "date",
-            run_date=self.date_activate_until,
+            run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
             misfire_grace_time=900,
             id="check_booking_activate_" + str(self.id),
             replace_existing=True
