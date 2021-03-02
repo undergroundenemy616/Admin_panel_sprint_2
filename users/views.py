@@ -228,11 +228,37 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
 
     @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
+        search = request.query_params.get('search')
         if request.query_params.get('start'):
-            search = request.query_params.get('search')
             if search:
                 search = search.split(" ")
             if search and len(search) > 1:
+                # Search by two words maybe: firstname and lastname
+                self.queryset = Account.objects.filter(
+                    Q(first_name__icontains=str(search[0]), last_name__icontains=str(search[1]))
+                    | Q(first_name__icontains=str(search[1]), last_name__icontains=str(search[0]))
+                ).select_related('user')
+            elif search:
+                # Search in firstname, lastname, middlename, phone_number, email
+                self.queryset = Account.objects.filter(
+                    Q(first_name__icontains=search[0])
+                    | Q(last_name__icontains=search[0])
+                    | Q(middle_name__icontains=search[0])
+                    | Q(user__phone_number__icontains=search[0])
+                    | Q(user__email__icontains=search[0])
+                ).select_related('user')
+            account_type = request.query_params.get('account_type')
+            if account_type != 'user':
+                # Added because of needs to handle kiosk account_type in future
+                pass
+            activated_flag = request.query_params.get('include_not_activated')
+            if activated_flag == 'false':
+                # Here we handle exclude of not activated accounts
+                self.queryset = self.queryset.filter(user__is_active=True)
+            return self.list(self, request, *args, **kwargs)
+        elif search:
+            search = search.split(" ")
+            if len(search) > 1:
                 # Search by two words maybe: firstname and lastname
                 self.queryset = Account.objects.filter(
                     Q(first_name__icontains=str(search[0]), last_name__icontains=str(search[1]))
