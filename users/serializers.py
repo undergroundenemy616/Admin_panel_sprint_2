@@ -335,7 +335,7 @@ class PasswordResetSerializer(serializers.Serializer):
             to=account.email,
             subject=subject,
             template_args={
-                'host': self.context['request'].build_absolute_uri('/'),
+                'host': os.environ.get('ADMIN_HOST'),
                 'username': account.user.email,
                 'password': password
             }
