@@ -56,9 +56,9 @@ class GroupSerializerLite(serializers.ModelSerializer):
         if not legacy_access:
             raise serializers.ValidationError('Invalid group access')
         response.update(legacy_access)
-        users_in_group = User.objects.filter(account__groups=response['id'])
+        users_in_group = User.objects.filter(account__groups=response['id']).values_list('account__id', flat=True)
         response['count'] = len(users_in_group)
-        # response['users'] = [user.account.id for user in users_in_group]
+        response['users'] = users_in_group
         for key in ['is_deletable', 'access']:
             response.pop(key)
         return response
