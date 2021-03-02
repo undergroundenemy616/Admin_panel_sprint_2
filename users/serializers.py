@@ -241,8 +241,8 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
 
 
 class AccountUpdateSerializer(serializers.ModelSerializer):
-    firstname = serializers.CharField(source='first_name', required=False)
-    lastname = serializers.CharField(source='last_name', required=False)
+    firstname = serializers.CharField(source='first_name', required=False, allow_blank=True)
+    lastname = serializers.CharField(source='last_name', required=False, allow_blank=True)
     middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False)
