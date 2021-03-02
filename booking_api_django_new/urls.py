@@ -97,8 +97,8 @@ urlpatterns = [
     path('book_list', include('bookings.urls_list')),
     path('tokens', include('push_tokens.urls')),
     path('send_', include('push_tokens.urls_send')),
-    path('password_change', views.PasswordChangeView.as_view()),
-    path('password_reset', views.PasswordResetView.as_view()),
+    path('pass_change', views.PasswordChangeView.as_view()),
+    path('pass_reset', views.PasswordResetView.as_view()),
 ]
 
 '''
