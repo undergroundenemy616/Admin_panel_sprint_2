@@ -227,7 +227,7 @@ class TestFloorSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         response = super(TestFloorSerializer, self).to_representation(instance)
-        response['rooms'] = TestRoomSerializer(instance=instance.rooms.prefetch_related('tables').select_related(
+        response['rooms'] = TestRoomSerializer(instance=instance.rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker', 'type__icon', 'images').select_related(
                                 'room_marker', 'type', 'floor', 'zone'), many=True).data
         tables = Table.objects.filter(room__floor=instance)
         response['occupied'] = tables.filter(is_occupied=True).count()
