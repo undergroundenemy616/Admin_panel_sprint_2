@@ -55,14 +55,14 @@ class ListCreateFloorView(ListModelMixin,
                 floors_by_office = floors_by_office.filter(rooms__type__title=request.query_params.get('type')).distinct('id')
             try:
                 if int(request.query_params.get('expand')) == 0:
-                    response = TestFloorSerializer(instance=floors_by_office, many=True).data
+                    response = TestFloorSerializer(instance=floors_by_office.prefetch_related('rooms'), many=True).data
                     # response = []
                     # for floor in floors_by_office:
                         # serialized_floor = base_floor_serializer(floor=floor)
                         # response.append(serialized_floor)
                     return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
                 else:
-                    response = TestFloorSerializerWithMap(instance=floors_by_office, many=True).data
+                    response = TestFloorSerializerWithMap(instance=floors_by_office.prefetch_related('rooms'), many=True).data
                     # response = []
                     # for floor in floors_by_office:
                     #     # if int(request.query_params.get('rooms')) == 0:
@@ -72,7 +72,7 @@ class ListCreateFloorView(ListModelMixin,
                     #     response.append(serialized_floor)
                     return Response(response, status=status.HTTP_200_OK)
             except TypeError:
-                response = TestFloorSerializerWithMap(instance=floors_by_office, many=True).data
+                response = TestFloorSerializerWithMap(instance=floors_by_office.prefetch_related('rooms'), many=True).data
                 # response = []
                 # for floor in floors_by_office:
                 #     serialized_floor = base_floor_serializer_with_floor_map(floor=floor)
