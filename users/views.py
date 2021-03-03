@@ -231,7 +231,8 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
     filter_backends = [filters.SearchFilter]
-    search_fields = ['first_name', 'last_name', 'middle_name', 'user__phone_number', 'user__email']
+    search_fields = ['first_name', 'last_name', 'middle_name', 'user__phone_number', 'user__email',
+                     'phone_number', 'email']
 
     @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
@@ -242,6 +243,8 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
                 self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
+            if serializer.data.get('access_groups'):
+                self.queryset = self.queryset.filter(groups=serializer.data.get('access_groups'))
             return self.list(self, request, *args, **kwargs)
         else:
             self.pagination_class = None
