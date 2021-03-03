@@ -60,6 +60,8 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
         if request.data.get('description'):
             account.description = request.data.get('description')
             account.save()
+        user.is_active = True
+        user.save()
         response = AccountSerializer(instance=account).data
         return Response(response, status=status.HTTP_201_CREATED)
 
