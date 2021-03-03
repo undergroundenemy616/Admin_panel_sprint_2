@@ -24,7 +24,6 @@ class SwaggerAccountParametr(serializers.Serializer):
 
 
 class SwaggerAccountListParametr(serializers.Serializer):
-    search = serializers.CharField(required=False, max_length=256)
     account_type = serializers.CharField(required=False, max_length=20)
     include_not_activated = serializers.CharField(required=False, max_length=5)
 
@@ -115,6 +114,11 @@ class TestAccountSerializer(serializers.Serializer):
             response['photo'] = BaseFileSerializer(instance=instance.photo).data
         response['has_cp_access'] = True if instance.user.email else False
         return response
+
+
+class AccountListGetSerializer(serializers.Serializer):
+    account_type = serializers.CharField(required=False, max_length=20)
+    include_not_activated = serializers.CharField(required=False, max_length=5)
 
 
 # def test_base_account_serializer(instance: Account) -> Dict[str, Any]:
