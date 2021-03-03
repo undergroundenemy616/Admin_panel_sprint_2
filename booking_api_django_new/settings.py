@@ -30,7 +30,7 @@ LOCAL = True if os.getenv('LOCAL') == 'True' else False
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-KEY_EXPIRATION = 60 * 3  # 3 minutes
+KEY_EXPIRATION = 60  # 3 minutes
 
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 BOOKING_TIMEDELTA_CHECK = 15

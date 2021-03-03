@@ -94,8 +94,8 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 # Creating data for response
                 data = {
                     'message': "OK",
-                    'new_code_in': 180,
-                    'expires_in': 180,
+                    'new_code_in': 60,
+                    'expires_in': 60,
                 }
             elif sms_code:  # Confirm code  and user.is_active
                 # first_login = True if user.last_login is None else False
