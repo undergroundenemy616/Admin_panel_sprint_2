@@ -201,11 +201,11 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
         if instance.id == self.request.user.account.id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         flag = 0
-        for group in instance.groups.all():
-            if group.access <= 2:
-                flag += 1
-        if flag != 0:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        # for group in instance.groups.all():
+        #     if group.access <= 2:
+        #         flag += 1
+        # if flag != 0:
+        #     return Response(status=status.HTTP_403_FORBIDDEN)
         return self.destroy(self, request, *args, **kwargs)
 
     def perform_destroy(self, instance):
@@ -215,7 +215,7 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
 class RegisterStaffView(GenericAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()
-    permission_classes = (IsOwner,)
+    permission_classes = (IsAdmin,)
 
     def post(self, request, *args, **kwargs):
         request.data['host_domain'] = request.build_absolute_uri('/')

@@ -221,7 +221,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.setdefault('is_staff', True)
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
-        group = Group.objects.filter(access=2, is_deletable=False).first()
+        group = Group.objects.filter(title='Администратор', is_deletable=False).first()
         if not group:
             raise ValidationError('Unable to find admin group')
         email = validated_data.get('email')
@@ -229,7 +229,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         is_exists = User.objects.filter(email=email).exists()
         if is_exists:
             raise ValidationError('Admin already exists.')
-        instance = super(RegisterStaffSerializer, self).create(validated_data)
+        instance = User(email=email, is_active=True, is_staff=True)
         instance.set_password(password)
         instance.save()
         send_html_email_message(
