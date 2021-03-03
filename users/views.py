@@ -228,7 +228,7 @@ class RegisterStaffView(GenericAPIView):
 class AccountListView(GenericAPIView, mixins.ListModelMixin):
     serializer_class = TestAccountSerializer    # TestAccountSerializer AccountSerializer
     queryset = Account.objects.all().select_related('user').prefetch_related('photo', 'groups')
-    # permission_classes = (IsAdmin, )
+    permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'middle_name', 'user__phone_number', 'user__email',
