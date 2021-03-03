@@ -36,7 +36,8 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
                                SwaggerAccountParametr, user_access_serializer,
-                               EntranceCollectorSerializer, TestAccountSerializer)
+                               EntranceCollectorSerializer, TestAccountSerializer,
+                               AccountListGetSerializer)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):
@@ -233,11 +234,11 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
     @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('start'):
-            account_type = request.query_params.get('account_type')
-            if account_type == 'kiosk':
-                self.queryset = self.queryset.filter(account_type=account_type)
-            activated_flag = request.query_params.get('include_not_activated')
-            if activated_flag == 'false':
+            serializer = AccountListGetSerializer(data=request.query_params)
+            serializer.is_valid(raise_exception=True)
+            if serializer.data.get('account_type') == 'kiosk':
+                self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
+            if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
             return self.list(self, request, *args, **kwargs)
         else:

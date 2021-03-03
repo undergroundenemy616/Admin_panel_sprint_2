@@ -116,6 +116,11 @@ class TestAccountSerializer(serializers.Serializer):
         return response
 
 
+class AccountListGetSerializer(serializers.Serializer):
+    account_type = serializers.CharField(required=False, max_length=20)
+    include_not_activated = serializers.CharField(required=False, max_length=5)
+
+
 # def test_base_account_serializer(instance: Account) -> Dict[str, Any]:
 #     return {
 #         'id': str(instance.id),
