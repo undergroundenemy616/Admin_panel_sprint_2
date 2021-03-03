@@ -215,7 +215,7 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
 class RegisterStaffView(GenericAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()
-    permission_classes = (IsOwner,)
+    permission_classes = (IsAdmin,)
 
     def post(self, request, *args, **kwargs):
         request.data['host_domain'] = request.build_absolute_uri('/')
