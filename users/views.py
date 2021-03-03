@@ -232,13 +232,20 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
 
     @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
-        account_type = request.query_params.get('account_type')
-        if account_type == 'kiosk':
-            self.queryset = self.queryset.filter(account_type=account_type)
-        activated_flag = request.query_params.get('include_not_activated')
-        if activated_flag == 'false':
-            self.queryset = self.queryset.filter(user__is_active=True)
-        return self.list(self, request, *args, **kwargs)
+        if request.query_params.get('start'):
+            account_type = request.query_params.get('account_type')
+            if account_type == 'kiosk':
+                self.queryset = self.queryset.filter(account_type=account_type)
+            activated_flag = request.query_params.get('include_not_activated')
+            if activated_flag == 'false':
+                self.queryset = self.queryset.filter(user__is_active=True)
+            return self.list(self, request, *args, **kwargs)
+        else:
+            self.pagination_class = None
+            all_accounts = self.list(self, request, *args, **kwargs)
+            response = dict()
+            response['results'] = all_accounts.data
+            return Response(response, status=status.HTTP_200_OK)
 
 
 class ServiceEmailView(GenericAPIView):
