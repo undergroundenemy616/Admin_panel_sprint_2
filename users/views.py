@@ -12,7 +12,7 @@ from django.core.mail import send_mail
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, status
+from rest_framework import mixins, status, filters
 from rest_framework.decorators import api_view
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
@@ -227,74 +227,18 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
     queryset = Account.objects.all().select_related('user').prefetch_related('photo', 'groups')
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['first_name', 'last_name', 'middle_name', 'user__phone_number', 'user__email']
 
     @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
-        search = request.query_params.get('search')
-        if request.query_params.get('start'):
-            if search:
-                search = search.split(" ")
-            if search and len(search) > 1:
-                # Search by two words maybe: firstname and lastname
-                self.queryset = Account.objects.filter(
-                    Q(first_name__icontains=str(search[0]), last_name__icontains=str(search[1]))
-                    | Q(first_name__icontains=str(search[1]), last_name__icontains=str(search[0]))
-                ).select_related('user')
-            elif search:
-                # Search in firstname, lastname, middlename, phone_number, email
-                self.queryset = Account.objects.filter(
-                    Q(first_name__icontains=search[0])
-                    | Q(last_name__icontains=search[0])
-                    | Q(middle_name__icontains=search[0])
-                    | Q(user__phone_number__icontains=search[0])
-                    | Q(user__email__icontains=search[0])
-                ).select_related('user')
-            account_type = request.query_params.get('account_type')
-            if account_type != 'user':
-                # Added because of needs to handle kiosk account_type in future
-                pass
-            activated_flag = request.query_params.get('include_not_activated')
-            if activated_flag == 'false':
-                # Here we handle exclude of not activated accounts
-                self.queryset = self.queryset.filter(user__is_active=True)
-            return self.list(self, request, *args, **kwargs)
-        elif search:
-            search = search.split(" ")
-            if len(search) > 1:
-                # Search by two words maybe: firstname and lastname
-                self.queryset = Account.objects.filter(
-                    Q(first_name__icontains=str(search[0]), last_name__icontains=str(search[1]))
-                    | Q(first_name__icontains=str(search[1]), last_name__icontains=str(search[0]))
-                ).select_related('user')
-            elif search:
-                # Search in firstname, lastname, middlename, phone_number, email
-                self.queryset = Account.objects.filter(
-                    Q(first_name__icontains=search[0])
-                    | Q(last_name__icontains=search[0])
-                    | Q(middle_name__icontains=search[0])
-                    | Q(user__phone_number__icontains=search[0])
-                    | Q(user__email__icontains=search[0])
-                ).select_related('user')
-            account_type = request.query_params.get('account_type')
-            if account_type != 'user':
-                # Added because of needs to handle kiosk account_type in future
-                pass
-            activated_flag = request.query_params.get('include_not_activated')
-            if activated_flag == 'false':
-                # Here we handle exclude of not activated accounts
-                self.queryset = self.queryset.filter(user__is_active=True)
-            return self.list(self, request, *args, **kwargs)
-        else:
-            self.pagination_class = None
-            all_accounts = self.list(self, request, *args, **kwargs)
-            response = dict()
-            # accounts = Account.objects.all()
-            # result = []
-            # for account in accounts:
-            #     result.append(test_base_account_serializer(account))
-            response['results'] = all_accounts.data
-            # otvet = orjson.loads(orjson.dumps(response))
-            return Response(response, status=status.HTTP_200_OK)
+        account_type = request.query_params.get('account_type')
+        if account_type == 'kiosk':
+            self.queryset = self.queryset.filter(account_type=account_type)
+        activated_flag = request.query_params.get('include_not_activated')
+        if activated_flag == 'false':
+            self.queryset = self.queryset.filter(user__is_active=True)
+        return self.list(self, request, *args, **kwargs)
 
 
 class ServiceEmailView(GenericAPIView):
