@@ -223,7 +223,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         is_exists = User.objects.filter(email=email).exists()
         if is_exists:
             raise ValidationError('Admin already exists.')
-        instance = super(RegisterStaffSerializer, self).create(validated_data)
+        instance = User(email=email, is_active=True, is_staff=True)
         instance.set_password(password)
         instance.save()
         send_html_email_message(
