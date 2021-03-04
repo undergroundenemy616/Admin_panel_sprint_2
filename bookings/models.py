@@ -236,7 +236,7 @@ class Booking(models.Model):
             self.notify_about_oncoming_booking,
             "date",
             run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(minutes=2),
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="notify_about_oncoming_booking_" + str(self.id),
             replace_existing=True
         )
@@ -244,7 +244,7 @@ class Booking(models.Model):
             self.notify_about_booking_activation,
             "date",
             run_date=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="notify_about_activation_booking_" + str(self.id),
             replace_existing=True
         )
@@ -263,7 +263,7 @@ class Booking(models.Model):
             self.make_booking_over,
             "date",
             run_date=self.date_to,
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="set_booking_over_" + str(self.id),
             replace_existing=True
         )
@@ -271,7 +271,7 @@ class Booking(models.Model):
             self.check_booking_activate,
             "date",
             run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="check_booking_activate_" + str(self.id),
             replace_existing=True
         )

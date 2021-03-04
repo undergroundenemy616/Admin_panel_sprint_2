@@ -234,7 +234,7 @@ SCHEDULER_CONFIG = {
     },
     'apscheduler.executors.processpool': {
         "type": "threadpool",
-        "max_workers": "20"
+        "max_workers": "30"
     },
 }
 SCHEDULER_AUTOSTART = True
