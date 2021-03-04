@@ -301,7 +301,7 @@ class UpdateGroupUsersSerializer(serializers.Serializer):
                                                required=True, allow_empty=True)
 
     def validate(self, attrs):
-        if attrs['id'].access < 3:
+        if attrs['id'].access < 2:
             raise ValidationError(detail="Can't add to this group", code=400)
         return attrs
 
