@@ -26,7 +26,7 @@ class SwaggerAccountParametr(serializers.Serializer):
 class SwaggerAccountListParametr(serializers.Serializer):
     account_type = serializers.CharField(required=False, max_length=20)
     include_not_activated = serializers.CharField(required=False, max_length=5)
-    access_groups = serializers.CharField(required=False, max_length=36)
+    access_group = serializers.CharField(required=False, max_length=36)
 
 
 class UserSerializer(serializers.ModelSerializer):
