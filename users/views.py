@@ -243,18 +243,18 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
                 self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
-            if serializer.data.get('access_groups'):
-                self.queryset = self.queryset.filter(groups=serializer.data.get('access_groups'))
+            if serializer.data.get('access_group'):
+                self.queryset = self.queryset.filter(groups=serializer.data.get('access_group'))
             return self.list(self, request, *args, **kwargs)
-        elif request.query_params.get('access_groups'):
+        elif request.query_params.get('access_group'):
             serializer = AccountListGetSerializer(data=request.query_params)
             serializer.is_valid(raise_exception=True)
             if serializer.data.get('account_type') == 'kiosk':
                 self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
-            if serializer.data.get('access_groups'):
-                self.queryset = self.queryset.filter(groups=serializer.data.get('access_groups'))
+            if serializer.data.get('access_group'):
+                self.queryset = self.queryset.filter(groups=serializer.data.get('access_group'))
             return self.list(self, request, *args, **kwargs)
         else:
             self.pagination_class = None
