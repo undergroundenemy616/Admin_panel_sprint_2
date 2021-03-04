@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Min
 
 from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS, BOOKING_TIMEDELTA_CHECK, PUSH_HOST
 from core.scheduler import scheduler
@@ -42,16 +42,16 @@ class BookingManager(models.Manager):
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
-            access = [access_dict.get('access') for access_dict in account.groups.values('access')]
+            access = account.groups.aggregate(Min('access'))
         except AttributeError:
-            access = [EMPLOYEE_ACCESS]
-        if min(access) < EMPLOYEE_ACCESS:
+            access = {'access__min': EMPLOYEE_ACCESS}
+        if access['access__min'] < EMPLOYEE_ACCESS:
             return False
         overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False, status__in=['waiting', 'active']). \
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
-                   | Q(date_to__gt=date_from, date_to__lt=date_to)).select_related('table')
+                   | Q(date_to__gt=date_from, date_to__lt=date_to))
         if overflows:
             return True
         return False
