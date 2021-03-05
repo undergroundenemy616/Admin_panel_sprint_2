@@ -263,7 +263,9 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
     Can be filtered by: date,
     """
     serializer_class = BookingPersonalSerializer
-    queryset = Booking.objects.all().order_by('-is_active', '-date_from').select_related('table')
+    queryset = Booking.objects.all().select_related('table', 'user').prefetch_related(
+        'table__room__floor__office', 'table__room__type', 'table__room__zone', 'table__tags',
+        'table__images', 'table__table_marker').order_by('-is_active', '-date_from')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
     search_fields = ['table__title',
@@ -294,7 +296,7 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
                 Q(date_from__gte=date_from, date_from__lt=date_to)
                 | Q(date_from__lte=date_from, date_to__gte=date_to)
                 | Q(date_to__gt=date_from, date_to__lte=date_to))
-        self.queryset = req_booking
+        self.queryset = req_booking.order_by('-date_from')
         self.serializer_class = BookingSerializer
         return self.list(request, *args, **kwargs)
 
