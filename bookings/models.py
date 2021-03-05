@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Min
 
 from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS, BOOKING_TIMEDELTA_CHECK, PUSH_HOST
 from core.scheduler import scheduler
@@ -42,16 +42,16 @@ class BookingManager(models.Manager):
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
-            access = [access_dict.get('access') for access_dict in account.groups.values('access')]
+            access = account.groups.aggregate(Min('access'))
         except AttributeError:
-            access = [EMPLOYEE_ACCESS]
-        if min(access) < EMPLOYEE_ACCESS:
+            access = {'access__min': EMPLOYEE_ACCESS}
+        if access['access__min'] < EMPLOYEE_ACCESS:
             return False
         overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False, status__in=['waiting', 'active']). \
             filter(Q(date_from__gte=date_from, date_from__lte=date_to)
                    | Q(date_from__lte=date_from, date_to__gte=date_to)
                    | Q(date_from__gte=date_from, date_to__lte=date_to)
-                   | Q(date_to__gt=date_from, date_to__lt=date_to)).select_related('table')
+                   | Q(date_to__gt=date_from, date_to__lt=date_to))
         if overflows:
             return True
         return False
@@ -236,7 +236,7 @@ class Booking(models.Model):
             self.notify_about_oncoming_booking,
             "date",
             run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(minutes=2),
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="notify_about_oncoming_booking_" + str(self.id),
             replace_existing=True
         )
@@ -244,7 +244,7 @@ class Booking(models.Model):
             self.notify_about_booking_activation,
             "date",
             run_date=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="notify_about_activation_booking_" + str(self.id),
             replace_existing=True
         )
@@ -263,7 +263,7 @@ class Booking(models.Model):
             self.make_booking_over,
             "date",
             run_date=self.date_to,
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="set_booking_over_" + str(self.id),
             replace_existing=True
         )
@@ -271,7 +271,7 @@ class Booking(models.Model):
             self.check_booking_activate,
             "date",
             run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
-            misfire_grace_time=900,
+            misfire_grace_time=10000,
             id="check_booking_activate_" + str(self.id),
             replace_existing=True
         )

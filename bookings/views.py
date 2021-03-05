@@ -104,7 +104,6 @@ class CreateFastBookingsView(GenericAPIView):
     Admin route. Fast booking for any user.
     """
     serializer_class = BookingFastSerializer
-    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):

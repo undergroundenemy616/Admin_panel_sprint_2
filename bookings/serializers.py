@@ -281,24 +281,20 @@ class BookingFastSerializer(serializers.ModelSerializer):
         date_from = validated_data['date_from']
         date_to = validated_data['date_to']
         office = validated_data.pop('office')
-        tables = list(Table.objects.filter(room__floor__office_id=office.id, room__type__id=validated_data['type'].id))
-        for table in tables[:]:
-            if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
-                                                          table.room.type.unified,
-                                                          validated_data['date_from'],
-                                                          validated_data['date_to']):
-                raise ResponseException('User already has a booking for this date.')
+        tables = Table.objects.filter(room__floor__office_id=office.id, room__type__id=validated_data['type'].id)
+        if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
+                                                      validated_data['type'].unified,
+                                                      validated_data['date_from'],
+                                                      validated_data['date_to']):
+            raise ResponseException('User already has a booking for this date.')
+        for table in tables:
             if not self.Meta.model.objects.is_overflowed(table, date_from, date_to):
-                continue
-            else:
-                tables.remove(table)
-        if len(tables) != 0:
-            return self.Meta.model.objects.create(
-                date_to=date_to,
-                date_from=date_from,
-                table=tables[0],
-                user=validated_data['user']
-            )
+                return self.Meta.model.objects.create(
+                    date_to=date_to,
+                    date_from=date_from,
+                    table=table,
+                    user=validated_data['user']
+                )
         raise serializers.ValidationError('No table found for fast booking')
 
 
