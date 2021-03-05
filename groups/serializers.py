@@ -3,6 +3,7 @@ from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from rest_framework import serializers, status
+import time
 
 
 from booking_api_django_new.validate_phone_number import validate_phone_number
@@ -152,7 +153,10 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
             groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
         group = Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
 
-        groups_created = len(group)
+        group_ids = []
+        for g in group:
+            group_ids.append(g.id)
+
         groups_processed = len(list_of_group_titles)
 
         for phone_number in list_of_phone_numbers:
@@ -162,9 +166,10 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
         users = User.objects.all().filter(phone_number__in=list_of_phone_numbers)
 
         groups = Group.objects.all()
+        groups_created = groups.filter(id__in=group_ids).count()
 
-        for group in groups:
-            for account in group.accounts.all():
+        for g in groups:
+            for account in g.accounts.all():
                 if account.phone_number in list_of_phone_numbers:
                     list_of_phone_numbers.remove(account.phone_number)
 
@@ -172,17 +177,22 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
             accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
         accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
 
-        accounts_created = len(accounts)
-        accounts_added = len(list_of_phone_numbers)
+        acc_ids = []
+        for acc_id in accounts:
+            acc_ids.append(acc_id.id)
+
+        accounts_created = Account.objects.filter(id__in=acc_ids).count()
+        accounts_added = 0
+
+        accounts = Account.objects.filter(phone_number__in=list_of_phone_numbers)
 
         for account in accounts:
             for relation in groups_users_relation:
                 if account.phone_number == relation.get('phone_number'):
                     user_group = groups.get(title=relation.get('group'))
-                    try:
+                    if user_group not in account.groups.all():
                         account.groups.add(user_group)
-                    except IntegrityError:
-                        pass
+                        accounts_added += 1
 
         return ({
             "message": "OK",
@@ -250,16 +260,26 @@ class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
             accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
         accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
 
+        acc_ids = []
+        for acc_id in accounts:
+            acc_ids.append(acc_id.id)
+
+        accounts_added = 0
+        accounts_created = Account.objects.filter(id__in=acc_ids).count()
+
+        accounts = Account.objects.filter(phone_number__in=list_of_phone_numbers)
+
         for account in accounts:
             try:
                 account.groups.add(group)
+                accounts_added += 1
             except IntegrityError:
                 pass
 
         return ({
             "message": "OK",
             "counters": {
-                "accounts_added": len(list_of_phone_numbers), "accounts_created": len(accounts)
+                "accounts_added": accounts_added, "accounts_created": accounts_created
             },
             "result": GroupSerializer(instance=Group.objects.get(id=group_id)).data
         })
