@@ -327,7 +327,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookListRoomTypeStats)
     def get(self, request, *args, **kwargs):
-        serializer = StatisticsSerializer(date=request.query_params)
+        serializer = StatisticsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
 
         date_validation(serializer.data.get('date_from'))
@@ -664,10 +664,18 @@ class BookingFuture(GenericAPIView):
                     book_time = float((datetime.fromisoformat(sql_results[j]['date_to']).timestamp() -
                                        datetime.fromisoformat(sql_results[j]['date_from']).timestamp()) / 3600).__round__(2)
 
-                    r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
-                                                    '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
-                    r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
-                                                  '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    try:
+                        r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    except ValueError:
+                        correct_date_from = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        correct_date_to = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        r_date_from = datetime.strptime(correct_date_from.replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(correct_date_to.replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
 
                     worksheet.write('A' + str(i), full_name)
                     worksheet.write('B' + str(i), str(r_date_from))
