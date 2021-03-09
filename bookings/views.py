@@ -427,7 +427,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 class BookingEmployeeStatistics(GenericAPIView):
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
-    # permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin,)
 
     @swagger_auto_schema(query_serializer=SwaggerBookingEmployeeStatistics)
     def get(self, request, *args, **kwargs):
