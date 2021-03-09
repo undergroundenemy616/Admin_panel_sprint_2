@@ -3,7 +3,6 @@ from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from rest_framework import serializers, status
-import time
 
 
 from booking_api_django_new.validate_phone_number import validate_phone_number
@@ -151,7 +150,7 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
 
         for group in list_of_group_titles:
             groups_to_create.append(Group(title=group, description=None, access=4, is_deletable=True))
-        group = Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)
+        group = Group.objects.bulk_create(groups_to_create, ignore_conflicts=True)  # Database
 
         group_ids = []
         for g in group:
@@ -161,11 +160,11 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
 
         for phone_number in list_of_phone_numbers:
             users_to_create.append(User(phone_number=phone_number))
-        User.objects.bulk_create(users_to_create, ignore_conflicts=True)
+        User.objects.bulk_create(users_to_create, ignore_conflicts=True)  # Database
 
-        users = User.objects.all().filter(phone_number__in=list_of_phone_numbers)
+        users = User.objects.all().filter(phone_number__in=list_of_phone_numbers)  # Database
 
-        groups = Group.objects.all()
+        groups = Group.objects.all()  # Database
         groups_created = groups.filter(id__in=group_ids).count()
 
         for g in groups:
@@ -175,7 +174,7 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
 
         for user in users:
             accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
-        accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
+        accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)  # Database
 
         acc_ids = []
         for acc_id in accounts:
@@ -184,14 +183,14 @@ class GroupSerializerWithAccountsCSV(serializers.ModelSerializer):
         accounts_created = Account.objects.filter(id__in=acc_ids).count()
         accounts_added = 0
 
-        accounts = Account.objects.filter(phone_number__in=list_of_phone_numbers)
+        accounts = Account.objects.filter(phone_number__in=list_of_phone_numbers)  # Database
 
         for account in accounts:
             for relation in groups_users_relation:
                 if account.phone_number == relation.get('phone_number'):
                     user_group = groups.get(title=relation.get('group'))
                     if user_group not in account.groups.all():
-                        account.groups.add(user_group)
+                        account.groups.add(user_group)  # Database
                         accounts_added += 1
 
         return ({
