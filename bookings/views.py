@@ -329,8 +329,8 @@ class BookingStatisticsRoomTypes(GenericAPIView):
     def get(self, request, *args, **kwargs):
         serializer = StatisticsSerializer(date=request.query_params)
         serializer.is_valid(raise_exception=True)
-        # date_validation(request.query_params.get('date_from'))
-        # date_validation(request.query_params.get('date_to'))
+        date_validation(serializer.data.get('date_from'))
+        date_validation(serializer.data.get('date_to'))
         date_from = serializer.data.get('date_from')
         date_to = serializer.data.get('date_to')
 
