@@ -207,7 +207,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'booking_api_django_new.wsgi.application'
 
-# Database
+
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 print({

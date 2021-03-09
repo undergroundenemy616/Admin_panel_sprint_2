@@ -106,7 +106,7 @@ class ListCreateGroupWithAccountsCsvAPIView(GenericAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializerWithAccountsCSV
     pagination_class = None
-    # permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin,)
     parser_classes = (MultiPartParser, FormParser, )
 
     def post(self, request, *args, **kwargs):
