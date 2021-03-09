@@ -65,6 +65,13 @@ class BaseBookingSerializer(serializers.ModelSerializer):
         depth = 1
 
 
+# TODO Merge with Serializer above. For now mb bad effect on response for frontend
+class TestBaseBookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = "__all__"
+
+
 class BookingSerializer(serializers.ModelSerializer):
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
@@ -81,7 +88,7 @@ class BookingSerializer(serializers.ModelSerializer):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
     def to_representation(self, instance):
-        response = BaseBookingSerializer(instance).data
+        response = TestBaseBookingSerializer(instance).data
         response['active'] = response['is_active']
         del response['is_active']
         response['date_activate_until'] = instance.date_to if instance.is_active else instance.date_activate_until
