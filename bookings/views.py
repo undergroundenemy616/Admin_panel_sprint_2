@@ -224,7 +224,9 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     Can be filtered by date_from-date_to.
     """
     serializer_class = BookingListTablesSerializer
-    queryset = Booking.objects.all().select_related('table')
+    queryset = Booking.objects.all().select_related('table', 'user').prefetch_related(
+        'table__room__floor__office', 'table__room__type', 'table__room__zone', 'table__tags',
+        'table__images', 'table__table_marker')
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(query_serializer=SwaggerBookListTableParametrs)
@@ -235,7 +237,7 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
             serializer.is_valid(raise_exception=True)
             queryset = self.queryset.is_overflowed_with_data(table=table_instance.id,
                                                              date_from=serializer.data['date_from'],
-                                                             date_to=serializer.data['date_to'])
+                                                             date_to=serializer.data['date_to']).order_by('-date_from')
             response = {
                 'id': table_instance.id,
                 'table': TableSerializer(instance=table_instance).data,
@@ -245,8 +247,9 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
             }
             return Response(response, status=status.HTTP_200_OK)
         else:
-            table_instance = get_object_or_404(Table, pk=request.query_params.get('table'))
-            queryset = self.queryset.filter(table=table_instance.id)
+            table_instance = get_object_or_404(Table.objects.select_related('room', 'room__floor',
+                'table_marker').prefetch_related('tags', 'images'), pk=request.query_params.get('table'))
+            queryset = self.queryset.filter(table=table_instance.id).order_by('-date_from')
             response = {
                 'id': table_instance.id,
                 'table': TableSerializer(instance=table_instance).data,
@@ -303,13 +306,14 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
 
 class BookingsListUserView(BookingsAdminView):
     serializer_class = BookingListSerializer
-    queryset = Booking.objects.all().prefetch_related('user').select_related('table')
+    queryset = Booking.objects.all().prefetch_related('user').select_related(
+        'table', 'table__room', 'table__room__type', 'table__room__floor', 'table__room__floor__office')
 
     @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.query_params['user'])
         by_user = self.queryset.filter(user=account.id, status__in=['waiting', 'active'])
-        self.queryset = by_user
+        self.queryset = by_user.order_by('-date_from')
         response = self.list(request, *args, **kwargs)
         response.data['user'] = AccountSerializer(instance=account).data
         return response
