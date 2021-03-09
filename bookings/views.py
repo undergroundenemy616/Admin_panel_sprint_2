@@ -15,6 +15,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.response import Response
 from time import strptime
 import orjson
+import os
 import uuid
 from workalendar.europe import Russia
 import xlsxwriter
@@ -40,7 +41,7 @@ from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from files.models import File
-from files.serializers import BaseFileSerializer
+from files.serializers import BaseFileSerializer, check_token
 from tables.serializers import Table, TableSerializer, TableMarker
 from users.models import Account
 from users.serializers import AccountSerializer
@@ -397,12 +398,15 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
             workbook.close()
 
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
                 files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
+                headers=headers,
             )
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
@@ -570,12 +574,15 @@ class BookingEmployeeStatistics(GenericAPIView):
 
             workbook.close()
 
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
                 files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
+                headers=headers,
             )
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
@@ -688,12 +695,15 @@ class BookingFuture(GenericAPIView):
 
             workbook.close()
 
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
             try:
                 response = requests.post(
                     url=FILES_HOST + "/upload",
                     files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                    auth=(FILES_USERNAME, FILES_PASSWORD),
+                    headers=headers,
                 )
             except requests.exceptions.RequestException:
                 return {"message": "Error occured during file upload"}, 500
