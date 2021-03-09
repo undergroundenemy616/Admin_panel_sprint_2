@@ -329,6 +329,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
     def get(self, request, *args, **kwargs):
         serializer = StatisticsSerializer(date=request.query_params)
         serializer.is_valid(raise_exception=True)
+
         date_validation(serializer.data.get('date_from'))
         date_validation(serializer.data.get('date_to'))
         date_from = serializer.data.get('date_from')
@@ -431,6 +432,8 @@ class BookingEmployeeStatistics(GenericAPIView):
     @swagger_auto_schema(query_serializer=SwaggerBookingEmployeeStatistics)
     def get(self, request, *args, **kwargs):
         serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
         if len(serializer.data.get('month')) > 10 or \
                 int(serializer.data.get('year')) not in range(1970, 2500):
             return ResponseException("Wrong data")
@@ -603,6 +606,7 @@ class BookingFuture(GenericAPIView):
     def get(self, request, *args, **kwargs):
         serializer = StatisticsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
+
         date_validation(serializer.data.get('date'))
         date = serializer.data.get('date')
 
