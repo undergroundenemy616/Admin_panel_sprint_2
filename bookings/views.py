@@ -454,15 +454,15 @@ class BookingEmployeeStatistics(GenericAPIView):
 
         query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
-        oo.title as office_title, ff.title as floor_title, ua.id as user_id, ua.first_name as first_name,
+        oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
         ua.middle_name as middle_name, ua.last_name as last_name
         FROM bookings_booking b
         INNER JOIN tables_table tt on b.table_id = tt.id
         INNER JOIN rooms_room rr on rr.id = tt.room_id
         INNER JOIN floors_floor ff on rr.floor_id = ff.id
         INNER JOIN offices_office oo on ff.office_id = oo.id
-        INNER JOIN users_user uu on b.user_id = uu.id
-        INNER JOIN users_account ua on uu.id = ua.user_id
+        LEFT JOIN users_user uu on b.user_id = uu.id
+        LEFT JOIN users_account ua on uu.id = ua.user_id
         WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}"""
 
         if serializer.data.get('office_id'):
@@ -613,17 +613,17 @@ class BookingFuture(GenericAPIView):
         file_name = "future_" + date + '.xlsx'
 
         query = f"""
-        SELECT b.id, ua.id as user_id, ua.first_name as first_name, ua.middle_name as middle_name, 
-        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id, 
-        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, 
+        SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
+        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id,
+        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
         b.date_activate_until
         FROM bookings_booking b
         INNER JOIN tables_table tt on b.table_id = tt.id
         INNER JOIN rooms_room rr on rr.id = tt.room_id
         INNER JOIN floors_floor ff on rr.floor_id = ff.id
         INNER JOIN offices_office oo on ff.office_id = oo.id
-        INNER JOIN users_user uu on b.user_id = uu.id
-        INNER JOIN users_account ua on uu.id = ua.user_id
+        LEFT JOIN users_user uu on b.user_id = uu.id
+        LEFT JOIN users_account ua on uu.id = ua.user_id
         WHERE b.date_from::date = '{date}'"""
 
         if serializer.data.get('office_id'):
