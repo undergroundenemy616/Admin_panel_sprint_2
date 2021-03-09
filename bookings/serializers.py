@@ -48,6 +48,16 @@ class SwaggerDashboard(serializers.Serializer):
     date_to = serializers.DateField(required=False, format='%Y-%m-%d')
 
 
+class StatisticsSerializer(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
+    month = serializers.CharField(required=False, max_length=10)
+    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    date = serializers.DateField(required=False, format='%Y-%m-%d')
+
+
+
 class BaseBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
