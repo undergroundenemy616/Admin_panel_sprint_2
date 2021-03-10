@@ -85,7 +85,7 @@ class FileSerializer(serializers.ModelSerializer):
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
-                files={"file": (file.name, file.file.getvalue(), file.content_type)},
+                files={"file": (file.name, file.file, file.content_type)},
                 headers=headers,
                 )
         except requests.exceptions.RequestException:
