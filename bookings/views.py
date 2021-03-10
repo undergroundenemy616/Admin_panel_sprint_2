@@ -15,6 +15,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.response import Response
 from time import strptime
 import orjson
+import os
 import uuid
 from workalendar.europe import Russia
 import xlsxwriter
@@ -40,7 +41,7 @@ from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from files.models import File
-from files.serializers import BaseFileSerializer
+from files.serializers import BaseFileSerializer, check_token
 from tables.serializers import Table, TableSerializer, TableMarker
 from users.models import Account
 from users.serializers import AccountSerializer
@@ -327,7 +328,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookListRoomTypeStats)
     def get(self, request, *args, **kwargs):
-        serializer = StatisticsSerializer(date=request.query_params)
+        serializer = StatisticsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
 
         date_validation(serializer.data.get('date_from'))
@@ -397,12 +398,15 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
             workbook.close()
 
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
                 files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
+                headers=headers,
             )
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
@@ -570,12 +574,15 @@ class BookingEmployeeStatistics(GenericAPIView):
 
             workbook.close()
 
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
                 files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
+                headers=headers,
             )
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
@@ -664,10 +671,18 @@ class BookingFuture(GenericAPIView):
                     book_time = float((datetime.fromisoformat(sql_results[j]['date_to']).timestamp() -
                                        datetime.fromisoformat(sql_results[j]['date_from']).timestamp()) / 3600).__round__(2)
 
-                    r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
-                                                    '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
-                    r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
-                                                  '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    try:
+                        r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    except ValueError:
+                        correct_date_from = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        correct_date_to = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        r_date_from = datetime.strptime(correct_date_from.replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(correct_date_to.replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
 
                     worksheet.write('A' + str(i), full_name)
                     worksheet.write('B' + str(i), str(r_date_from))
@@ -680,12 +695,15 @@ class BookingFuture(GenericAPIView):
 
             workbook.close()
 
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
             try:
                 response = requests.post(
                     url=FILES_HOST + "/upload",
                     files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                    auth=(FILES_USERNAME, FILES_PASSWORD),
+                    headers=headers,
                 )
             except requests.exceptions.RequestException:
                 return {"message": "Error occured during file upload"}, 500
