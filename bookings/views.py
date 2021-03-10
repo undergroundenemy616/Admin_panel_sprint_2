@@ -15,6 +15,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.response import Response
 from time import strptime
 import orjson
+import os
 import uuid
 from workalendar.europe import Russia
 import xlsxwriter
@@ -33,13 +34,14 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   SwaggerBookingEmployeeStatistics,
                                   SwaggerBookingFuture,
                                   SwaggerDashboard,
+                                  StatisticsSerializer,
                                   get_duration, room_type_statictic_serializer,
                                   employee_statistics, most_frequent, bookings_future, date_validation, months_between)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from files.models import File
-from files.serializers import BaseFileSerializer
+from files.serializers import BaseFileSerializer, check_token
 from tables.serializers import Table, TableSerializer, TableMarker
 from users.models import Account
 from users.serializers import AccountSerializer
@@ -224,7 +226,9 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     Can be filtered by date_from-date_to.
     """
     serializer_class = BookingListTablesSerializer
-    queryset = Booking.objects.all().select_related('table')
+    queryset = Booking.objects.all().select_related('table', 'user').prefetch_related(
+        'table__room__floor__office', 'table__room__type', 'table__room__zone', 'table__tags',
+        'table__images', 'table__table_marker')
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(query_serializer=SwaggerBookListTableParametrs)
@@ -235,7 +239,7 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
             serializer.is_valid(raise_exception=True)
             queryset = self.queryset.is_overflowed_with_data(table=table_instance.id,
                                                              date_from=serializer.data['date_from'],
-                                                             date_to=serializer.data['date_to'])
+                                                             date_to=serializer.data['date_to']).order_by('-date_from')
             response = {
                 'id': table_instance.id,
                 'table': TableSerializer(instance=table_instance).data,
@@ -245,8 +249,9 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
             }
             return Response(response, status=status.HTTP_200_OK)
         else:
-            table_instance = get_object_or_404(Table, pk=request.query_params.get('table'))
-            queryset = self.queryset.filter(table=table_instance.id)
+            table_instance = get_object_or_404(Table.objects.select_related('room', 'room__floor',
+                'table_marker').prefetch_related('tags', 'images'), pk=request.query_params.get('table'))
+            queryset = self.queryset.filter(table=table_instance.id).order_by('-date_from')
             response = {
                 'id': table_instance.id,
                 'table': TableSerializer(instance=table_instance).data,
@@ -303,13 +308,14 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
 
 class BookingsListUserView(BookingsAdminView):
     serializer_class = BookingListSerializer
-    queryset = Booking.objects.all().prefetch_related('user').select_related('table')
+    queryset = Booking.objects.all().prefetch_related('user').select_related(
+        'table', 'table__room', 'table__room__type', 'table__room__floor', 'table__room__floor__office')
 
     @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.query_params['user'])
         by_user = self.queryset.filter(user=account.id, status__in=['waiting', 'active'])
-        self.queryset = by_user
+        self.queryset = by_user.order_by('-date_from')
         response = self.list(request, *args, **kwargs)
         response.data['user'] = AccountSerializer(instance=account).data
         return response
@@ -322,15 +328,18 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookListRoomTypeStats)
     def get(self, request, *args, **kwargs):
-        date_validation(request.query_params.get('date_from'))
-        date_validation(request.query_params.get('date_to'))
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        date_validation(serializer.data.get('date_from'))
+        date_validation(serializer.data.get('date_to'))
+        date_from = serializer.data.get('date_from')
+        date_to = serializer.data.get('date_to')
 
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
-        stats = self.queryset.all().raw(f"""
+        query = f"""
         SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to
         FROM bookings_booking b
         INNER JOIN tables_table t ON t.id = b.table_id
@@ -338,7 +347,12 @@ class BookingStatisticsRoomTypes(GenericAPIView):
         INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
         WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-        (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
+        (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')"""
+
+        if serializer.data.get('office_id'):
+            query = query + f""" and rtr.office_id = '{serializer.data.get('office_id')}'"""
+
+        stats = self.queryset.all().raw(query)
         sql_results = []
         set_of_types = set()
         list_of_types = []
@@ -384,12 +398,15 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
             workbook.close()
 
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
                 files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
+                headers=headers,
             )
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
@@ -418,35 +435,44 @@ class BookingEmployeeStatistics(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookingEmployeeStatistics)
     def get(self, request, *args, **kwargs):
-        if len(request.query_params.get('month')) > 10 or \
-                int(request.query_params.get('year')) not in range(1970, 2500):
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        if len(serializer.data.get('month')) > 10 or \
+                int(serializer.data.get('year')) not in range(1970, 2500):
             return ResponseException("Wrong data")
-        if request.query_params.get('month'):
-            month = request.query_params.get('month')
+        if serializer.data.get('month'):
+            month = serializer.data.get('month')
             month_num = int(strptime(month, '%B').tm_mon)
         else:
             month_num = int(datetime.now().month)
             month = datetime.now().strftime("%B")
 
-        if request.query_params.get('year'):
-            year = int(request.query_params.get('year'))
+        if serializer.data.get('year'):
+            year = int(serializer.data.get('year'))
         else:
             year = int(datetime.now().year)
 
         file_name = month + '_' + str(year) + '.xlsx'
         secure_file_name = uuid.uuid4().hex + file_name
 
-        stats = self.queryset.all().raw(f"""
+        query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
-        oo.title as office_title, ff.title as floor_title, ua.id as user_id, ua.first_name as first_name,
+        oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
         ua.middle_name as middle_name, ua.last_name as last_name
         FROM bookings_booking b
         INNER JOIN tables_table tt on b.table_id = tt.id
         INNER JOIN rooms_room rr on rr.id = tt.room_id
         INNER JOIN floors_floor ff on rr.floor_id = ff.id
         INNER JOIN offices_office oo on ff.office_id = oo.id
-        INNER JOIN users_account ua on b.user_id = ua.id
-        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}""")
+        LEFT JOIN users_user uu on b.user_id = uu.id
+        LEFT JOIN users_account ua on uu.id = ua.user_id
+        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}"""
+
+        if serializer.data.get('office_id'):
+            query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
+
+        stats = self.queryset.all().raw(query)
 
         sql_results = []
 
@@ -496,7 +522,7 @@ class BookingEmployeeStatistics(GenericAPIView):
             set_rows = set()
 
             for employee in employees:
-                set_rows.add(orjson.dumps(employee, sort_keys=True))
+                set_rows.add(orjson.dumps(employee, option=orjson.OPT_SORT_KEYS))
 
             list_rows = []
 
@@ -547,12 +573,16 @@ class BookingEmployeeStatistics(GenericAPIView):
             worksheet.write('B' + str(len(list_rows) + 2), working_days, bold)
 
             workbook.close()
+
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
                 files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
+                headers=headers,
             )
         except requests.exceptions.RequestException:
             return {"message": "Error occured during file upload"}, 500
@@ -581,23 +611,32 @@ class BookingFuture(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookingFuture)
     def get(self, request, *args, **kwargs):
-        date_validation(request.query_params.get('date'))
-        date = request.query_params.get('date')
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        date_validation(serializer.data.get('date'))
+        date = serializer.data.get('date')
 
         file_name = "future_" + date + '.xlsx'
 
-        stats = self.queryset.all().raw(f"""
-        SELECT b.id, ua.id as user_id, ua.first_name as first_name, ua.middle_name as middle_name, 
-        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id, 
-        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, 
+        query = f"""
+        SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
+        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id,
+        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
         b.date_activate_until
         FROM bookings_booking b
         INNER JOIN tables_table tt on b.table_id = tt.id
         INNER JOIN rooms_room rr on rr.id = tt.room_id
         INNER JOIN floors_floor ff on rr.floor_id = ff.id
         INNER JOIN offices_office oo on ff.office_id = oo.id
-        INNER JOIN users_account ua on b.user_id = ua.id
-        WHERE b.date_from::date = '{date}'""")
+        LEFT JOIN users_user uu on b.user_id = uu.id
+        LEFT JOIN users_account ua on uu.id = ua.user_id
+        WHERE b.date_from::date = '{date}'"""
+
+        if serializer.data.get('office_id'):
+            query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
+
+        stats = self.queryset.all().raw(query)
 
         sql_results = []
 
@@ -632,10 +671,18 @@ class BookingFuture(GenericAPIView):
                     book_time = float((datetime.fromisoformat(sql_results[j]['date_to']).timestamp() -
                                        datetime.fromisoformat(sql_results[j]['date_from']).timestamp()) / 3600).__round__(2)
 
-                    r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
-                                                    '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
-                    r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
-                                                  '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    try:
+                        r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    except ValueError:
+                        correct_date_from = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        correct_date_to = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        r_date_from = datetime.strptime(correct_date_from.replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(correct_date_to.replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
 
                     worksheet.write('A' + str(i), full_name)
                     worksheet.write('B' + str(i), str(r_date_from))
@@ -648,12 +695,15 @@ class BookingFuture(GenericAPIView):
 
             workbook.close()
 
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
             try:
                 response = requests.post(
                     url=FILES_HOST + "/upload",
                     files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                    auth=(FILES_USERNAME, FILES_PASSWORD),
+                    headers=headers,
                 )
             except requests.exceptions.RequestException:
                 return {"message": "Error occured during file upload"}, 500
@@ -684,17 +734,19 @@ class BookingStatisticsDashboard(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerDashboard)
     def get(self, request, *args, **kwargs):
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
         valid_office_id = None
-        if request.query_params.get('office_id'):
+        if serializer.data.get('office_id'):
             try:
-                valid_office_id = uuid.UUID(request.query_params.get('office_id')).hex
+                valid_office_id = uuid.UUID(serializer.data.get('office_id')).hex
             except ValueError:
                 raise ResponseException("Office ID is not valid", status.HTTP_400_BAD_REQUEST)
-        if request.query_params.get('date_from') and request.query_params.get('date_to'):
-            date_validation(request.query_params.get('date_from'))
-            date_validation(request.query_params.get('date_to'))
-            date_from = request.query_params.get('date_from')
-            date_to = request.query_params.get('date_to')
+        if serializer.data.get('date_from') and serializer.data.get('date_to'):
+            date_validation(serializer.data.get('date_from'))
+            date_validation(serializer.data.get('date_to'))
+            date_from = serializer.data.get('date_from')
+            date_to = serializer.data.get('date_to')
         else:
             date_from, date_to = date.today(), date.today()
 

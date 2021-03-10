@@ -3,7 +3,6 @@ from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from rest_framework import serializers, status
-import time
 
 
 from booking_api_django_new.validate_phone_number import validate_phone_number
