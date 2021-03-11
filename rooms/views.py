@@ -131,8 +131,11 @@ class RoomsView(ListModelMixin,
                 ).select_related('table').values_list('table__id', flat=True)
                 room_tables = room['tables'][:]
                 for table in room['tables']:
-                    if not room['room_type_unified'] and (not table.get('marker') or uuid.UUID(table.get('id'))) in bookings:
+                    if (not table.get('marker') and not room['room_type_unified']) or uuid.UUID(table.get('id')) in bookings:
                         room_tables.remove(table)
+                    if room['room_type_unified'] and uuid.UUID(table.get('id')) in bookings:
+                        room['booked_table'] = table
+
                 room['tables'] = room_tables
                 # for booking in bookings:
                 #     room_tables = room['tables'][:]
