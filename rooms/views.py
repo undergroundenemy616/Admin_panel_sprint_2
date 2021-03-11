@@ -133,6 +133,9 @@ class RoomsView(ListModelMixin,
                 for table in room['tables']:
                     if (not table.get('marker') and not room['room_type_unified']) or uuid.UUID(table.get('id')) in bookings:
                         room_tables.remove(table)
+                    if room['room_type_unified'] and uuid.UUID(table.get('id')) in bookings:
+                        room['booked_table'] = table
+
                 room['tables'] = room_tables
                 # for booking in bookings:
                 #     room_tables = room['tables'][:]
