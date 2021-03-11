@@ -56,7 +56,7 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
 
         account, account_created = Account.objects.get_or_create(user=user)
         if account_created:
-            user_group = Group.objects.get(access=4)
+            user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
             account.groups.add(user_group)
         if request.data.get('description'):
             account.description = request.data.get('description')
