@@ -187,10 +187,12 @@ class AccountView(GenericAPIView):
 class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
     serializer_class = AccountUpdateSerializer
     queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAuthenticated,)
 
     def put(self, request, pk=None, *args, **kwargs):
         account = get_object_or_404(Account, pk=pk)
+        if account.id != request.user.account.id and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=account)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
@@ -200,6 +202,8 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
         instance = get_object_or_404(Account, pk=pk)
         if instance.id == self.request.user.account.id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        if not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         flag = 0
         # for group in instance.groups.all():
         #     if group.access <= 2:
