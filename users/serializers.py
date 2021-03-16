@@ -251,12 +251,12 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
     lastname = serializers.CharField(source='last_name', required=False, allow_blank=True)
     middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    email = serializers.EmailField(required=False)
+    email = serializers.EmailField(required=False, allow_blank=True)
     phone_number = serializers.CharField(required=False)
     photo = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, allow_null=True)
     city = serializers.IntegerField(required=False, allow_null=True)
     birthday = serializers.CharField(source='birth_date', required=False)
-    gender = serializers.CharField(required=False)
+    gender = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Account
