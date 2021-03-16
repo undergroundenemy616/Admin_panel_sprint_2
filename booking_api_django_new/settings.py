@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 from datetime import timedelta
 import os
+import logging
 
 import orjson
 from dotenv import load_dotenv
@@ -36,6 +37,7 @@ BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 BOOKING_TIMEDELTA_CHECK = 15
 PUSH_HOST = "https://push.liis.su"
 
+SERVER_EMAIL = 'support@liis.su'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.com'
 EMAIL_PORT = 465
@@ -150,32 +152,64 @@ CACHES = {
     }
 }
 
-# LOGGING = {
-#     'version': 1,
-#     'filters': {
-#         'require_debug_true': {
-#             '()': 'django.utils.log.RequireDebugTrue',
-#         }
-#     },
-#     'handlers': {
-#         'console': {
-#             'level': 'DEBUG',
-#             'filters': ['require_debug_true'],
-#             'class': 'logging.StreamHandler',
-#         }
-#     },
-#     'loggers': {
-#         'django.db.backends': {
-#             'level': 'DEBUG',
-#             'handlers': ['console'],
-#         }
-#     }
-# }
+
+ADMINS = [('Support', 'support@liis.su'), ]
+
+REQUEST_LOGGING_DATA_LOG_LEVEL = logging.WARNING
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+            'django.server': {
+                '()': 'django.utils.log.ServerFormatter',
+                'format': '[{server_time}] {message}',
+                'style': '{',
+            }
+        },
+    'filters': {
+            'require_debug_false': {
+                '()': 'django.utils.log.RequireDebugFalse',
+            },
+            'require_debug_true': {
+                '()': 'django.utils.log.RequireDebugTrue',
+            },
+            'not_500': {
+                '()': 'core.filters.Not500'
+            }
+
+        },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'django.server'
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'filters': ['not_500']
+        },
+        'logfile': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR + '/simple_office.log',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console', 'logfile', 'mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
 
 MIDDLEWARE = [
     'core.middlewares.CorsMiddleware',
     'core.middlewares.RequestTimeMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'request_logging.middleware.LoggingMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

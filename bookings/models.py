@@ -1,6 +1,7 @@
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+import logging
 
 import requests
 from django.core.exceptions import ObjectDoesNotExist
@@ -94,7 +95,7 @@ class Booking(models.Model):
 
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
-        self.job_create_oncoming_notification()
+        self.job_create_oncoming_notification(self.user.id)
         self.job_create_change_states()
         super(self.__class__, self).save(*args, **kwargs)
 
@@ -189,6 +190,8 @@ class Booking(models.Model):
         if push_group and not self.is_over \
                 and self.user:
             expo_data = {
+                "account": str(self.user.id),
+                "app": push_group,
                 "title": "Уведомление о предстоящем бронировании",
                 "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
                 "data": {
@@ -211,6 +214,8 @@ class Booking(models.Model):
         if push_group and not self.is_over \
                 and self.user:
             expo_data = {
+                "account": str(self.user.id),
+                "app": push_group,
                 "title": "Открыто подтверждение!",
                 "body": f"Вы можете подтвердить бронирование QR-кодом в течении 30 минут.",
                 "data": {
@@ -228,21 +233,23 @@ class Booking(models.Model):
             # for token in [push_object.token for push_object in self.user.push_tokens.all()]:
             #     send_push_message(token, expo_data)
 
-    def job_create_oncoming_notification(self):
+    def job_create_oncoming_notification(self, account_id):
         """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         # if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
+        logging.basicConfig()
+        logging.getLogger('apscheduler').setLevel(logging.DEBUG)
         scheduler.add_job(
-            self.notify_about_oncoming_booking,
-            "date",
+            func=self.notify_about_oncoming_booking,
+            name="oncoming",
             run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(minutes=2),
             misfire_grace_time=10000,
             id="notify_about_oncoming_booking_" + str(self.id),
             replace_existing=True
         )
         scheduler.add_job(
-            self.notify_about_booking_activation,
-            "date",
+            func=self.notify_about_booking_activation,
+            name="activation",
             run_date=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
             misfire_grace_time=10000,
             id="notify_about_activation_booking_" + str(self.id),
