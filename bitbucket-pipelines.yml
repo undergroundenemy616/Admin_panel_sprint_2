@@ -66,3 +66,11 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: production
+    
+    dev_simple_office:
+      - step:
+          <<: *Build
+      - step:
+          <<: *Deploy
+          deployment: deploy_develop
+    
