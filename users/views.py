@@ -423,14 +423,14 @@ class RefreshTokenView(GenericAPIView):
             return Response({"detail": "Refresh parametr is required."}, status=400)
         refresh_ser = TokenRefreshSerializer(data=request.data)
         refresh_ser.is_valid(raise_exception=True)
-        access = refresh_ser.validated_data['access']
-        payload = jwt.decode(jwt=access, verify=False)
-        user = get_object_or_404(User, id=payload['user_id'])
+        # access = refresh_ser.validated_data['access']
+        # payload = jwt.decode(jwt=access, verify=False)
+        # user = get_object_or_404(User, id=payload['user_id'])
         auth_dict = dict()
-        token_serializer = TokenObtainPairSerializer()
-        token = token_serializer.get_token(user=user)
-        auth_dict["refresh_token"] = str(token)
-        auth_dict["access_token"] = str(token.access_token)
+        # token_serializer = TokenObtainPairSerializer()
+        # token = token_serializer.get_token(user=user)
+        auth_dict["refresh_token"] = str(refresh_ser.validated_data['refresh'])
+        auth_dict["access_token"] = str(refresh_ser.validated_data['access'])
         return Response(auth_dict, status=200)
 
 
