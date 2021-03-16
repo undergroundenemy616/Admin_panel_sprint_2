@@ -65,6 +65,7 @@ urlpatterns = [
     path('account', views.AccountView.as_view()),
     path('accounts/<uuid:pk>', views.SingleAccountView.as_view()),
     path('accounts_list', views.AccountListView.as_view()),
+    path('accounts_first/<uuid:pk>', views.AccountFirstPutView.as_view()),
     path('service_email', views.ServiceEmailView.as_view()),
     path('user_access/<uuid:pk>', views.UserAccessView.as_view()),
     path('operator_promotion', views.OperatorPromotionView.as_view()),

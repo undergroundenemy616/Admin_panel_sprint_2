@@ -21,6 +21,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
+from core.authentication import AuthForAccountPut
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
@@ -214,6 +215,21 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
 
     def perform_destroy(self, instance):
         instance.user.delete()
+
+
+class AccountFirstPutView(GenericAPIView):
+    serializer_class = AccountUpdateSerializer
+    queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
+    authentication_classes = (AuthForAccountPut, )
+
+    def put(self, request, pk=None, *args, **kwargs):
+        account = get_object_or_404(Account, pk=pk)
+        if account.id != request.user.account.id and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = self.serializer_class(data=request.data, instance=account)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 
 class RegisterStaffView(GenericAPIView):
