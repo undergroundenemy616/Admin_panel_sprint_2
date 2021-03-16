@@ -411,6 +411,7 @@ class EntranceCollectorView(GenericAPIView):
 
 
 class RefreshTokenView(GenericAPIView):
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         refresh = request.data.get('refresh')

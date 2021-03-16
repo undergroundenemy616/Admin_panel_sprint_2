@@ -28,7 +28,7 @@ SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
 LOCAL = True if os.getenv('LOCAL') == 'True' else False
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False if os.environ.get('BRANCH') == 'prod_gpn' else True
+DEBUG = False  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
 KEY_EXPIRATION = 60  # 3 minutes
 
