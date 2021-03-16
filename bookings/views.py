@@ -398,34 +398,36 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
             workbook.close()
 
-        check_token()
-        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
 
-        try:
-            response = requests.post(
-                url=FILES_HOST + "/upload",
-                files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
-                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                headers=headers,
-            )
-        except requests.exceptions.RequestException:
-            return {"message": "Error occured during file upload"}, 500
+            try:
+                response = requests.post(
+                    url=FILES_HOST + "/upload",
+                    files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                    headers=headers,
+                )
+            except requests.exceptions.RequestException:
+                return {"message": "Error occured during file upload"}, 500
 
-        response_dict = orjson.loads(response.text)
-        file_attrs = {
-            "path": FILES_HOST + str(response_dict.get("path")),
-            "title": secure_file_name,
-            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
-        }
-        if response_dict.get("thumb"):
-            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+            response_dict = orjson.loads(response.text)
+            file_attrs = {
+                "path": FILES_HOST + str(response_dict.get("path")),
+                "title": secure_file_name,
+                "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+            }
+            if response_dict.get("thumb"):
+                file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
 
-        file_storage_object = File(**file_attrs)
-        file_storage_object.save()
+            file_storage_object = File(**file_attrs)
+            file_storage_object.save()
 
-        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+            Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
 
-        return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+            return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
 
 
 class BookingEmployeeStatistics(GenericAPIView):
@@ -574,34 +576,37 @@ class BookingEmployeeStatistics(GenericAPIView):
 
             workbook.close()
 
-        check_token()
-        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
 
-        try:
-            response = requests.post(
-                url=FILES_HOST + "/upload",
-                files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
-                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                headers=headers,
-            )
-        except requests.exceptions.RequestException:
-            return {"message": "Error occured during file upload"}, 500
+            try:
+                response = requests.post(
+                    url=FILES_HOST + "/upload",
+                    files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                    headers=headers,
+                )
+            except requests.exceptions.RequestException:
+                return {"message": "Error occured during file upload"}, 500
 
-        response_dict = orjson.loads(response.text)
-        file_attrs = {
-            "path": FILES_HOST + str(response_dict.get("path")),
-            "title": secure_file_name,
-            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
-        }
-        if response_dict.get("thumb"):
-            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+            response_dict = orjson.loads(response.text)
+            file_attrs = {
+                "path": FILES_HOST + str(response_dict.get("path")),
+                "title": secure_file_name,
+                "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+            }
+            if response_dict.get("thumb"):
+                file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
 
-        file_storage_object = File(**file_attrs)
-        file_storage_object.save()
+            file_storage_object = File(**file_attrs)
+            file_storage_object.save()
 
-        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+            Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
 
-        return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+            return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
+
 
 
 class BookingFuture(GenericAPIView):
@@ -724,7 +729,7 @@ class BookingFuture(GenericAPIView):
 
             return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
         else:
-            return Response("Not found", status=status.HTTP_404_NOT_FOUND)
+            return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
 
 
 class BookingStatisticsDashboard(GenericAPIView):
