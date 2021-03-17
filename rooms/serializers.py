@@ -277,7 +277,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
         data['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
-        data['type'] = RoomTypeSerializer(instance=instance.type).data
+        data['type'] = instance.type.title  # RoomTypeSerializer(instance=instance.type).data
         data['room_type_color'] = instance.type.color
         data['room_type_unified'] = instance.type.unified
         data['is_bookable'] = instance.type.bookable
