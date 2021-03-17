@@ -105,6 +105,7 @@ class TestAccountSerializer(serializers.Serializer):
         # response['district_string'] = instance.district_string,
         # response['account_type'] = instance.account_type,
         # response['groups'] = instance.groups.all(),
+        response['is_active'] = instance.user.is_active
         response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
         response['firstname'] = instance.first_name
         response['lastname'] = instance.last_name

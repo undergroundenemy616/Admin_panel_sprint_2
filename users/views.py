@@ -253,7 +253,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
                 self.queryset = self.queryset.filter(groups=serializer.data.get('access_group'))
-            self.queryset.order_by('is_active')
+            self.queryset.order_by('user__is_active')
             return self.list(self, request, *args, **kwargs)
         elif request.query_params.get('access_group'):
             serializer = AccountListGetSerializer(data=request.query_params)
