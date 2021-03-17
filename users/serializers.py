@@ -202,7 +202,7 @@ class RegisterUserFromAPSerializer(serializers.Serializer):
         if not created:
             raise ValidationError(detail={'message': 'User already exist', 'code': '400'})
         account = Account.objects.create(user=user, city=self.data['city'], description=self.data['description'],
-                                         email=self.data['email'], first_name=self.data['firstname'],
+                                         email=self.data['email'] or None, first_name=self.data['firstname'],
                                          gender=self.data['gender'], last_name=self.data['lastname'],
                                          middle_name=self.data['middlename'])
         user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
