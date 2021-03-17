@@ -94,7 +94,7 @@ class Booking(models.Model):
 
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
-        self.job_create_oncoming_notification(self.user.id)
+        self.job_create_oncoming_notification()
         self.job_create_change_states()
         super(self.__class__, self).save(*args, **kwargs)
 
@@ -232,7 +232,7 @@ class Booking(models.Model):
             # for token in [push_object.token for push_object in self.user.push_tokens.all()]:
             #     send_push_message(token, expo_data)
 
-    def job_create_oncoming_notification(self, account_id):
+    def job_create_oncoming_notification(self):
         """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         # if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
