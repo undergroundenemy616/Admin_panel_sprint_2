@@ -1,7 +1,6 @@
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-import logging
 
 import requests
 from django.core.exceptions import ObjectDoesNotExist
@@ -237,8 +236,6 @@ class Booking(models.Model):
         """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         # if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
-        logging.basicConfig()
-        logging.getLogger('apscheduler').setLevel(logging.DEBUG)
         scheduler.add_job(
             func=self.notify_about_oncoming_booking,
             name="oncoming",
