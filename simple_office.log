@@ -1,0 +1,328 @@
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 204, in _get_response
+    response = response.render()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\template\response.py", line 105, in render
+    self.content = self.rendered_content
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\response.py", line 70, in rendered_content
+    ret = renderer.render(self.data, accepted_media_type, context)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\drf_orjson_renderer\renderers.py", line 96, in render
+    serialized = orjson.dumps(
+TypeError: Type is not JSON serializable: Response
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 204, in _get_response
+    response = response.render()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\template\response.py", line 105, in render
+    self.content = self.rendered_content
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\response.py", line 70, in rendered_content
+    ret = renderer.render(self.data, accepted_media_type, context)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\drf_orjson_renderer\renderers.py", line 96, in render
+    serialized = orjson.dumps(
+TypeError: Type is not JSON serializable: Response
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'POST, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '35')}[0m
+[35mb'{"message":"Incorrect data format"}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'POST, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '35')}[0m
+[35mb'{"message":"Incorrect data format"}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'POST, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '35')}[0m
+[35mb'{"message":"Incorrect data format"}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'POST, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '35')}[0m
+[35mb'{"message":"Incorrect data format"}'[0m
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 262, in create
+    if validate_phone_number(chunk.decode('utf8').split(';')[2]):
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 129, in post
+    group = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 280, in create
+    "full_name": chunk.decode('cp1251').encode('utf-8').split(';')[0],
+TypeError: a bytes-like object is required, not 'str'
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 129, in post
+    group = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 262, in create
+    if validate_phone_number(chunk.split(';')[2]):
+TypeError: a bytes-like object is required, not 'str'
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 262, in create
+    if validate_phone_number(chunk.decode('utf8').split(';')[2]):
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 129, in post
+    group = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 279, in create
+    print("full_name", chunk.decode('cp1252').split(';')[0])
+  File "C:\Users\AngryNerd\AppData\Local\Programs\Python\Python39\lib\encodings\cp1252.py", line 15, in decode
+    return codecs.charmap_decode(input,errors,decoding_table)
+UnicodeDecodeError: 'charmap' codec can't decode byte 0x8f in position 14: character maps to <undefined>
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 262, in create
+    if validate_phone_number(chunk.decode('utf8').split(';')[2]):
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 129, in post
+    group = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 279, in create
+    print("full_name", chunk.decode('utf8').split(';')[0])
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 262, in create
+    if validate_phone_number(chunk.decode('utf8').split(';')[2]):
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 129, in post
+    group = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 279, in create
+    print("full_name", chunk.decode('cp-1251').split(';')[0])
+LookupError: unknown encoding: cp-1251
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 262, in create
+    if validate_phone_number(chunk.decode('utf8').split(';')[2]):
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 129, in post
+    group = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 279, in create
+    print("full_name", chunk.decode('cp-1251').split(';')[0])
+LookupError: unknown encoding: cp-1251
+Internal Server Error: /groups/import_single
+Traceback (most recent call last):
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 262, in create
+    if validate_phone_number(chunk.decode('utf8').split(';')[2]):
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 0: invalid start byte
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 129, in post
+    group = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 279, in create
+    print("full_name", chunk.decode('cp1251').split(';')[0])
+LookupError: unknown encoding: cp-1251
+Internal Server Error: /groups/import_list
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 115, in post
+    groups = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 138, in create
+    list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
+IndexError: list index out of range
+Internal Server Error: /groups/import_list
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 115, in post
+    groups = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 138, in create
+    list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
+IndexError: list index out of range
+Internal Server Error: /groups/import_list
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\groups\views.py", line 115, in post
+    groups = serializer.save()
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\serializers.py", line 205, in save
+    self.instance = self.create(validated_data)
+  File "C:\Projects\booking-api-django\groups\serializers.py", line 138, in create
+    list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
+IndexError: list index out of range

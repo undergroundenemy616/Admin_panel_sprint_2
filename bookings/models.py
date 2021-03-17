@@ -21,9 +21,9 @@ class BookingManager(models.Manager):
     def is_overflowed(self, table, date_from, date_to):
         """Check for booking availability"""
         overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
-            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gte=date_to)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)
+            filter(Q(date_from__gt=date_from, date_from__lt=date_to)
+                   | Q(date_from__lt=date_from, date_to__gt=date_to)
+                   | Q(date_from__gt=date_from, date_to__lt=date_to)
                    | Q(date_to__gt=date_from, date_to__lt=date_to)).select_related('table')
         if overflows:
             return True
@@ -32,9 +32,9 @@ class BookingManager(models.Manager):
     def is_overflowed_with_data(self, table, date_from, date_to):
         """Check for booking availability"""
         overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
-            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gte=date_to)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)
+            filter(Q(date_from__gt=date_from, date_from__lt=date_to)
+                   | Q(date_from__lt=date_from, date_to__gt=date_to)
+                   | Q(date_from__gt=date_from, date_to__lt=date_to)
                    | Q(date_to__gt=date_from, date_to__lt=date_to)).select_related('table')
         if overflows:
             return overflows
@@ -189,6 +189,8 @@ class Booking(models.Model):
         if push_group and not self.is_over \
                 and self.user:
             expo_data = {
+                "account": str(self.user.id),
+                "app": push_group,
                 "title": "Уведомление о предстоящем бронировании",
                 "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
                 "data": {
@@ -211,6 +213,8 @@ class Booking(models.Model):
         if push_group and not self.is_over \
                 and self.user:
             expo_data = {
+                "account": str(self.user.id),
+                "app": push_group,
                 "title": "Открыто подтверждение!",
                 "body": f"Вы можете подтвердить бронирование QR-кодом в течении 30 минут.",
                 "data": {
@@ -233,16 +237,16 @@ class Booking(models.Model):
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         # if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
         scheduler.add_job(
-            self.notify_about_oncoming_booking,
-            "date",
+            func=self.notify_about_oncoming_booking,
+            name="oncoming",
             run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(minutes=2),
             misfire_grace_time=10000,
             id="notify_about_oncoming_booking_" + str(self.id),
             replace_existing=True
         )
         scheduler.add_job(
-            self.notify_about_booking_activation,
-            "date",
+            func=self.notify_about_booking_activation,
+            name="activation",
             run_date=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
             misfire_grace_time=10000,
             id="notify_about_activation_booking_" + str(self.id),
