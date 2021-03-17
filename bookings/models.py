@@ -48,9 +48,9 @@ class BookingManager(models.Manager):
         if access['access__min'] < EMPLOYEE_ACCESS:
             return False
         overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False, status__in=['waiting', 'active']). \
-            filter(Q(date_from__gte=date_from, date_from__lte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gte=date_to)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)
+            filter(Q(date_from__gt=date_from, date_from__lt=date_to)
+                   | Q(date_from__lt=date_from, date_to__gt=date_to)
+                   | Q(date_from__gt=date_from, date_to__lt=date_to)
                    | Q(date_to__gt=date_from, date_to__lt=date_to))
         if overflows:
             return True
