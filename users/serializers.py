@@ -229,6 +229,7 @@ class LoginOrRegisterStaffSerializer(serializers.Serializer):
 class RegisterStaffSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='email', required=True)
     host_domain = serializers.CharField(required=False, default='')
+    phone_number = serializers.CharField(required=False)
 
     class Meta:
         model = User
@@ -250,12 +251,16 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         is_exists = User.objects.filter(email=email).exists()
         if is_exists:
             raise ValidationError('Admin already exists.')
+        phone_number = validated_data.get('phone_number')
+        if phone_number:
+            if Account.objects.filter(phone_number=phone_number).exists():
+                raise ValidationError(detail={"message": "Account with this phone already exists!"}, code=400)
         instance = User(email=email, is_active=True, is_staff=True)
         instance.set_password(password)
         instance.save()
         send_html_email_message(
             to=email,
-            subject="Добро пожаловать в Газпром!",
+            subject="Добро пожаловать в Газпром!", # TODO CHANGE!
             template_args={
                 'host': host_domain,
                 'username': email,
