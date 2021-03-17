@@ -261,7 +261,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         instance.save()
         send_html_email_message(
             to=email,
-            subject="Добро пожаловать в Газпром!", # TODO CHANGE!
+            subject="Добро пожаловать в Simple-Office!",
             template_args={
                 'host': host_domain,
                 'username': email,
@@ -357,7 +357,7 @@ class PasswordResetSerializer(serializers.Serializer):
         account = Account.objects.get(pk=self.data['account'])
         if not account.user.email:
             account.user.email = account.email
-            subject = "Добро пожаловать в Газпром!"
+            subject = "Добро пожаловать в Simple-Office!"
         else:
             subject = "Ваш пароль был успешно сброшен!"
 

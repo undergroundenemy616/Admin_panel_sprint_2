@@ -343,7 +343,7 @@ class OperatorPromotionView(GenericAPIView):
             account.groups.add(group)
             send_html_email_message(
                 to=account.email,
-                subject="Добро пожаловать в Газпром!",
+                subject="Добро пожаловать в Simple-Office!",
                 template_args={
                     'host': request.build_absolute_uri('/'),
                     'username': account.user.email,
