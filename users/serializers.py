@@ -247,11 +247,11 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
 
 
 class AccountUpdateSerializer(serializers.ModelSerializer):
-    firstname = serializers.CharField(source='first_name', required=False, allow_blank=True)
-    lastname = serializers.CharField(source='last_name', required=False, allow_blank=True)
-    middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True)
+    firstname = serializers.CharField(source='first_name', required=False, allow_blank=True, allow_null=True)
+    lastname = serializers.CharField(source='last_name', required=False, allow_blank=True, allow_null=True)
+    middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True, allow_null=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    email = serializers.EmailField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
     phone_number = serializers.CharField(required=False)
     photo = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, allow_null=True)
     city = serializers.IntegerField(required=False, allow_null=True)
