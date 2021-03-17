@@ -1,5 +1,6 @@
 from core.handlers import ResponseException
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from rest_framework import serializers, status
@@ -225,38 +226,87 @@ class GroupSerializerOnlyAccountsCSV(serializers.ModelSerializer):
             raise ResponseException('Group not found', status.HTTP_404_NOT_FOUND)
 
         list_of_phone_numbers = []
+        account_data = []
 
         for chunk in list(file.read().splitlines()):
-            try:
+            if len(chunk) <= 15:
                 try:
-                    if validate_phone_number(chunk.decode('utf8').split(',')[0]):
-                        list_of_phone_numbers.append(chunk.decode('utf8').split(',')[0])
-                except IndexError:
-                    if validate_phone_number(chunk.decode('utf8')):
-                        list_of_phone_numbers.append(chunk.decode('utf8'))
-            except UnicodeDecodeError:
+                    try:
+                        if validate_phone_number(chunk.decode('utf8').split(',')[0]):
+                            for account in group.accounts.all():
+                                if account.phone_number != chunk.decode('utf8').split(',')[0]:
+                                    account_data.append(chunk.decode('utf8').split(',')[0])
+                                    list_of_phone_numbers.append(chunk.decode('utf8').split(',')[0])
+                    except IndexError:
+                        if validate_phone_number(chunk.decode('utf8')):
+                            for account in group.accounts.all():
+                                if account.phone_number != chunk.decode('utf8'):
+                                    account_data.append(chunk.decode('utf8'))
+                                    list_of_phone_numbers.append(chunk.decode('utf8'))
+                except UnicodeDecodeError:
+                    try:
+                        if validate_phone_number(chunk.decode('cp1251').split(',')[0]):
+                            for account in group.accounts.all():
+                                if account.phone_number != chunk.decode('cp1251').split(',')[0]:
+                                    account_data.append(chunk.decode('cp1251').split(',')[0])
+                                    list_of_phone_numbers.append(chunk.decode('cp1251').split(',')[0])
+                    except IndexError:
+                        if validate_phone_number(chunk.decode('cp1251')):
+                            for account in group.accounts.all():
+                                if account.phone_number != chunk.decode('cp1251'):
+                                    account_data.append(chunk.decode('cp1251'))
+                                    list_of_phone_numbers.append(chunk.decode('cp1251'))
+            else:
                 try:
-                    if validate_phone_number(chunk.decode('cp1251').split(',')[0]):
-                        list_of_phone_numbers.append(chunk.decode('cp1251').split(',')[0])
-                except IndexError:
-                    if validate_phone_number(chunk.decode('cp1251')):
-                        list_of_phone_numbers.append(chunk.decode('cp1251'))
-
-        for account in group.accounts.all():
-            if account.phone_number in list_of_phone_numbers:
-                list_of_phone_numbers.remove(account.phone_number)
+                    try:
+                        if validate_phone_number(chunk.decode('utf8').split(';')[2]):
+                            for account in group.accounts.all():
+                                if account.phone_number != chunk.decode('utf8').split(';')[2]:
+                                    account_data.append({
+                                        "full_name": chunk.decode('utf8').split(';')[0],
+                                        "email": chunk.decode('utf8').split(';')[1],
+                                        "phone_number": chunk.decode('utf8').split(';')[2]
+                                    })
+                                    list_of_phone_numbers.append(chunk.decode('utf8').split(';')[2])
+                    except IndexError:
+                        raise ResponseException("Incorrect data format")
+                except UnicodeDecodeError:
+                    try:
+                        if validate_phone_number(chunk.decode('cp1251').split(';')[2]):
+                            for account in group.accounts.all():
+                                if account.phone_number != chunk.decode('cp1251').split(';')[2]:
+                                    account_data.append({
+                                        "full_name": chunk.decode('cp1251').split(';')[0],
+                                        "email": chunk.decode('cp1251').split(';')[1],
+                                        "phone_number": chunk.decode('cp1251').split(';')[2]
+                                    })
+                                    list_of_phone_numbers.append(chunk.decode('cp1251').split(';')[2])
+                    except IndexError:
+                        raise ResponseException("Incorrect data format")
 
         users_to_create = []
         accounts_to_create = []
 
-        for phone_number in list_of_phone_numbers:
-            users_to_create.append(User(phone_number=phone_number))
+        for data in account_data:
+            if type(data) is dict:
+                users_to_create.append(User(phone_number=data.get('phone_number'),
+                                            email=data.get('email')))
+            else:
+                users_to_create.append(User(phone_number=data))
         User.objects.bulk_create(users_to_create, ignore_conflicts=True)
 
         users = User.objects.all().filter(phone_number__in=list_of_phone_numbers)
 
         for user in users:
-            accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
+            for data in account_data:
+                if type(data) is dict and user.email == data.get('email'):
+                    accounts_to_create.append(Account(user=user, phone_number=user.phone_number,
+                                                      last_name=data.get('full_name').split(' ')[0],
+                                                      first_name=data.get('full_name').split(' ')[1],
+                                                      middle_name=data.get('full_name').split(' ')[2],
+                                                      email=user.email))
+            else:
+                accounts_to_create.append(Account(user=user, phone_number=user.phone_number, description=None))
         accounts = Account.objects.bulk_create(accounts_to_create, ignore_conflicts=True)
 
         acc_ids = []
