@@ -22,8 +22,9 @@ class BookingManager(models.Manager):
         """Check for booking availability"""
         overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gt=date_from)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))  # | Q(date_to__gt=date_from, date_to__lt=date_to)
+                    | Q(date_from__lte=date_from, date_to__gt=date_from)
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(
+            date_from__lt=date_to))  # | Q(date_to__gt=date_from, date_to__lt=date_to)
         if overflows:
             return True
         return False
@@ -32,8 +33,9 @@ class BookingManager(models.Manager):
         """Check for booking availability"""
         overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gt=date_from)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).select_related('table')
+                    | Q(date_from__lte=date_from, date_to__gt=date_from)
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).select_related(
+            'table')
         # Q(date_from__gt=date_from, date_from__lt=date_to)
         # | Q(date_from__lt=date_from, date_to__gt=date_to)
         # | Q(date_from__gt=date_from, date_to__lt=date_to)
@@ -49,10 +51,11 @@ class BookingManager(models.Manager):
             access = {'access__min': EMPLOYEE_ACCESS}
         if access['access__min'] < EMPLOYEE_ACCESS:
             return False
-        overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False, status__in=['waiting', 'active']). \
+        overflows = self.model.objects.filter(user=account, table__room__type__unified=room_type, is_over=False,
+                                              status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
-                   | Q(date_from__lte=date_from, date_to__gt=date_from)
-                   | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
+                    | Q(date_from__lte=date_from, date_to__gt=date_from)
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
         if overflows:
             return True
         return False
@@ -192,10 +195,12 @@ class Booking(models.Model):
             expo_data = {
                 "account": str(self.user.id),
                 "app": push_group,
-                "title": "Уведомление о предстоящем бронировании",
-                "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
-                "data": {
-                    "go_booking": True
+                "expo": {
+                    "title": "Уведомление о предстоящем бронировании",
+                    "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
+                    "data": {
+                        "go_booking": True
+                    }
                 }
             }
             response = requests.post(
@@ -216,10 +221,12 @@ class Booking(models.Model):
             expo_data = {
                 "account": str(self.user.id),
                 "app": push_group,
-                "title": "Открыто подтверждение!",
-                "body": f"Вы можете подтвердить бронирование QR-кодом в течении 30 минут.",
-                "data": {
-                    "go_booking": True
+                "expo": {
+                    "title": "Открыто подтверждение!",
+                    "body": f"Вы можете подтвердить бронирование QR-кодом в течении 30 минут.",
+                    "data": {
+                        "go_booking": True
+                    }
                 }
             }
             response = requests.post(
@@ -240,7 +247,9 @@ class Booking(models.Model):
         scheduler.add_job(
             func=self.notify_about_oncoming_booking,
             name="oncoming",
-            run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(minutes=2),
+            run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (
+                        date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
+                minutes=2),
             misfire_grace_time=10000,
             id="notify_about_oncoming_booking_" + str(self.id),
             replace_existing=True
@@ -248,7 +257,8 @@ class Booking(models.Model):
         scheduler.add_job(
             func=self.notify_about_booking_activation,
             name="activation",
-            run_date=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
+            run_date=self.date_from - timedelta(
+                minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
             misfire_grace_time=10000,
             id="notify_about_activation_booking_" + str(self.id),
             replace_existing=True
