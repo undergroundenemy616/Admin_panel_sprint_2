@@ -5,7 +5,6 @@ from datetime import datetime, timezone, timedelta, date
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from pathlib import Path
-import pytz
 import requests
 from rest_framework import status
 from rest_framework.filters import SearchFilter
