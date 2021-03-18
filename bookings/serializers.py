@@ -109,9 +109,9 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data, *args, **kwargs):
         # This is the hack to evade booking by two or more user on the same table in the same time
-        time.sleep(random.uniform(0.001, 0.005))
-        time.sleep(random.uniform(0.001, 0.003))
-        time.sleep(random.uniform(0.01, 0.07))
+        # time.sleep(random.uniform(0.001, 0.005))
+        # time.sleep(random.uniform(0.001, 0.003))
+        # time.sleep(random.uniform(0.01, 0.07))
         if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
                                                       validated_data['table'].room.type.unified,
                                                       validated_data['date_from'],
