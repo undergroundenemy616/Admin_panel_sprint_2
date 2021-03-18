@@ -252,7 +252,7 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         host_domain = os.environ.get('ADMIN_HOST', default='Please write ADMIN_HOST')
         is_exists = User.objects.filter(email=email).exists()
         if is_exists:
-            raise ValidationError('User already exist.')
+            raise ValidationError('User already exist')
         phone_number = validated_data.get('phone_number')
         if phone_number:
             if Account.objects.filter(phone_number=phone_number).exists():
