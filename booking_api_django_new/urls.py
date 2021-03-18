@@ -26,7 +26,9 @@ from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from users import views
 from tables.views import TableSlotsView
+from users.views import custom404
 
+handler404 = custom404
 
 def get_swagger() -> Any:
     """Returns current swagger class from `drf_yasg`"""
@@ -37,7 +39,7 @@ def get_swagger() -> Any:
             description="Test description",
             terms_of_service="https://www.google.com/policies/terms/",
             contact=openapi.Contact(email="support@liis.su"),
-            license=openapi.License(name="MTI License"),
+            license=openapi.License(name="MIT License"),
         ),
         public=True,
         permission_classes=(permissions.AllowAny,)
@@ -54,7 +56,7 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Current urls
-    path('admin', admin.site.urls),
+    # path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUserFromMobileView.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
     path('refresh', views.RefreshTokenView.as_view()),
@@ -63,6 +65,7 @@ urlpatterns = [
     path('account', views.AccountView.as_view()),
     path('accounts/<uuid:pk>', views.SingleAccountView.as_view()),
     path('accounts_list', views.AccountListView.as_view()),
+    path('accounts_first/<uuid:pk>', views.AccountFirstPutView.as_view()),
     path('service_email', views.ServiceEmailView.as_view()),
     path('user_access/<uuid:pk>', views.UserAccessView.as_view()),
     path('operator_promotion', views.OperatorPromotionView.as_view()),
@@ -95,8 +98,8 @@ urlpatterns = [
     path('book_list', include('bookings.urls_list')),
     path('tokens', include('push_tokens.urls')),
     path('send_', include('push_tokens.urls_send')),
-    path('password_change', views.PasswordChangeView.as_view()),
-    path('password_reset', views.PasswordResetView.as_view()),
+    path('pass_change', views.PasswordChangeView.as_view()),
+    path('pass_reset', views.PasswordResetView.as_view()),
 ]
 
 '''

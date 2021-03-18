@@ -12,22 +12,18 @@ from files.models import File
 
 
 def check_token():
-    if os.environ.get('FILES_TOKEN') == 'None':
-        try:
-            token = requests.post(
-                url=FILES_HOST + "/auth",
-                json={
-                    'username': FILES_USERNAME,
-                    'password': FILES_PASSWORD
-                }
-            )
-            token = orjson.loads(token.text)
-            os.environ['FILES_TOKEN'] = str(token.get('access_token'))
-        except requests.exceptions.RequestException:
-            return {"message": "Failed to get access to file storage"}, 401
-
-
-check_token()
+    try:
+        token = requests.post(
+            url=FILES_HOST + "/auth",
+            json={
+                'username': FILES_USERNAME,
+                'password': FILES_PASSWORD
+            }
+        )
+        token = orjson.loads(token.text)
+        os.environ['FILES_TOKEN'] = str(token.get('access_token'))
+    except requests.exceptions.RequestException:
+        return {"message": "Failed to get access to file storage"}, 401
 
 
 def create_new_folder(local_dir):
@@ -58,40 +54,45 @@ class TestBaseFileSerializer(serializers.Serializer):
     title = serializers.CharField()
     path = serializers.CharField()
     thumb = serializers.CharField()
+    height = serializers.IntegerField()
+    width = serializers.IntegerField()
+    size = serializers.CharField()
 
 
 class FileSerializer(serializers.ModelSerializer):
     file = serializers.FileField(required=True)
+    title = serializers.CharField(required=False)
 
     class Meta:
         model = File
-        fields = ['file']
-        depth = 1
+        fields = ['file', 'title']
+        # depth = 1
 
-    def to_representation(self, instance):
-        response = dict()
-        response['id'] = instance.id
-        response['title'] = instance.title
-        response['path'] = instance.path
-        response['thumb'] = instance.thumb
-        response['width'] = instance.width
-        response['height'] = instance.height
-        return response
+    # def to_representation(self, instance):
+    #     response = dict()
+    #     response['id'] = instance.id
+    #     response['title'] = instance.title
+    #     response['path'] = instance.path
+    #     response['thumb'] = instance.thumb
+    #     response['width'] = instance.width
+    #     response['height'] = instance.height
+    #     return response
 
     def create(self, validated_data):
         file = validated_data.pop('file')
+        check_token()
         headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
         try:
             response = requests.post(
                 url=FILES_HOST + "/upload",
-                files={"file": (file.name, file.file.getvalue(), file.content_type)},
+                files={"file": (file.name, file.file, file.content_type)},
                 headers=headers,
                 )
         except requests.exceptions.RequestException:
             return {"message": "Error occurred during file upload"}, 500
         if response.status_code != 200:
             if response.status_code == 401:
-                return {"message": "Basic Auth required"}, 401
+                return {"message": "Problems with authorization"}, 401
             if response.status_code == 400:
                 return {"message": "Bad request"}, 400
 

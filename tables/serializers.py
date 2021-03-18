@@ -16,7 +16,7 @@ from offices.models import Office
 from rooms.models import Room
 from bookings.models import Booking
 from bookings.serializers import BookingSerializer
-from tables.models import Table, TableTag, TableMarker
+from tables.models import Table, TableTag, TableMarker, Rating
 
 
 class SwaggerTableParameters(serializers.Serializer):
@@ -87,7 +87,7 @@ class BaseTableTagSerializer(serializers.ModelSerializer):
 
 
 class TestBaseTableTagSerializer(serializers.Serializer):
-    id = serializers.UUIDField
+    id = serializers.UUIDField()
     office = serializers.PrimaryKeyRelatedField(read_only=True)
     title = serializers.CharField()
     icon = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -115,7 +115,7 @@ class TableTagSerializer(serializers.ModelSerializer):
         else:
             response = BaseTableTagSerializer(instance=instance).data
             if instance.icon:
-                response['icon'] = FileSerializer(instance=instance.icon).data
+                response['icon'] = TestBaseFileSerializer(instance=instance.icon).data
             response = [response]
             return response
 
@@ -173,6 +173,8 @@ class TableSerializer(serializers.ModelSerializer):
         response['images'] = BaseFileSerializer(instance.images.all(), many=True).data
         response['marker'] = TableMarkerSerializer(instance=instance.table_marker).data if \
             hasattr(instance, 'table_marker') else None
+        response['rating'] = 0
+        response['ratings'] = 0
         return response
 
 
@@ -187,12 +189,24 @@ class TestTableSerializer(serializers.Serializer):
     rating = serializers.ReadOnlyField()
 
     def to_representation(self, instance):
+        # ratings = Rating.objects.raw(f"""
+        #         select table_id as id,
+        #         cast(sum(rating) as decimal)/count(rating) as table_rating,
+        #         count(rating) as number_of_votes
+        #         from tables_rating
+        #         where table_id = '{instance.id}'
+        #         group by table_id
+        #         """)
         response = super(TestTableSerializer, self).to_representation(instance)
-        response['tags'] = TestBaseTableTagSerializer(instance.tags.all(), many=True).data
-        response['images'] = TestBaseFileSerializer(instance.images.all(), many=True).data
+        response['tags'] = TestBaseTableTagSerializer(instance.tags, many=True).data
+        response['images'] = TestBaseFileSerializer(instance.images, many=True).data
         response['marker'] = TestTableMarkerSerializer(instance=instance.table_marker).data if \
             hasattr(instance, 'table_marker') else None
         response['rating'] = 0
+        response['ratings'] = 0
+        # for rating in ratings:
+        #     response['rating'] = rating.table_rating
+        #     response['ratings'] = rating.number_of_votes
         return response
 
 
@@ -212,10 +226,12 @@ class CreateTableSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         instance: Table
         response = super(CreateTableSerializer, self).to_representation(instance)
-        response['images'] = FileSerializer(instance=instance.images, many=True).data
-        response['tags'] = TableTagSerializer(instance=instance.tags, many=True).data
+        response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
+        response['tags'] = BaseTableTagSerializer(instance=instance.tags, many=True).data
         response['marker'] = None
         response['office'] = instance.room.floor.office.id
+        response['rating'] = 0
+        response['ratings'] = 0
         return response
 
     def create(self, validated_data):

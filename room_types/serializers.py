@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from files.models import File
+from files.serializers import TestBaseFileSerializer
+from tables.models import Table
 from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
@@ -20,7 +22,10 @@ class RoomTypeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(RoomTypeSerializer, self).to_representation(instance)
+        response['avalible_for_book'] = Table.objects.filter(room__floor__office=instance.office, room__type=instance).exists()
+        response['icon'] = TestBaseFileSerializer(instance.icon).data if instance.icon else None
         response['pre_defined'] = not instance.is_deletable
+        response['icon'] = TestBaseFileSerializer(instance=instance.icon).data if instance.icon else None
         return response
 
 
@@ -94,7 +99,8 @@ class DestroyRoomTypeSerializer(serializers.ModelSerializer):
         rooms_with_type = Room.objects.filter(type=instance.id)
         default_room_type = RoomType.objects.filter(office=instance.office.id, title='Рабочее место').first()
         for room in rooms_with_type:
-            room.objects.update(type=default_room_type)
+            room.type = default_room_type
+            room.save()
         return instance
 
 

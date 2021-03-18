@@ -21,7 +21,7 @@ from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
                                 TableSerializer, TableTagSerializer,
                                 UpdateTableSerializer, UpdateTableTagSerializer,
                                 SwaggerTableSlotsParametrs, basic_table_serializer,
-                                TableSerializerCSV)
+                                TableSerializerCSV, TestTableSerializer)
 
 
 class TableView(ListModelMixin,
@@ -49,8 +49,9 @@ class TableView(ListModelMixin,
             elif int(request.query_params.get('free')) == 0:
                 tables = tables.filter(is_occupied=True)
 
-        for table in tables:
-            response.append(basic_table_serializer(table=table))
+        # for table in tables:
+        #     response.append(basic_table_serializer(table=table))
+        response = TestTableSerializer(instance=tables, many=True).data
 
         if request.query_params.getlist('tags'):
             tables_with_the_right_tags = []
@@ -62,14 +63,14 @@ class TableView(ListModelMixin,
 
             response = list({r['id']: r for r in tables_with_the_right_tags}.values())
 
-        ratings = Rating.objects.all()
-        for table in response:
-            table['ratings'] = ratings.filter(table_id=table['id']).count()
+        # ratings = Rating.objects.all()
+        # for table in response:
+        #     table['ratings'] = ratings.filter(table_id=table['id']).count()
 
         response_dict = {
             'results': response
         }
-        return Response(orjson.loads(orjson.dumps(response_dict, default=default)), status=status.HTTP_200_OK)
+        return Response(response_dict, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )
@@ -136,7 +137,6 @@ class DetailTableTagView(GenericAPIView,
     permission_classes = (IsAdmin, )
 
     def put(self, request, pk=None, *args, **kwargs):
-        print(2)
         instance = get_object_or_404(TableTag, pk=pk)
         self.serializer_class = UpdateTableTagSerializer
         serializer = self.serializer_class(data=request.data, instance=instance)
@@ -164,7 +164,6 @@ class TableMarkerView(CreateModelMixin, DestroyModelMixin,
         return Response(table_serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request, *args, **kwargs):
-        print(3)
         table = get_object_or_404(Table, pk=request.data['table'])
         if hasattr(table, 'table_marker'):
             serializer = self.serializer_class(data=request.data,
@@ -212,6 +211,7 @@ class TableSlotsView(ListModelMixin,
         if request.query_params.get('date'):
             occupied = []
             date = datetime.strptime(request.query_params.get('date'), '%Y-%m-%d')
+            # !!!!!!!!Monthly never used!!!!!!!
             if request.query_params.get('monthly'):
                 if int(request.query_params.get('monthly')) == 1:
                     for booking in bookings:
@@ -222,7 +222,7 @@ class TableSlotsView(ListModelMixin,
             elif request.query_params.get('daily'):
                 if int(request.query_params.get('daily')) == 1:
                     for booking in bookings:
-                        if booking.date_from.date() <= date.date() <= booking.date_to.date():
+                        if booking.date_from.date() <= date.date() <= booking.date_to.date() and booking.status in ['active', 'waiting']:
                             occupied.append(booking)
                 return Response(BookingSerializerForTableSlots(instance=occupied, many=True).data, status=status.HTTP_200_OK)
             else:

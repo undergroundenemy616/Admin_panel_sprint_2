@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime, timezone, timedelta, date
+import tables
 import time
 import random
 
@@ -47,11 +48,28 @@ class SwaggerDashboard(serializers.Serializer):
     date_to = serializers.DateField(required=False, format='%Y-%m-%d')
 
 
+class StatisticsSerializer(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
+    month = serializers.CharField(required=False, max_length=10)
+    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    date = serializers.DateField(required=False, format='%Y-%m-%d')
+
+
+
 class BaseBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = "__all__"
         depth = 1
+
+
+# TODO Merge with Serializer above. For now mb bad effect on response for frontend
+class TestBaseBookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = "__all__"
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -70,9 +88,11 @@ class BookingSerializer(serializers.ModelSerializer):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
     def to_representation(self, instance):
-        response = BaseBookingSerializer(instance).data
+        response = TestBaseBookingSerializer(instance).data
         response['active'] = response['is_active']
         del response['is_active']
+        response['date_activate_until'] = instance.date_to if instance.is_active else instance.date_activate_until
+        response['table'] = tables.serializers.TestTableSerializer(instance=instance.table).data
         response['room'] = {"id": instance.table.room.id,
                             "title": instance.table.room.title,
                             "type": instance.table.room.type.title,
@@ -82,15 +102,16 @@ class BookingSerializer(serializers.ModelSerializer):
         response['floor'] = {"id": instance.table.room.floor.id,
                              "title": instance.table.room.floor.title}
         response['office'] = {"id": instance.table.room.floor.office.id,
-                              "title": instance.table.room.floor.office.title}
+                              "title": instance.table.room.floor.office.title,
+                              "description": instance.table.room.floor.office.description}
         response['user'] = instance.user_id
         return response
 
     def create(self, validated_data, *args, **kwargs):
         # This is the hack to evade booking by two or more user on the same table in the same time
-        time.sleep(random.uniform(0.001, 0.005))
-        time.sleep(random.uniform(0.001, 0.003))
-        time.sleep(random.uniform(0.01, 0.07))
+        # time.sleep(random.uniform(0.001, 0.005))
+        # time.sleep(random.uniform(0.001, 0.003))
+        # time.sleep(random.uniform(0.01, 0.07))
         if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
                                                       validated_data['table'].room.type.unified,
                                                       validated_data['date_from'],
@@ -143,11 +164,11 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
         """OMG: actually it's not create but 'GET available tables at this time periods (= slots)' method"""
         reference_object = validated_data.get('room') or validated_data.get('floor') or validated_data.get('table')
         # TODO: protected filter for user
-        user = validated_data['user']
+        # user = validated_data['user']
         if isinstance(reference_object, Room):
             tables = list(reference_object.tables)
         elif isinstance(reference_object, Floor):
-            tables = list(Table.objects.filter(room__in=list(reference_object.rooms)))
+            tables = list(Table.objects.filter(room__in=reference_object.rooms))
         elif isinstance(reference_object, Table):
             tables = [reference_object, ]
         else:
@@ -242,10 +263,10 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
         return response
 
     def update(self, instance, validated_data):
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        # now = datetime.utcnow().replace(tzinfo=timezone.utc)
         instance.set_booking_over()
-        validated_data['date_to'] = now
-        return super(BookingDeactivateActionSerializer, self).update(instance, validated_data)
+        # validated_data['date_to'] = now
+        return instance
 
 
 class BookingFastSerializer(serializers.ModelSerializer):
@@ -277,24 +298,20 @@ class BookingFastSerializer(serializers.ModelSerializer):
         date_from = validated_data['date_from']
         date_to = validated_data['date_to']
         office = validated_data.pop('office')
-        tables = list(Table.objects.filter(room__floor__office_id=office.id, room__type__id=validated_data['type'].id))
-        for table in tables[:]:
-            if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
-                                                          table.room.type.unified,
-                                                          validated_data['date_from'],
-                                                          validated_data['date_to']):
-                raise ResponseException('User already has a booking for this date.')
+        tables = Table.objects.filter(room__floor__office_id=office.id, room__type__id=validated_data['type'].id)
+        if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
+                                                      validated_data['type'].unified,
+                                                      validated_data['date_from'],
+                                                      validated_data['date_to']):
+            raise ResponseException('User already has a booking for this date.')
+        for table in tables:
             if not self.Meta.model.objects.is_overflowed(table, date_from, date_to):
-                continue
-            else:
-                tables.remove(table)
-        if len(tables) != 0:
-            return self.Meta.model.objects.create(
-                date_to=date_to,
-                date_from=date_from,
-                table=tables[0],
-                user=validated_data['user']
-            )
+                return self.Meta.model.objects.create(
+                    date_to=date_to,
+                    date_from=date_from,
+                    table=table,
+                    user=validated_data['user']
+                )
         raise serializers.ValidationError('No table found for fast booking')
 
 

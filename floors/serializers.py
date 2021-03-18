@@ -8,7 +8,8 @@ from files.models import File
 from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor, FloorMap
 from offices.models import Office
-from rooms.serializers import RoomSerializer, base_serialize_room
+from rooms.models import Room
+from rooms.serializers import RoomSerializer, base_serialize_room, TestRoomSerializer
 from tables.models import Table
 
 
@@ -180,7 +181,7 @@ class EditFloorSerializer(DetailFloorSerializer):
 
 
 class NestedFloorSerializer(FloorSerializer):
-    rooms = RoomSerializer(many=True, read_only=True)
+    rooms = TestRoomSerializer(many=True, read_only=True)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
 
 
@@ -216,3 +217,51 @@ class BaseFloorMapSerializer(serializers.ModelSerializer):
         model = FloorMap
         fields = '__all__'
         depth = 1
+
+
+class TestFloorSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+
+    def to_representation(self, instance):
+        response = super(TestFloorSerializer, self).to_representation(instance)
+        response['rooms'] = TestRoomSerializer(
+            instance=instance.rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
+                                                     'type__icon', 'images').select_related(
+                'room_marker', 'type', 'floor', 'zone'), many=True).data
+        tables = Table.objects.filter(room__floor=instance)
+        response['occupied'] = tables.filter(is_occupied=True).count()
+        response['capacity'] = tables.count()
+        response['capacity_meeting'] = tables.filter(room__type__unified=True).count()
+        response['occupied_meeting'] = tables.filter(room__type__unified=True, is_occupied=True).count()
+        response['capacity_tables'] = tables.filter(room__type__unified=False).count()
+        response['occupied_tables'] = tables.filter(room__type__unified=False, is_occupied=True).count()
+        return response
+
+
+class TestFloorSerializerWithMap(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+
+    def to_representation(self, instance):
+        response = super(TestFloorSerializerWithMap, self).to_representation(instance)
+        response['rooms'] = TestRoomSerializer(
+            instance=instance.rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
+                                                     'type__icon', 'images').select_related(
+                'room_marker', 'type', 'floor', 'zone'), many=True).data
+        tables = Table.objects.filter(room__floor=instance)
+        try:
+            response['floor_map'] = floor_map_serializer(floor_map=FloorMap.objects.get(floor=instance))
+        except ObjectDoesNotExist:
+            response['floor_map'] = None
+        response['occupied'] = tables.filter(is_occupied=True).count()
+        response['capacity'] = tables.count()
+        response['capacity_meeting'] = tables.filter(room__type__unified=True).count()
+        response['occupied_meeting'] = tables.filter(room__type__unified=True, is_occupied=True).count()
+        response['capacity_tables'] = tables.filter(room__type__unified=False).count()
+        response['occupied_tables'] = tables.filter(room__type__unified=False, is_occupied=True).count()
+        return response

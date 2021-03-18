@@ -4,7 +4,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from core.permissions import IsAuthenticated
 from files.models import File
-from files.serializers import FileSerializer
+from files.serializers import FileSerializer, TestBaseFileSerializer
 
 
 class ListCreateFilesView(ListCreateAPIView):
@@ -17,5 +17,7 @@ class ListCreateFilesView(ListCreateAPIView):
         serializer = self.serializer_class(data=request.FILES)
         serializer.is_valid(raise_exception=True)
         saved_file = serializer.save()
-        return Response(serializer.to_representation(instance=saved_file),
+        if isinstance(saved_file, tuple):
+            return Response(saved_file)
+        return Response(TestBaseFileSerializer(instance=saved_file).data,
                         status=status.HTTP_201_CREATED)

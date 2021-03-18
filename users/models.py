@@ -126,14 +126,13 @@ class Account(models.Model):
     GENDERS = (
         ('male', 'male'),
         ('female', 'female'),
-        ('undefined', 'undefined')
     )
 
     user = models.OneToOneField('User', on_delete=models.CASCADE)
 
     description = models.TextField(default='', blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
-    gender = models.CharField(choices=GENDERS, max_length=32, default='undefined')
+    gender = models.CharField(choices=GENDERS, max_length=32, default=None, null=True)
     first_name = models.CharField(default='', max_length=64, blank=True, null=True)
     last_name = models.CharField(default='', max_length=64, blank=True, null=True)
     middle_name = models.CharField(default='', max_length=64, blank=True, null=True)

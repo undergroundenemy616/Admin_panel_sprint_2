@@ -1,3 +1,4 @@
+import os
 import random
 import ipinfo
 from smtplib import SMTPException
@@ -23,9 +24,9 @@ class SwaggerAccountParametr(serializers.Serializer):
 
 
 class SwaggerAccountListParametr(serializers.Serializer):
-    search = serializers.CharField(required=False, max_length=256)
     account_type = serializers.CharField(required=False, max_length=20)
     include_not_activated = serializers.CharField(required=False, max_length=5)
+    access_group = serializers.CharField(required=False, max_length=36)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -104,6 +105,7 @@ class TestAccountSerializer(serializers.Serializer):
         # response['district_string'] = instance.district_string,
         # response['account_type'] = instance.account_type,
         # response['groups'] = instance.groups.all(),
+        response['is_active'] = instance.user.is_active
         response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
         response['firstname'] = instance.first_name
         response['lastname'] = instance.last_name
@@ -114,6 +116,12 @@ class TestAccountSerializer(serializers.Serializer):
             response['photo'] = BaseFileSerializer(instance=instance.photo).data
         response['has_cp_access'] = True if instance.user.email else False
         return response
+
+
+class AccountListGetSerializer(serializers.Serializer):
+    account_type = serializers.CharField(required=False, max_length=20)
+    include_not_activated = serializers.CharField(required=False, max_length=5)
+    access_group = serializers.CharField(required=False, max_length=36)
 
 
 # def test_base_account_serializer(instance: Account) -> Dict[str, Any]:
@@ -179,8 +187,30 @@ class LoginOrRegisterSerializer(serializers.Serializer):
         pass
 
 
-class RegisterUserFromAPSerializer(LoginOrRegisterSerializer):
+class RegisterUserFromAPSerializer(serializers.Serializer):
+    city = serializers.IntegerField(required=False, allow_null=True)
     description = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    firstname = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.CharField(required=False, allow_blank=True)
+    lastname = serializers.CharField(required=False, allow_blank=True)
+    middlename = serializers.CharField(required=False, allow_blank=True)
+    phone_number = serializers.CharField()
+
+    def save(self, **kwargs):
+        user, created = User.objects.get_or_create(phone_number=self.data['phone_number'])
+        if not created:
+            raise ValidationError(detail={'message': 'User already exist', 'code': '400'})
+        email = None if self.data.get('email') == "" else self.data.get('email')
+        account = Account.objects.create(user=user, city=self.data.get('city'), description=self.data.get('description'),
+                                         email=email, first_name=self.data.get('firstname'),
+                                         gender=self.data.get('gender'), last_name=self.data.get('lastname'),
+                                         middle_name=self.data.get('middlename'))
+        user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        account.groups.add(user_group)
+        return account
 
 
 class LoginOrRegisterStaffSerializer(serializers.Serializer):
@@ -201,6 +231,7 @@ class LoginOrRegisterStaffSerializer(serializers.Serializer):
 class RegisterStaffSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='email', required=True)
     host_domain = serializers.CharField(required=False, default='')
+    phone_number = serializers.CharField(required=False)
 
     class Meta:
         model = User
@@ -214,20 +245,24 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.setdefault('is_staff', True)
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
-        group = Group.objects.filter(access=2, is_deletable=False).first()
+        group = Group.objects.filter(title='Администратор', is_deletable=False).first()
         if not group:
             raise ValidationError('Unable to find admin group')
         email = validated_data.get('email')
-        host_domain = validated_data.pop('host_domain', '')
+        host_domain = os.environ.get('ADMIN_HOST', default='Please write ADMIN_HOST')
         is_exists = User.objects.filter(email=email).exists()
         if is_exists:
-            raise ValidationError('Admin already exists.')
-        instance = super(RegisterStaffSerializer, self).create(validated_data)
+            raise ValidationError('User already exist')
+        phone_number = validated_data.get('phone_number')
+        if phone_number:
+            if Account.objects.filter(phone_number=phone_number).exists():
+                raise ValidationError(detail={"message": "User already exist"}, code=400)
+        instance = User(email=email, is_active=True, is_staff=True)
         instance.set_password(password)
         instance.save()
         send_html_email_message(
             to=email,
-            subject="Добро пожаловать в Газпром!",
+            subject="Добро пожаловать в Simple-Office!",
             template_args={
                 'host': host_domain,
                 'username': email,
@@ -240,16 +275,16 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
 
 
 class AccountUpdateSerializer(serializers.ModelSerializer):
-    firstname = serializers.CharField(source='first_name', required=False)
-    lastname = serializers.CharField(source='last_name', required=False)
-    middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True)
+    firstname = serializers.CharField(source='first_name', required=False, allow_blank=True, allow_null=True)
+    lastname = serializers.CharField(source='last_name', required=False, allow_blank=True, allow_null=True)
+    middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True, allow_null=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    email = serializers.EmailField(required=False)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
     phone_number = serializers.CharField(required=False)
     photo = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), required=False, allow_null=True)
     city = serializers.IntegerField(required=False, allow_null=True)
     birthday = serializers.CharField(source='birth_date', required=False)
-    gender = serializers.CharField(required=False)
+    gender = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Account
@@ -259,6 +294,11 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = AccountSerializer(instance).data
         return response
+
+    def validate(self, attrs):
+        if attrs.get('email') == "":
+            attrs['email'] = None
+        return attrs
 
 
 def user_access_serializer(group_id):
@@ -323,7 +363,7 @@ class PasswordResetSerializer(serializers.Serializer):
         account = Account.objects.get(pk=self.data['account'])
         if not account.user.email:
             account.user.email = account.email
-            subject = "Добро пожаловать в Газпром!"
+            subject = "Добро пожаловать в Simple-Office!"
         else:
             subject = "Ваш пароль был успешно сброшен!"
 
@@ -334,7 +374,7 @@ class PasswordResetSerializer(serializers.Serializer):
             to=account.email,
             subject=subject,
             template_args={
-                'host': self.context['request'].build_absolute_uri('/'),
+                'host': os.environ.get('ADMIN_HOST'),
                 'username': account.user.email,
                 'password': password
             }
@@ -351,9 +391,11 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
         account = Account.objects.get(user=self.context['request'].user)
         attrs['device_info'] = self.context['request'].data['device_info']
         attrs['user'] = account
-        ip_address = self.context['request'].META['HTTP_HOST'] \
-            if self.context['request'].META['HTTP_HOST'] != '127.0.0.1:8000' and \
-               self.context['request'].META['HTTP_HOST'] != '0.0.0.0:5022' else '95.161.222.237'
+        x_forwarded_for = self.context['request'].META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip_address = x_forwarded_for.split(',')[0]
+        else:
+            ip_address = self.context['request'].META.get('REMOTE_ADDR')
         if ip_address:
             attrs['ip_address'] = ip_address
             handler = ipinfo.getHandler(access_token="e11640aca14e4d")
@@ -362,8 +404,8 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
             longitude = details.all.get("longitude")
             if latitude and longitude:
                 attrs["location"] = str(latitude) + " " + str(longitude)
-            attrs['country'] = details.all.get("country_name")
-            attrs['city'] = details.all.get("city")
+            attrs['country'] = details.all.get("country_name") or "undefined"
+            attrs['city'] = details.all.get("city") or "undefined"
         return attrs
 
 

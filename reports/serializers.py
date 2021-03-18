@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from files.models import File
-from files.serializers import FileSerializer
+from files.serializers import TestBaseFileSerializer
 from reports.models import Report
 
 
@@ -21,5 +21,5 @@ class ReportSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(ReportSerializer, self).to_representation(instance)
         response['office'] = {"id": instance.office.id, "title": instance.title}
-        response['images'] = FileSerializer(instance=instance.images.all(), many=True).data
+        response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         return response

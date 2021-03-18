@@ -15,6 +15,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.response import Response
 from time import strptime
 import orjson
+import os
 import uuid
 from workalendar.europe import Russia
 import xlsxwriter
@@ -33,13 +34,14 @@ from bookings.serializers import (BookingActivateActionSerializer,
                                   SwaggerBookingEmployeeStatistics,
                                   SwaggerBookingFuture,
                                   SwaggerDashboard,
+                                  StatisticsSerializer,
                                   get_duration, room_type_statictic_serializer,
                                   employee_statistics, most_frequent, bookings_future, date_validation, months_between)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from files.models import File
-from files.serializers import BaseFileSerializer
+from files.serializers import BaseFileSerializer, check_token
 from tables.serializers import Table, TableSerializer, TableMarker
 from users.models import Account
 from users.serializers import AccountSerializer
@@ -104,7 +106,6 @@ class CreateFastBookingsView(GenericAPIView):
     Admin route. Fast booking for any user.
     """
     serializer_class = BookingFastSerializer
-    queryset = Booking.objects.all().select_related('table')
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
@@ -134,7 +135,7 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
         request.data['user'] = request.user.id
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        response = serializer.save(user=request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -182,31 +183,41 @@ class ActionEndBookingsView(GenericAPIView, DestroyModelMixin):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        # now = datetime.utcnow().replace(tzinfo=timezone.utc)
         existing_booking = get_object_or_404(Booking, pk=request.data.get('booking'))
         if existing_booking.user.id != request.user.account.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=existing_booking)
         serializer.is_valid(raise_exception=True)
-        booking = serializer.validated_data['booking']
-        if now < booking.date_from and now < booking.date_to:
-            return self.destroy(request, *args, **kwargs)
+        # booking = serializer.validated_data['booking']
+        # if now < booking.date_from and now < booking.date_to:
+        #     return self.destroy(request, *args, **kwargs)
         serializer.save()
         return Response(serializer.to_representation(existing_booking), status=status.HTTP_200_OK)
 
 
-class ActionCancelBookingsView(GenericAPIView, DestroyModelMixin):
+class ActionCancelBookingsView(GenericAPIView):
     """
-    User route. Delete booking object from DB
+    User route. Set booking over
     """
-    queryset = Booking.objects.all().prefetch_related('user').select_related('table')
+    queryset = Booking.objects.all().select_related('table', 'user')
+    serializer_class = BookingDeactivateActionSerializer
     permission_classes = (IsAuthenticated, )
 
     def delete(self, request, pk=None, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=pk)
-        if existing_booking.user.id != request.user.account.id:
+        user_is_admin = False
+        for group in request.user.account.groups.all():
+            if group.title == 'Администратор' and not group.is_deletable:
+                user_is_admin = True
+        if existing_booking.user.id != request.user.account.id and not user_is_admin:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        return self.destroy(request, *args, **kwargs)
+        request.data['booking'] = existing_booking.id
+        serializer = self.serializer_class(data=request.data, instance=existing_booking)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        instance = get_object_or_404(Booking, pk=pk)
+        return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
 
 
 class BookingListTablesView(GenericAPIView, ListModelMixin):
@@ -215,7 +226,9 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
     Can be filtered by date_from-date_to.
     """
     serializer_class = BookingListTablesSerializer
-    queryset = Booking.objects.all().select_related('table')
+    queryset = Booking.objects.all().select_related('table', 'user').prefetch_related(
+        'table__room__floor__office', 'table__room__type', 'table__room__zone', 'table__tags',
+        'table__images', 'table__table_marker')
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(query_serializer=SwaggerBookListTableParametrs)
@@ -226,7 +239,7 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
             serializer.is_valid(raise_exception=True)
             queryset = self.queryset.is_overflowed_with_data(table=table_instance.id,
                                                              date_from=serializer.data['date_from'],
-                                                             date_to=serializer.data['date_to'])
+                                                             date_to=serializer.data['date_to']).order_by('-date_from')
             response = {
                 'id': table_instance.id,
                 'table': TableSerializer(instance=table_instance).data,
@@ -236,8 +249,9 @@ class BookingListTablesView(GenericAPIView, ListModelMixin):
             }
             return Response(response, status=status.HTTP_200_OK)
         else:
-            table_instance = get_object_or_404(Table, pk=request.query_params.get('table'))
-            queryset = self.queryset.filter(table=table_instance.id)
+            table_instance = get_object_or_404(Table.objects.select_related('room', 'room__floor',
+                'table_marker').prefetch_related('tags', 'images'), pk=request.query_params.get('table'))
+            queryset = self.queryset.filter(table=table_instance.id).order_by('-date_from')
             response = {
                 'id': table_instance.id,
                 'table': TableSerializer(instance=table_instance).data,
@@ -254,7 +268,9 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
     Can be filtered by: date,
     """
     serializer_class = BookingPersonalSerializer
-    queryset = Booking.objects.all().order_by('-is_active', 'date_from').select_related('table')
+    queryset = Booking.objects.all().select_related('table', 'user').prefetch_related(
+        'table__room__floor__office', 'table__room__type', 'table__room__zone', 'table__tags',
+        'table__images', 'table__table_marker').order_by('-is_active', '-date_from')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
     search_fields = ['table__title',
@@ -266,9 +282,6 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
 
     @swagger_auto_schema(query_serializer=BookingPersonalSerializer)
     def get(self, request, *args, **kwargs):
-        if request.query_params.get('search'):
-            self.serializer_class = BookingSerializer
-            return self.list(request, *args, **kwargs)
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         date_from = datetime.strptime(request.query_params.get(
@@ -276,25 +289,33 @@ class BookingListPersonalView(GenericAPIView, ListModelMixin):
         date_to = datetime.strptime(request.query_params.get(
             'date_to', '9999-12-12T12:59:59.9'), '%Y-%m-%dT%H:%M:%S.%f')
         is_over = bool(serializer.data['is_over']) if serializer.data.get('is_over') else 0
-        req_booking = self.queryset.filter(user=request.user.account.id).filter(
-            Q(is_over=is_over),
-            Q(date_from__gte=date_from, date_from__lt=date_to)
-            | Q(date_from__lte=date_from, date_to__gte=date_to)
-            | Q(date_to__gt=date_from, date_to__lte=date_to))
-        self.queryset = req_booking
+        if is_over == 1:
+            req_booking = self.queryset.filter(user=request.user.account.id).filter(
+                Q(status__in=['canceled', 'auto_canceled', 'over']),
+                Q(date_from__gte=date_from, date_from__lt=date_to)
+                | Q(date_from__lte=date_from, date_to__gte=date_to)
+                | Q(date_to__gt=date_from, date_to__lte=date_to))
+        else:
+            req_booking = self.queryset.filter(user=request.user.account.id).filter(
+                Q(status__in=['waiting', 'active']),
+                Q(date_from__gte=date_from, date_from__lt=date_to)
+                | Q(date_from__lte=date_from, date_to__gte=date_to)
+                | Q(date_to__gt=date_from, date_to__lte=date_to))
+        self.queryset = req_booking.order_by('-date_from')
         self.serializer_class = BookingSerializer
         return self.list(request, *args, **kwargs)
 
 
 class BookingsListUserView(BookingsAdminView):
     serializer_class = BookingListSerializer
-    queryset = Booking.objects.all().prefetch_related('user').select_related('table')
+    queryset = Booking.objects.all().prefetch_related('user').select_related(
+        'table', 'table__room', 'table__room__type', 'table__room__floor', 'table__room__floor__office')
 
     @swagger_auto_schema(query_serializer=SwaggerBookListActiveParametrs)
     def get(self, request, *args, **kwargs):
         account = get_object_or_404(Account, pk=request.query_params['user'])
-        by_user = self.queryset.filter(user=account.id)
-        self.queryset = by_user
+        by_user = self.queryset.filter(user=account.id, status__in=['waiting', 'active'])
+        self.queryset = by_user.order_by('-date_from')
         response = self.list(request, *args, **kwargs)
         response.data['user'] = AccountSerializer(instance=account).data
         return response
@@ -307,15 +328,18 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookListRoomTypeStats)
     def get(self, request, *args, **kwargs):
-        date_validation(request.query_params.get('date_from'))
-        date_validation(request.query_params.get('date_to'))
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        date_validation(serializer.data.get('date_from'))
+        date_validation(serializer.data.get('date_to'))
+        date_from = serializer.data.get('date_from')
+        date_to = serializer.data.get('date_to')
 
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
-        stats = self.queryset.all().raw(f"""
+        query = f"""
         SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to
         FROM bookings_booking b
         INNER JOIN tables_table t ON t.id = b.table_id
@@ -323,7 +347,12 @@ class BookingStatisticsRoomTypes(GenericAPIView):
         INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
         WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-        (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
+        (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')"""
+
+        if serializer.data.get('office_id'):
+            query = query + f""" and rtr.office_id = '{serializer.data.get('office_id')}'"""
+
+        stats = self.queryset.all().raw(query)
         sql_results = []
         set_of_types = set()
         list_of_types = []
@@ -369,31 +398,36 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
             workbook.close()
 
-        try:
-            response = requests.post(
-                url=FILES_HOST + "/upload",
-                files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
-                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
-            )
-        except requests.exceptions.RequestException:
-            return {"message": "Error occured during file upload"}, 500
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
 
-        response_dict = orjson.loads(response.text)
-        file_attrs = {
-            "path": FILES_HOST + str(response_dict.get("path")),
-            "title": secure_file_name,
-            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
-        }
-        if response_dict.get("thumb"):
-            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+            try:
+                response = requests.post(
+                    url=FILES_HOST + "/upload",
+                    files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                    headers=headers,
+                )
+            except requests.exceptions.RequestException:
+                return {"message": "Error occured during file upload"}, 500
 
-        file_storage_object = File(**file_attrs)
-        file_storage_object.save()
+            response_dict = orjson.loads(response.text)
+            file_attrs = {
+                "path": FILES_HOST + str(response_dict.get("path")),
+                "title": secure_file_name,
+                "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+            }
+            if response_dict.get("thumb"):
+                file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
 
-        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+            file_storage_object = File(**file_attrs)
+            file_storage_object.save()
 
-        return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+            Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+
+            return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
 
 
 class BookingEmployeeStatistics(GenericAPIView):
@@ -403,35 +437,44 @@ class BookingEmployeeStatistics(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookingEmployeeStatistics)
     def get(self, request, *args, **kwargs):
-        if len(request.query_params.get('month')) > 10 or \
-                int(request.query_params.get('year')) not in range(1970, 2500):
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        if len(serializer.data.get('month')) > 10 or \
+                int(serializer.data.get('year')) not in range(1970, 2500):
             return ResponseException("Wrong data")
-        if request.query_params.get('month'):
-            month = request.query_params.get('month')
+        if serializer.data.get('month'):
+            month = serializer.data.get('month')
             month_num = int(strptime(month, '%B').tm_mon)
         else:
             month_num = int(datetime.now().month)
             month = datetime.now().strftime("%B")
 
-        if request.query_params.get('year'):
-            year = int(request.query_params.get('year'))
+        if serializer.data.get('year'):
+            year = int(serializer.data.get('year'))
         else:
             year = int(datetime.now().year)
 
         file_name = month + '_' + str(year) + '.xlsx'
         secure_file_name = uuid.uuid4().hex + file_name
 
-        stats = self.queryset.all().raw(f"""
+        query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
-        oo.title as office_title, ff.title as floor_title, ua.id as user_id, ua.first_name as first_name,
+        oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
         ua.middle_name as middle_name, ua.last_name as last_name
         FROM bookings_booking b
         INNER JOIN tables_table tt on b.table_id = tt.id
         INNER JOIN rooms_room rr on rr.id = tt.room_id
         INNER JOIN floors_floor ff on rr.floor_id = ff.id
         INNER JOIN offices_office oo on ff.office_id = oo.id
-        INNER JOIN users_account ua on b.user_id = ua.id
-        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}""")
+        LEFT JOIN users_user uu on b.user_id = uu.id
+        LEFT JOIN users_account ua on uu.id = ua.user_id
+        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}"""
+
+        if serializer.data.get('office_id'):
+            query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
+
+        stats = self.queryset.all().raw(query)
 
         sql_results = []
 
@@ -481,7 +524,7 @@ class BookingEmployeeStatistics(GenericAPIView):
             set_rows = set()
 
             for employee in employees:
-                set_rows.add(orjson.dumps(employee, sort_keys=True))
+                set_rows.add(orjson.dumps(employee, option=orjson.OPT_SORT_KEYS))
 
             list_rows = []
 
@@ -532,31 +575,38 @@ class BookingEmployeeStatistics(GenericAPIView):
             worksheet.write('B' + str(len(list_rows) + 2), working_days, bold)
 
             workbook.close()
-        try:
-            response = requests.post(
-                url=FILES_HOST + "/upload",
-                files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
-                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                auth=(FILES_USERNAME, FILES_PASSWORD),
-            )
-        except requests.exceptions.RequestException:
-            return {"message": "Error occured during file upload"}, 500
 
-        response_dict = orjson.loads(response.text)
-        file_attrs = {
-            "path": FILES_HOST + str(response_dict.get("path")),
-            "title": secure_file_name,
-            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
-        }
-        if response_dict.get("thumb"):
-            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
 
-        file_storage_object = File(**file_attrs)
-        file_storage_object.save()
+            try:
+                response = requests.post(
+                    url=FILES_HOST + "/upload",
+                    files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                    headers=headers,
+                )
+            except requests.exceptions.RequestException:
+                return {"message": "Error occured during file upload"}, 500
 
-        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+            response_dict = orjson.loads(response.text)
+            file_attrs = {
+                "path": FILES_HOST + str(response_dict.get("path")),
+                "title": secure_file_name,
+                "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+            }
+            if response_dict.get("thumb"):
+                file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
 
-        return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+            file_storage_object = File(**file_attrs)
+            file_storage_object.save()
+
+            Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+
+            return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
+
 
 
 class BookingFuture(GenericAPIView):
@@ -566,23 +616,32 @@ class BookingFuture(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerBookingFuture)
     def get(self, request, *args, **kwargs):
-        date_validation(request.query_params.get('date'))
-        date = request.query_params.get('date')
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        date_validation(serializer.data.get('date'))
+        date = serializer.data.get('date')
 
         file_name = "future_" + date + '.xlsx'
 
-        stats = self.queryset.all().raw(f"""
-        SELECT b.id, ua.id as user_id, ua.first_name as first_name, ua.middle_name as middle_name, 
-        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id, 
-        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, 
+        query = f"""
+        SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
+        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id,
+        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
         b.date_activate_until
         FROM bookings_booking b
         INNER JOIN tables_table tt on b.table_id = tt.id
         INNER JOIN rooms_room rr on rr.id = tt.room_id
         INNER JOIN floors_floor ff on rr.floor_id = ff.id
         INNER JOIN offices_office oo on ff.office_id = oo.id
-        INNER JOIN users_account ua on b.user_id = ua.id
-        WHERE b.date_from::date = '{date}'""")
+        LEFT JOIN users_user uu on b.user_id = uu.id
+        LEFT JOIN users_account ua on uu.id = ua.user_id
+        WHERE b.date_from::date = '{date}'"""
+
+        if serializer.data.get('office_id'):
+            query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
+
+        stats = self.queryset.all().raw(query)
 
         sql_results = []
 
@@ -617,10 +676,18 @@ class BookingFuture(GenericAPIView):
                     book_time = float((datetime.fromisoformat(sql_results[j]['date_to']).timestamp() -
                                        datetime.fromisoformat(sql_results[j]['date_from']).timestamp()) / 3600).__round__(2)
 
-                    r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
-                                                    '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
-                    r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
-                                                  '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    try:
+                        r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    except ValueError:
+                        correct_date_from = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        correct_date_to = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                        r_date_from = datetime.strptime(correct_date_from.replace("T", " ").split("+")[0],
+                                                        '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                        r_date_to = datetime.strptime(correct_date_to.replace("T", " ").split("+")[0],
+                                                      '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
 
                     worksheet.write('A' + str(i), full_name)
                     worksheet.write('B' + str(i), str(r_date_from))
@@ -633,12 +700,15 @@ class BookingFuture(GenericAPIView):
 
             workbook.close()
 
+            check_token()
+            headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
             try:
                 response = requests.post(
                     url=FILES_HOST + "/upload",
                     files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
                                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                    auth=(FILES_USERNAME, FILES_PASSWORD),
+                    headers=headers,
                 )
             except requests.exceptions.RequestException:
                 return {"message": "Error occured during file upload"}, 500
@@ -659,7 +729,7 @@ class BookingFuture(GenericAPIView):
 
             return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
         else:
-            return Response("Not found", status=status.HTTP_404_NOT_FOUND)
+            return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
 
 
 class BookingStatisticsDashboard(GenericAPIView):
@@ -669,17 +739,19 @@ class BookingStatisticsDashboard(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=SwaggerDashboard)
     def get(self, request, *args, **kwargs):
+        serializer = StatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
         valid_office_id = None
-        if request.query_params.get('office_id'):
+        if serializer.data.get('office_id'):
             try:
-                valid_office_id = uuid.UUID(request.query_params.get('office_id')).hex
+                valid_office_id = uuid.UUID(serializer.data.get('office_id')).hex
             except ValueError:
                 raise ResponseException("Office ID is not valid", status.HTTP_400_BAD_REQUEST)
-        if request.query_params.get('date_from') and request.query_params.get('date_to'):
-            date_validation(request.query_params.get('date_from'))
-            date_validation(request.query_params.get('date_to'))
-            date_from = request.query_params.get('date_from')
-            date_to = request.query_params.get('date_to')
+        if serializer.data.get('date_from') and serializer.data.get('date_to'):
+            date_validation(serializer.data.get('date_from'))
+            date_validation(serializer.data.get('date_to'))
+            date_from = serializer.data.get('date_from')
+            date_to = serializer.data.get('date_to')
         else:
             date_from, date_to = date.today(), date.today()
 
@@ -687,7 +759,7 @@ class BookingStatisticsDashboard(GenericAPIView):
             all_tables = Table.objects.filter(Q(room__floor__office_id=valid_office_id) &
                                               Q(room__type__is_deletable=False) &
                                               Q(room__type__bookable=True) &
-                                              Q(room__type__office_id=valid_office_id))
+                                              Q(room__type__unified=False))
             tables_with_markers = TableMarker.objects.filter(Q(table__room__floor__office_id=valid_office_id) &
                                                              Q(table__room__type__is_deletable=False) &
                                                              Q(table__room__type__bookable=True)).count()
@@ -703,7 +775,7 @@ class BookingStatisticsDashboard(GenericAPIView):
                                                                Q(date_to__date__lte=date_to))
                                                       )
                                                       ).count()
-            number_of_activated_bookings = self.queryset.filter(Q(is_active=True) &
+            number_of_activated_bookings = self.queryset.filter(Q(status__in=['active', 'over']) &
                                                                 Q(table__room__floor__office_id=valid_office_id) &
                                                                 (
                                                                         (Q(date_from__date__gte=date_from) &
@@ -728,8 +800,13 @@ class BookingStatisticsDashboard(GenericAPIView):
             (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
             (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
             office_id = '{valid_office_id}'""")
+            tables_from_booking = self.queryset.filter(Q(table__room__floor__office_id=valid_office_id) &
+                                                       Q(table__room__type__is_deletable=False) &
+                                                       Q(table__room__type__bookable=True)).only('table_id')
         else:
-            all_tables = Table.objects.filter(Q(room__type__is_deletable=False) & Q(room__type__bookable=True))
+            all_tables = Table.objects.filter(Q(room__type__is_deletable=False) &
+                                              Q(room__type__bookable=True) &
+                                              Q(room__type__unified=False))
             tables_with_markers = TableMarker.objects.filter(Q(table__room__type__is_deletable=False) &
                                                              Q(table__room__type__bookable=True)).count()
             number_of_bookings = self.queryset.filter((Q(date_from__date__gte=date_from) &
@@ -740,13 +817,15 @@ class BookingStatisticsDashboard(GenericAPIView):
                                                       |
                                                       (Q(date_to__date__gt=date_from) &
                                                        Q(date_to__date__lte=date_to))).count()
-            number_of_activated_bookings = self.queryset.filter(is_active=True).count()
+            number_of_activated_bookings = self.queryset.filter(status__in=['active', 'over']).count()
             bookings_with_hours = self.queryset.raw(f"""SELECT 
                         DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
                         DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from bookings_booking b
                         WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
                         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                         (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
+            tables_from_booking = self.queryset.filter(Q(table__room__type__is_deletable=False) &
+                                                       Q(table__room__type__bookable=True)).only('table_id')
         all_accounts = Account.objects.all()
 
         working_days = 0
@@ -773,9 +852,7 @@ class BookingStatisticsDashboard(GenericAPIView):
 
         tables_available_for_booking = all_tables.filter(is_occupied=False).count()
         active_users = all_accounts.count()
-        total_tables = all_tables.count()
-
-        tables_from_booking = self.queryset.only('table_id')
+        total_tables = Table.objects.filter(room__floor__office_id=valid_office_id).count()
 
         list_of_booked_tables = []
         for table in tables_from_booking:

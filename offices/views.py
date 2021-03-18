@@ -16,7 +16,7 @@ from offices.models import Office, OfficeZone
 from offices.serializers import (CreateOfficeSerializer,
                                  CreateUpdateOfficeZoneSerializer,
                                  ListOfficeSerializer,
-                                 OfficeZoneSerializer,
+                                 OfficeZoneSerializer, TestOfficeBaseSerializer,
                                  SwaggerOfficeParametrs, SwaggerZonesParametrs,
                                  office_base_serializer, OptimizeListOfficeSerializer)
 
@@ -26,7 +26,8 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                                  GenericAPIView):
     """Office View."""
     serializer_class = ListOfficeSerializer
-    queryset = Office.objects.all()
+    queryset = Office.objects.all().prefetch_related(
+        'zones', 'zones__groups', 'zones__groups__accounts', 'floors', 'images').select_related('license')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated, )
     filter_backends = [filters.SearchFilter]
@@ -48,11 +49,11 @@ class ListCreateUpdateOfficeView(ListModelMixin,
             except ObjectDoesNotExist:
                 return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
             return Response(orjson.loads(orjson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
-        for office in self.queryset.all():
-            print("Office: ", office)
-            response.append(office_base_serializer(office=office))
+        response = TestOfficeBaseSerializer(instance=self.queryset.all(), many=True).data
+        # for office in self.queryset.all():
+        #     response.append(office_base_serializer(office=office))
         response = {'results': response}
-        return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
+        return Response(data=response, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         self.permission_classes = (IsAdmin, )

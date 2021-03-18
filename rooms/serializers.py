@@ -1,18 +1,19 @@
 from typing import Any, Dict
 
 from django.db import IntegrityError
+from django.db.models import Q, Count, Case, When
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import FileSerializer, image_serializer
+from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
 from floors.models import Floor
 from groups.serializers import validate_csv_file_extension
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
-from tables.models import Rating, Table, TableTag
+from tables.models import Rating, Table, TableTag, TableMarker
 from tables.serializers import TableSerializer, table_tag_serializer, table_marker_serializer, TestTableSerializer
 
 
@@ -92,13 +93,24 @@ def floor_serializer_for_room(floor: Floor) -> Dict[str, Any]:
 def table_serializer_for_room(table: Table) -> Dict[str, Any]:
     # tags = table.tags.all()
     # images = table.images.first()
+    ratings = Rating.objects.raw(f"""select table_id as id, cast(sum(rating) as decimal)/count(rating) as table_rating, 
+        count(rating) as number_of_votes
+        from tables_rating
+        where table_id = '{table.id}'
+        group by table_id""")
+    table_rating = 0
+    table_ratings = 0
+    for result in table_ratings:
+        table_rating = result.table_rating
+        table_ratings = result.number_of_votes
     return {
         'id': str(table.id),
         'title': table.title,
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
         'images': list(image_serializer(image=table.images.first())) if table.images.first() else [],
-        'rating': table.rating,
+        'rating': table_rating,
         # 'ratings': Rating.objects.filter(table_id=table.id).count(),
+        'ratings': table_ratings,
         'description': table.description,
         'is_occupied': table.is_occupied,
         'room': str(table.room_id),
@@ -108,10 +120,11 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
 
 def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
     return {
-        'icon': marker.icon if marker.icon else None,
+        'icon': marker.icon if marker.icon != 'null' else None,
         'x': float(marker.x),
         'y': float(marker.y),
     }
+
 
 class TestRoomSerializer(serializers.Serializer):
     id = serializers.UUIDField()
@@ -119,7 +132,7 @@ class TestRoomSerializer(serializers.Serializer):
     description = serializers.CharField()
     type = serializers.PrimaryKeyRelatedField(read_only=True)
     zone = serializers.PrimaryKeyRelatedField(read_only=True)
-    images = serializers.PrimaryKeyRelatedField(read_only=True)
+    images = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     floor = serializers.PrimaryKeyRelatedField(read_only=True)
     seats_amount = serializers.IntegerField()
 
@@ -127,20 +140,29 @@ class TestRoomSerializer(serializers.Serializer):
         # response = BaseRoomSerializer(instance=instance).data
         response = super(TestRoomSerializer, self).to_representation(instance)
         # room_type = response.pop('type')
+        tables = instance.tables.aggregate(
+            capacity=Count('*'),
+            occupied=Count(Case(When(is_occupied=True, then=1))),
+            suitable_tables=Count(Case(When(is_occupied=False, then=1)))
+        )
         response['type'] = instance.type.title if instance.type else None
         response['room_type_color'] = instance.type.color if instance.type else None
         response['room_type_unified'] = instance.type.unified if instance.type else None
         response['zone'] = {'id': instance.zone.id,
                             'title': instance.zone.title}
+        response['floor'] = {'id': instance.floor.id,
+                             'title': instance.floor.title}
         response['is_bookable'] = instance.type.bookable if instance.type else None
-        response['room_type_icon'] = instance.type.icon if instance.type else None
-        response['tables'] = TestTableSerializer(instance=instance.tables.prefetch_related('tags', 'images').select_related('table_marker'), many=True).data
-        response['capacity'] = instance.tables.count()
-        response['marker'] = TestRoomMarkerSerializer(instance=instance.room_marker).data if \
-            hasattr(instance, 'room_marker') else None
-        response['occupied'] = instance.tables.filter(is_occupied=True).count(),
-        response['suitable_tables'] = instance.tables.filter(is_occupied=False).count()
+        response['room_type_icon'] = TestBaseFileSerializer(instance=instance.type.icon).data if instance.type.icon else None
+        response['tables'] = TestTableSerializer(instance=instance.tables, many=True).data
+        response['capacity'] = tables['capacity']
+        response['marker'] = room_marker_serializer(instance.room_marker) if \
+             hasattr(instance, 'room_marker') else None
+        response['occupied'] = tables['occupied']
+        response['suitable_tables'] = tables['suitable_tables']
+        response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         return response
+
 
 class RoomSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField()
@@ -156,6 +178,8 @@ class RoomSerializer(serializers.ModelSerializer):
         # response = BaseRoomSerializer(instance=instance).data
         response = super(RoomSerializer, self).to_representation(instance)
         # room_type = response.pop('type')
+        response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}
+        response['zone'] = {"id": instance.zone.id, "title": instance.zone.title}
         response['type'] = instance.type.title if instance.type else None
         response['room_type_color'] = instance.type.color if instance.type else None
         response['room_type_unified'] = instance.type.unified if instance.type else None
@@ -252,8 +276,8 @@ class CreateRoomSerializer(serializers.ModelSerializer):
                         }  # OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
-        data['images'] = FileSerializer(instance=instance.images, many=True).data
-        data['type'] = RoomTypeSerializer(instance=instance.type).data
+        data['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
+        data['type'] = instance.type.title  # RoomTypeSerializer(instance=instance.type).data
         data['room_type_color'] = instance.type.color
         data['room_type_unified'] = instance.type.unified
         data['is_bookable'] = instance.type.bookable
@@ -273,7 +297,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
             for image in images:
                 instance.images.add(image)
         if instance.type.unified:
-            Table.objects.create(title=f'Стол в {instance.title}', room_id=instance.id,)
+            Table.objects.create(title=instance.title, room_id=instance.id,)
         return instance
 
 
@@ -297,26 +321,18 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
         from offices.serializers import \
             OfficeZoneSerializer  # If not like this Import Error calls
         data['seats_amount'] = instance.seats_amount
-        data['marker'] = None
-        tables_nested = Table.objects.filter(room=instance.id)
-        data['tables'] = TableSerializer(instance=tables_nested, many=True).data
+        data['marker'] = RoomMarkerSerializer(instance=instance.room_marker).data if \
+            hasattr(instance, 'room_marker') else None
+        tables_nested = Table.objects.filter(room=instance.id).prefetch_related('tags', 'images').select_related('table_marker')
+        data['tables'] = TestTableSerializer(instance=tables_nested, many=True).data
         data['floor'] = FloorSerializer(instance=instance.floor).data
         data['zone'] = OfficeZoneSerializer(instance=instance.zone).data
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
-        data['images'] = FileSerializer(instance=instance.images, many=True).data
+        data['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         data['type'] = instance.type.title
 
         return data
-
-    # def update(self, instance, validated_data):
-    #     if validated_data.get('type'):
-    #         room_type = RoomType.objects.filter(title=validated_data['type'],
-    #                                             office_id=validated_data['floor'].office.id).first()
-    #         if not room_type:
-    #             raise ValidationError(f'RoomType {room_type} does not exists.')
-    #         validated_data['type'] = room_type
-    #     return super(UpdateRoomSerializer, self).update(instance, validated_data)
 
 
 class FilterRoomSerializer(serializers.ModelSerializer):
@@ -338,11 +354,25 @@ class RoomMarkerSerializer(serializers.ModelSerializer):
         model = RoomMarker
         fields = '__all__'
 
+    # def save(self, **kwargs):
+    #     if self.validated_data['room'].type.unified:
+    #         table_marker = TableMarker.objects.filter(table=self.validated_data['room'].tables.first()).first()
+    #         if table_marker:
+    #             table_marker.x = self.validated_data['x']
+    #             table_marker.y = self.validated_data['y']
+    #             table_marker.save()
+    #         else:
+    #             TableMarker.objects.create(table=self.validated_data['room'].tables.first(),
+    #                                        x=self.validated_data['x'],
+    #                                        y=self.validated_data['y'])
+    #     return super(RoomMarkerSerializer, self).save()
+    # TODO: For now it's don't need, but looks logic to do so. Need front fix for this.
+
 
 class TestRoomMarkerSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     room = serializers.PrimaryKeyRelatedField(read_only=True)
-    icon = serializers.CharField()
+    icon = serializers.CharField(allow_null=True)
     x = serializers.DecimalField(max_digits=4, decimal_places=2)
     y = serializers.DecimalField(max_digits=4, decimal_places=2)
 

@@ -5,13 +5,14 @@ import jwt
 import orjson
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
+from django.http import JsonResponse
 from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
 from django.core.mail import send_mail
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, status
+from rest_framework import mixins, status, filters
 from rest_framework.decorators import api_view
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
@@ -19,6 +20,8 @@ from rest_framework_jwt.settings import api_settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
+from core.authentication import AuthForAccountPut
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
@@ -34,7 +37,8 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
                                SwaggerAccountParametr, user_access_serializer,
-                               EntranceCollectorSerializer, TestAccountSerializer)
+                               EntranceCollectorSerializer, TestAccountSerializer,
+                               AccountListGetSerializer)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):
@@ -47,15 +51,7 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
             request.data['phone'] = request.data.get('phone_number')
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        phone_number = serializer.data.get('phone', None)
-        user, created = User.objects.get_or_create(phone_number=phone_number)
-        # Fix if we have user we dont need any actions
-
-        account, account_created = Account.objects.get_or_create(user=user,
-                                                                 description=serializer.data.get('description'))
-        if account_created:
-            user_group = Group.objects.get(access=4)
-            account.groups.add(user_group)
+        account = serializer.save()
         response = AccountSerializer(instance=account).data
         return Response(response, status=status.HTTP_201_CREATED)
 
@@ -87,14 +83,17 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 # Creating data for response
                 data = {
                     'message': "OK",
-                    'new_code_in': 180,
-                    'expires_in': 180,
+                    'new_code_in': 60,
+                    'expires_in': 60,
                 }
             elif sms_code:  # Confirm code  and user.is_active
                 # first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
-                    confirm_code(phone_number, sms_code)
+                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
+                        pass
+                    else:
+                        confirm_code(phone_number, sms_code)
                 else:
                     print('SMS service is off, any code is acceptable')
 
@@ -177,10 +176,12 @@ class AccountView(GenericAPIView):
 class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
     serializer_class = AccountUpdateSerializer
     queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAuthenticated,)
 
     def put(self, request, pk=None, *args, **kwargs):
         account = get_object_or_404(Account, pk=pk)
+        if account.id != request.user.account.id and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data, instance=account)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
@@ -190,22 +191,39 @@ class SingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
         instance = get_object_or_404(Account, pk=pk)
         if instance.id == self.request.user.account.id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        flag = 0
-        for group in instance.groups.all():
-            if group.access <= 2:
-                flag += 1
-        if flag != 0:
+        if not request.user.is_staff:
             return Response(status=status.HTTP_403_FORBIDDEN)
+        flag = 0
+        # for group in instance.groups.all():
+        #     if group.access <= 2:
+        #         flag += 1
+        # if flag != 0:
+        #     return Response(status=status.HTTP_403_FORBIDDEN)
         return self.destroy(self, request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         instance.user.delete()
 
 
+class AccountFirstPutView(GenericAPIView):
+    serializer_class = AccountUpdateSerializer
+    queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
+    authentication_classes = (AuthForAccountPut, )
+
+    def put(self, request, pk=None, *args, **kwargs):
+        account = get_object_or_404(Account, pk=pk)
+        if account.id != request.user.account.id and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = self.serializer_class(data=request.data, instance=account)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
+
+
 class RegisterStaffView(GenericAPIView):
     serializer_class = RegisterStaffSerializer
     queryset = User.objects.all()
-    permission_classes = (IsOwner,)
+    permission_classes = (IsAdmin,)
 
     def post(self, request, *args, **kwargs):
         request.data['host_domain'] = request.build_absolute_uri('/')
@@ -220,47 +238,38 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
     queryset = Account.objects.all().select_related('user').prefetch_related('photo', 'groups')
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['first_name', 'last_name', 'middle_name', 'user__phone_number', 'user__email',
+                     'phone_number', 'email']
 
     @swagger_auto_schema(query_serializer=SwaggerAccountListParametr)
     def get(self, request, *args, **kwargs):
         if request.query_params.get('start'):
-            search = request.query_params.get('search')
-            if search:
-                search = search.split(" ")
-            if search and len(search) > 1:
-                # Search by two words maybe: firstname and lastname
-                self.queryset = Account.objects.filter(
-                    Q(first_name__icontains=str(search[0]), last_name__icontains=str(search[1]))
-                    | Q(first_name__icontains=str(search[1]), last_name__icontains=str(search[0]))
-                ).select_related('user')
-            elif search:
-                # Search in firstname, lastname, middlename, phone_number, email
-                self.queryset = Account.objects.filter(
-                    Q(first_name__icontains=search[0])
-                    | Q(last_name__icontains=search[0])
-                    | Q(middle_name__icontains=search[0])
-                    | Q(user__phone_number__icontains=search[0])
-                    | Q(user__email__icontains=search[0])
-                ).select_related('user')
-            account_type = request.query_params.get('account_type')
-            if account_type != 'user':
-                # Added because of needs to handle kiosk account_type in future
-                pass
-            activated_flag = request.query_params.get('include_not_activated')
-            if activated_flag == 'false':
-                # Here we handle exclude of not activated accounts
+            serializer = AccountListGetSerializer(data=request.query_params)
+            serializer.is_valid(raise_exception=True)
+            if serializer.data.get('account_type') == 'kiosk':
+                self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
+            if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
+            if serializer.data.get('access_group'):
+                self.queryset = self.queryset.filter(groups=serializer.data.get('access_group'))
+            self.queryset.order_by('user__is_active')
+            return self.list(self, request, *args, **kwargs)
+        elif request.query_params.get('access_group'):
+            serializer = AccountListGetSerializer(data=request.query_params)
+            serializer.is_valid(raise_exception=True)
+            if serializer.data.get('account_type') == 'kiosk':
+                self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
+            if serializer.data.get('include_not_activated') == 'false':
+                self.queryset = self.queryset.filter(user__is_active=True)
+            if serializer.data.get('access_group'):
+                self.queryset = self.queryset.filter(groups=serializer.data.get('access_group'))
             return self.list(self, request, *args, **kwargs)
         else:
             self.pagination_class = None
             all_accounts = self.list(self, request, *args, **kwargs)
             response = dict()
-            # accounts = Account.objects.all()
-            # result = []
-            # for account in accounts:
-            #     result.append(test_base_account_serializer(account))
             response['results'] = all_accounts.data
-            # otvet = orjson.loads(orjson.dumps(response))
             return Response(response, status=status.HTTP_200_OK)
 
 
@@ -334,7 +343,7 @@ class OperatorPromotionView(GenericAPIView):
             account.groups.add(group)
             send_html_email_message(
                 to=account.email,
-                subject="Добро пожаловать в Газпром!",
+                subject="Добро пожаловать в Simple-Office!",
                 template_args={
                     'host': request.build_absolute_uri('/'),
                     'username': account.user.email,
@@ -401,7 +410,7 @@ class PasswordResetView(GenericAPIView):
 
 class EntranceCollectorView(GenericAPIView):
     serializer_class = EntranceCollectorSerializer
-    permission_classes = (IsAuthenticated, )
+    authentication_classes = (AuthForAccountPut, )
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
@@ -411,6 +420,7 @@ class EntranceCollectorView(GenericAPIView):
 
 
 class RefreshTokenView(GenericAPIView):
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         refresh = request.data.get('refresh')
@@ -418,12 +428,19 @@ class RefreshTokenView(GenericAPIView):
             return Response({"detail": "Refresh parametr is required."}, status=400)
         refresh_ser = TokenRefreshSerializer(data=request.data)
         refresh_ser.is_valid(raise_exception=True)
-        access = refresh_ser.validated_data['access']
-        payload = jwt.decode(jwt=access, verify=False)
-        user = get_object_or_404(User, id=payload['user_id'])
+        # access = refresh_ser.validated_data['access']
+        # payload = jwt.decode(jwt=access, verify=False)
+        # user = get_object_or_404(User, id=payload['user_id'])
         auth_dict = dict()
-        token_serializer = TokenObtainPairSerializer()
-        token = token_serializer.get_token(user=user)
-        auth_dict["refresh_token"] = str(token)
-        auth_dict["access_token"] = str(token.access_token)
+        # token_serializer = TokenObtainPairSerializer()
+        # token = token_serializer.get_token(user=user)
+        auth_dict["refresh_token"] = str(refresh_ser.validated_data['refresh'])
+        auth_dict["access_token"] = str(refresh_ser.validated_data['access'])
         return Response(auth_dict, status=200)
+
+
+def custom404(request, exception=None):
+    return JsonResponse({
+        'status_code': 404,
+        'message': 'Not found'
+    }, status=404)

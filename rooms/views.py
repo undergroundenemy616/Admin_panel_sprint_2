@@ -14,6 +14,7 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    status)
 from rest_framework.request import Request
 
+import uuid
 from groups.models import Group, GUEST_ACCESS, ADMIN_ACCESS
 from bookings.models import Booking
 from core.pagination import DefaultPagination
@@ -26,7 +27,7 @@ from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
                                SwaggerRoomParameters, UpdateRoomSerializer,
                                base_serialize_room, table_serializer_for_room,
                                RoomGetSerializer, RoomSerializerCSV, TestRoomSerializer)
-from tables.serializers import Table, TableSerializer
+from tables.serializers import Table, TableSerializer, TestTableSerializer
 
 
 class RoomsView(ListModelMixin,
@@ -108,16 +109,18 @@ class RoomsView(ListModelMixin,
 
         # for room in rooms.prefetch_related('tables'):  # This for cycle slowing down everything, because of a huge amount of data being serialized in it, and i don`t know how to fix it
         #     response.append(base_serialize_room(room=room).copy())
-        response = TestRoomSerializer(instance=rooms.prefetch_related('tables'), many=True).data
+        response = TestRoomSerializer(instance=rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker', 'type__icon', 'images').select_related(
+                                'room_marker', 'type', 'floor', 'zone'), many=True).data
         # return Response(orjson.loads(orjson.dumps(response)))   # Made for test
 
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
             date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
+
             if date_from > date_to:
                 return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
             for room in response:
-                bookings = Booking.objects.filter(
+                bookings = Booking.objects.filter(status__in=['active', 'waiting']).filter(
                     (
                             (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
                             |
@@ -125,13 +128,21 @@ class RoomsView(ListModelMixin,
                             |
                             (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
                     )
-                ).select_related('table')
-                for booking in bookings:
-                    room_tables = room['tables'][:]
-                    for table in room['tables']:
-                        if table.get('id') == str(booking.table_id):
-                            room_tables.remove(table)
-                    room['tables'] = room_tables
+                ).select_related('table').values_list('table__id', flat=True)
+                room_tables = room['tables'][:]
+                for table in room['tables']:
+                    if (not table.get('marker') and not room['room_type_unified']) or uuid.UUID(table.get('id')) in bookings:
+                        room_tables.remove(table)
+                    if room['room_type_unified'] and uuid.UUID(table.get('id')) in bookings:
+                        room['booked_table'] = table
+
+                room['tables'] = room_tables
+                # for booking in bookings:
+                #     room_tables = room['tables'][:]
+                #     for table in room['tables']:
+                #         if table.get('id') == str(booking.table_id):
+                #             room_tables.remove(table)
+                #     room['tables'] = room_tables
 
         if request.query_params.get('range_to') and request.query_params.get('range_from'):
             not_in_range = []
@@ -168,13 +179,13 @@ class RoomsView(ListModelMixin,
                 response = without_image
 
         if request.query_params.getlist('tags'):
-            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags'))
+            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags')).prefetch_related('tags', 'images').select_related('table_marker')
             for room in response:
                 tables_with_tags = []
-                for table in tables:
-                    serialized_table = table_serializer_for_room(table=table)
-                    if serialized_table['room'] == room['id']:
-                        tables_with_tags.append(serialized_table)
+                serialized_tables = TestTableSerializer(instance=tables, many=True).data
+                for table in serialized_tables:
+                    if str(table['room']) == room['id']:
+                        tables_with_tags.append(table)
                 room['tables'] = tables_with_tags
 
         suitable_tables = 0
@@ -239,7 +250,7 @@ class RoomMarkerView(CreateModelMixin,
             serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        self.serializer_class = RoomSerializer
+        self.serializer_class = TestRoomSerializer
         serializer = self.serializer_class(instance=instance.room)
         return Response(serializer.to_representation(instance=instance.room), status=status.HTTP_201_CREATED)
 
@@ -251,7 +262,7 @@ class RoomMarkerView(CreateModelMixin,
     ))
     def delete(self, request, *args, **kwargs):
         room_instance = get_object_or_404(Room, pk=request.data['room'])
-        instance = get_object_or_404(RoomMarker, pk=room_instance.room_marker.id)
+        instance = get_object_or_404(RoomMarker, room=room_instance)
         instance.delete()
         self.serializer_class = RoomSerializer
         room_instance = get_object_or_404(Room, pk=request.data['room'])  # Need to fix to improve performance
