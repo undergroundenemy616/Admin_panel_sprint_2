@@ -201,10 +201,11 @@ class RegisterUserFromAPSerializer(serializers.Serializer):
         user, created = User.objects.get_or_create(phone_number=self.data['phone_number'])
         if not created:
             raise ValidationError(detail={'message': 'User already exist', 'code': '400'})
-        account = Account.objects.create(user=user, city=self.data['city'], description=self.data['description'],
-                                         email=self.data['email'] or None, first_name=self.data['firstname'],
-                                         gender=self.data['gender'], last_name=self.data['lastname'],
-                                         middle_name=self.data['middlename'])
+        email = None if self.data.get('email') == "" else self.data.get('email')
+        account = Account.objects.create(user=user, city=self.data.get('city'), description=self.data.get('description'),
+                                         email=email, first_name=self.data.get('firstname'),
+                                         gender=self.data.get('gender'), last_name=self.data.get('lastname'),
+                                         middle_name=self.data.get('middlename'))
         user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
         user.is_active = True
         user.save(update_fields=['is_active'])
@@ -251,11 +252,11 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         host_domain = os.environ.get('ADMIN_HOST', default='Please write ADMIN_HOST')
         is_exists = User.objects.filter(email=email).exists()
         if is_exists:
-            raise ValidationError('Admin already exists.')
+            raise ValidationError('User already exist.')
         phone_number = validated_data.get('phone_number')
         if phone_number:
             if Account.objects.filter(phone_number=phone_number).exists():
-                raise ValidationError(detail={"message": "Account with this phone already exists!"}, code=400)
+                raise ValidationError(detail={"message": "User already exist"}, code=400)
         instance = User(email=email, is_active=True, is_staff=True)
         instance.set_password(password)
         instance.save()
@@ -293,6 +294,11 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = AccountSerializer(instance).data
         return response
+
+    def validate(self, attrs):
+        if attrs.get('email') == "":
+            attrs['email'] = None
+        return attrs
 
 
 def user_access_serializer(group_id):
