@@ -294,6 +294,11 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
         response = AccountSerializer(instance).data
         return response
 
+    def validate(self, attrs):
+        if attrs.get('email') == "":
+            attrs['email'] = None
+        return attrs
+
 
 def user_access_serializer(group_id):
     office_zones = OfficeZone.objects.filter(groups=group_id)
