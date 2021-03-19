@@ -74,7 +74,7 @@ pipelines:
           <<: *Deploy
           deployment: deploy_develop
 
-    simple-office/prod:
+    prod_simple-office:
       - step:
           <<: *Build
       - step:
