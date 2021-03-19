@@ -326,3 +326,5 @@ Traceback (most recent call last):
   File "C:\Projects\booking-api-django\groups\serializers.py", line 138, in create
     list_of_group_titles.append(chunk.decode('utf8').split(',')[1])
 IndexError: list index out of range
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '49')}[0m
+[35mb'{"message":"Table already booked for this date."}'[0m
