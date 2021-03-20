@@ -73,10 +73,12 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: deploy_develop
-
+  
     prod_simple-office:
       - step:
           <<: *Build
+  custom:
+    prod_simple-office-deploy:
       - step:
           <<: *Deploy
           deployment: simple-office-liis-su
