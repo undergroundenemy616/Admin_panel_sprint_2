@@ -77,6 +77,22 @@ pipelines:
     prod_simple-office:
       - step:
           <<: *Build
+      - step:
+          <<: *Deploy
+          deployment: simple-office-liis-su
+      - step:
+          <<: *Deploy
+          deployment: statio-simple-office-liis-su
+      - step:
+          <<: *Deploy
+          deployment: nbcom-simple-office-liis-su
+      - step:
+          <<: *Deploy
+          deployment: semrush-simple-office-liis-su
+      - step:
+          <<: *Deploy
+          deployment: bplus-simple-office-liis-su
+          
   custom:
     prod_simple-office-deploy:
       - step:
