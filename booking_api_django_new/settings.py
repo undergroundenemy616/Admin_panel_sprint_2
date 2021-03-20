@@ -271,6 +271,8 @@ SCHEDULER_CONFIG = {
         "type": "threadpool",
         "max_workers": "30"
     },
+    'apscheduler.job_defaults.coalesce': 'false',
+    'apscheduler.job_defaults.max_instances': '5',
 }
 SCHEDULER_AUTOSTART = True
 
