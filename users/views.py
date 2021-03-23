@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
 from core.authentication import AuthForAccountPut
@@ -425,15 +426,13 @@ class RefreshTokenView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         refresh = request.data.get('refresh')
         if not refresh:
-            return Response({"detail": "Refresh parametr is required."}, status=400)
+            return Response({"detail": "Refresh parametr is required"}, status=400)
         refresh_ser = TokenRefreshSerializer(data=request.data)
-        refresh_ser.is_valid(raise_exception=True)
-        # access = refresh_ser.validated_data['access']
-        # payload = jwt.decode(jwt=access, verify=False)
-        # user = get_object_or_404(User, id=payload['user_id'])
+        try:
+            refresh_ser.is_valid(raise_exception=True)
+        except TokenError as e:
+            return Response(data={"detail": 'Refresh ' + ''.join(*e.args).lower()}, status=400)
         auth_dict = dict()
-        # token_serializer = TokenObtainPairSerializer()
-        # token = token_serializer.get_token(user=user)
         auth_dict["refresh_token"] = str(refresh_ser.validated_data['refresh'])
         auth_dict["access_token"] = str(refresh_ser.validated_data['access'])
         return Response(auth_dict, status=200)
