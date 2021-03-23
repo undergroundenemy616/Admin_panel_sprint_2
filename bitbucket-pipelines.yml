@@ -58,41 +58,23 @@ pipelines:
           <<: *Build
       - step:
           <<: *Deploy
-          deployment: test
+          deployment: pg-simple-office-liis-su
 
     prod_gpn:
       - step:
           <<: *Build
-      - step:
-          <<: *Deploy
-          deployment: production
     
     dev_simple_office:
       - step:
           <<: *Build
       - step:
           <<: *Deploy
-          deployment: deploy_develop
+          deployment: dev-simple-office-liis-su
   
     prod_simple-office:
       - step:
           <<: *Build
-      - step:
-          <<: *Deploy
-          deployment: simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: statio-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: nbcom-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: semrush-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: bplus-simple-office-liis-su
-          
+               
   custom:
     prod_simple-office-deploy:
       - step:
@@ -110,5 +92,10 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: bplus-simple-office-liis-su
+      
+    prod_gpn-deploy:
+      - step:
+          <<: *Deploy
+          deployment: table-informer-liis-su
     
     
