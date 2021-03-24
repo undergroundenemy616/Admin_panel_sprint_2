@@ -153,6 +153,7 @@ class RoomsView(ListModelMixin,
                 for table in room['tables']:
                     if (not table.get('marker') and not room['room_type_unified']) or uuid.UUID(table.get('id')) in bookings:
                         table['is_avialable'] = False
+                        room['suitable_tables'] -= 1
                     else:
                         table['is_avialable'] = True
                     if room['room_type_unified'] and uuid.UUID(table.get('id')) in bookings:
@@ -202,7 +203,7 @@ class RoomsView(ListModelMixin,
         suitable_tables = 0
 
         for room in response:
-            suitable_tables += len(room.get('tables'))
+            suitable_tables += room['suitable_tables']
 
         response_dict = {
             'results': response,
