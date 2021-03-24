@@ -236,7 +236,7 @@ class RegisterStaffView(GenericAPIView):
 
 class AccountListView(GenericAPIView, mixins.ListModelMixin):
     serializer_class = TestAccountSerializer    # TestAccountSerializer AccountSerializer
-    queryset = Account.objects.all().select_related('user').prefetch_related('photo', 'groups')
+    queryset = Account.objects.all().select_related('user').prefetch_related('photo', 'groups').order_by('-user__is_active')
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
     filter_backends = [filters.SearchFilter]
@@ -254,7 +254,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
                 self.queryset = self.queryset.filter(groups=serializer.data.get('access_group'))
-            self.queryset.order_by('user__is_active')
+            self.queryset.order_by('-user__is_active')
             return self.list(self, request, *args, **kwargs)
         elif request.query_params.get('access_group'):
             serializer = AccountListGetSerializer(data=request.query_params)

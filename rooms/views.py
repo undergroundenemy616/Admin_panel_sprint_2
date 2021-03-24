@@ -179,7 +179,7 @@ class RoomsView(ListModelMixin,
                 response = without_image
 
         if request.query_params.getlist('tags'):
-            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags')).prefetch_related('tags', 'images').select_related('table_marker')
+            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags')).prefetch_related('tags', 'images').select_related('table_marker').distinct()
             for room in response:
                 tables_with_tags = []
                 serialized_tables = TestTableSerializer(instance=tables, many=True).data
