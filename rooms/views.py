@@ -41,25 +41,25 @@ class RoomsView(ListModelMixin,
 
     permission_classes = (IsAuthenticated, )
 
-    @staticmethod
-    def get_mapped_query(request: Request) -> Optional[Dict]:
-        """Returns mapped literals for search in database or None."""
-        serializer = FilterRoomSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-        query_params = serializer.data
-        mapped = {"floor_id__in": query_params.get('floor'),
-                  "floor__office_id": query_params.get('office'),
-                  "type__title__in": query_params.get('type'),
-                  "tables__tags__title__in": query_params.get('tags'),
-                  "zone_id__in": query_params.get('zone'),
-                  }
-        items = []
-        for field in mapped.keys():
-            if not mapped[field]:
-                items.append(field)
-        for item in items:
-            del mapped[item]
-        return mapped
+    # @staticmethod
+    # def get_mapped_query(request: Request) -> Optional[Dict]:
+    #     """Returns mapped literals for search in database or None."""
+    #     serializer = FilterRoomSerializer(data=request.query_params)
+    #     serializer.is_valid(raise_exception=True)
+    #     query_params = serializer.data
+    #     mapped = {"floor_id__in": query_params.get('floor'),
+    #               "floor__office_id": query_params.get('office'),
+    #               "type__title__in": query_params.get('type'),
+    #               "tables__tags__title__in": query_params.get('tags'),
+    #               "zone_id__in": query_params.get('zone'),
+    #               }
+    #     items = []
+    #     for field in mapped.keys():
+    #         if not mapped[field]:
+    #             items.append(field)
+    #     for item in items:
+    #         del mapped[item]
+    #     return mapped
 
     # def get_queryset(self, *args, **kwargs):
     #     queryset = self.queryset
@@ -113,12 +113,32 @@ class RoomsView(ListModelMixin,
                                 'room_marker', 'type', 'floor', 'zone'), many=True).data
         # return Response(orjson.loads(orjson.dumps(response)))   # Made for test
 
+        if request.query_params.getlist('tags'):
+            tables = Table.objects.all().prefetch_related(
+                'tags', 'images').select_related('table_marker').distinct()
+            for tag in request.query_params.getlist('tags'):
+                tables = tables.filter(tags__title__icontains=tag)
+            serialized_tables = TestTableSerializer(instance=tables, many=True).data
+            i = 0
+            while i < len(response):
+                tables_with_tags = []
+                for table in serialized_tables:
+                    if str(table['room']) == response[i]['id']:
+                        tables_with_tags.append(table)
+                response[i]['tables'] = tables_with_tags
+                if len(response[i]['tables']) == 0:
+                    response.remove(response[i])
+                else:
+                    response[i]['suitable_tables'] = len(response[i]['tables'])
+                    i += 1
+
         if request.query_params.get('date_to') and request.query_params.get('date_from'):
             date_from = datetime.strptime(request.query_params.get('date_from'), '%Y-%m-%dT%H:%M:%S.%f')
             date_to = datetime.strptime(request.query_params.get('date_to'), '%Y-%m-%dT%H:%M:%S.%f')
 
             if date_from > date_to:
                 return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
+
             for room in response:
                 bookings = Booking.objects.filter(status__in=['active', 'waiting']).filter(
                     (
@@ -128,14 +148,15 @@ class RoomsView(ListModelMixin,
                             |
                             (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
                     )
-                ).select_related('table').values_list('table__id', flat=True)
+                ).filter(table__room__pk=uuid.UUID(room['id'])).select_related('table').values_list('table__id', flat=True)
                 room_tables = room['tables'][:]
                 for table in room['tables']:
                     if (not table.get('marker') and not room['room_type_unified']) or uuid.UUID(table.get('id')) in bookings:
-                        room_tables.remove(table)
+                        table['is_avialable'] = False
+                    else:
+                        table['is_avialable'] = True
                     if room['room_type_unified'] and uuid.UUID(table.get('id')) in bookings:
                         room['booked_table'] = table
-
                 room['tables'] = room_tables
                 # for booking in bookings:
                 #     room_tables = room['tables'][:]
@@ -177,16 +198,6 @@ class RoomsView(ListModelMixin,
                     if not room['images']:
                         without_image.append(room)
                 response = without_image
-
-        if request.query_params.getlist('tags'):
-            tables = Table.objects.all().filter(tags__title__in=request.query_params.getlist('tags')).prefetch_related('tags', 'images').select_related('table_marker').distinct()
-            for room in response:
-                tables_with_tags = []
-                serialized_tables = TestTableSerializer(instance=tables, many=True).data
-                for table in serialized_tables:
-                    if str(table['room']) == room['id']:
-                        tables_with_tags.append(table)
-                room['tables'] = tables_with_tags
 
         suitable_tables = 0
 
