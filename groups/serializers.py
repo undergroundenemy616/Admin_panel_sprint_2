@@ -353,6 +353,12 @@ class UpdateGroupSerializer(GroupSerializer):
     global_can_write = serializers.BooleanField(required=False, write_only=True)
     global_can_manage = serializers.BooleanField(required=False, write_only=True)
 
+    def validate(self, attrs):
+        if attrs.get('title'):
+            if Group.objects.filter(title=attrs['title']).exists():
+                raise ValidationError(detail={"detail": "Group with this title already exists"}, code=400)
+        return attrs
+
     def update(self, instance, validated_data):
         instance: Group
         legacy_rights = Group.to_legacy_access(instance.access)
