@@ -155,10 +155,10 @@ class RoomsView(ListModelMixin,
                         room_tables.remove(table)
                         continue
                     if uuid.UUID(table.get('id')) in bookings:
-                        table['is_avialable'] = False
+                        table['is_available'] = False
                         room['suitable_tables'] -= 1
                     else:
-                        table['is_avialable'] = True
+                        table['is_available'] = True
                 room['tables'] = room_tables
                 # for booking in bookings:
                 #     room_tables = room['tables'][:]
