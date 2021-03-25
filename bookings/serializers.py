@@ -30,16 +30,19 @@ class SwaggerBookListTableParametrs(serializers.Serializer):
 class SwaggerBookListRoomTypeStats(serializers.Serializer):
     date_from = serializers.DateField(required=True, format='%Y-%m-%d')
     date_to = serializers.DateField(required=True, format='%Y-%m-%d')
+    doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
 
 class SwaggerBookingEmployeeStatistics(serializers.Serializer):
     office_id = serializers.UUIDField(required=False, format='hex_verbose')
     month = serializers.CharField(required=False, max_length=10)
     year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
 
 class SwaggerBookingFuture(serializers.Serializer):
     date = serializers.DateField(required=False, format='%Y-%m-%d')
+    doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
 
 class SwaggerDashboard(serializers.Serializer):
