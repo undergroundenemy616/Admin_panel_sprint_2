@@ -71,7 +71,7 @@ pipelines:
           <<: *Deploy
           deployment: dev-simple-office-liis-su
   
-    prod_simple-office:
+    prod_simple_office:
       - step:
           <<: *Build
                
