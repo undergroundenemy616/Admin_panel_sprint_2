@@ -92,6 +92,9 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: bplus-simple-office-liis-su
+      - step:
+          <<: *Deploy
+          deployment: platformix-simple-office-liis
       
     prod_gpn-deploy:
       - step:
