@@ -170,6 +170,13 @@ class AppEntrances(models.Model):
     device_info = JSONField(encoder=DjangoJSONEncoder)
 
 
+class OfficePanelRelation(models.Model):
+    office = models.ForeignKey(Office, null=False, related_name='office_panels', on_delete=models.CASCADE)
+    floor = models.ForeignKey(Floor, null=False, related_name='office_panels', on_delete=models.CASCADE)
+    account = models.OneToOneField(Account, null=False, related_name='office_panels', on_delete=models.CASCADE)
+    access_code = models.IntegerField(unique=True, max_length=11, null=False)
+
+
 # class InfoPanel(models.Model):
 #     id = models.UUIDField(primary_key=True, default=uuid.uuid4(), editable=False)
 #     title = models.CharField(max_length=64)

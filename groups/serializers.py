@@ -1,6 +1,5 @@
 from core.handlers import ResponseException
 from rest_framework.exceptions import ValidationError
-from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from rest_framework import serializers, status
@@ -352,6 +351,12 @@ class UpdateGroupSerializer(GroupSerializer):
     title = serializers.CharField(required=False)
     global_can_write = serializers.BooleanField(required=False, write_only=True)
     global_can_manage = serializers.BooleanField(required=False, write_only=True)
+
+    def validate(self, attrs):
+        if attrs.get('title'):
+            if Group.objects.filter(title=attrs['title']).exclude(pk=self.instance.pk).exists():
+                raise ValidationError(detail={"detail": "Group with this title already exists"}, code=400)
+        return attrs
 
     def update(self, instance, validated_data):
         instance: Group

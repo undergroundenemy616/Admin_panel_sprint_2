@@ -23,11 +23,12 @@ from rest_framework_simplejwt.exceptions import TokenError
 
 from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
 from core.authentication import AuthForAccountPut
+from core.handlers import ResponseException
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
 from mail import send_html_email_message
-from users.models import Account, User
+from users.models import Account, User, OfficePanelRelation
 from users.registration import confirm_code, send_code
 from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                LoginOrRegisterSerializer,
@@ -39,7 +40,7 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                SwaggerAccountListParametr,
                                SwaggerAccountParametr, user_access_serializer,
                                EntranceCollectorSerializer, TestAccountSerializer,
-                               AccountListGetSerializer)
+                               AccountListGetSerializer, OfficePanelSerializer, LoginOfficePanel)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):
@@ -155,6 +156,41 @@ class LoginStaff(GenericAPIView):
         auth_dict["access_token"] = str(token.access_token)
         # data['status'], data['user'] = 'DONE', UserSerializer(instance=user).data
         return Response(auth_dict, status=200)
+
+
+class LoginOfficePanel(GenericAPIView):
+    queryset = User.objects.all()
+    authentication_classes = []
+    serializer_class = LoginOfficePanel
+
+    def post(self, request, *args, **kwargs):
+        access_code = request.data.get('access_code')
+
+        if not access_code:
+            raise ResponseException("Invalid Credentials", status_code=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            office_panel_info = OfficePanelRelation.objects.get(access_code=access_code)
+        except OfficePanelRelation.DoesNotExist:
+            raise ResponseException("Data not found", status_code=status.HTTP_404_NOT_FOUND)
+
+        if not office_panel_info.office or not office_panel_info.floor:
+            raise ResponseException("Panel has no office/floor", status_code=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=office_panel_info.account.user.id)
+        except User.DoesNotExist:
+            raise ResponseException("Account not found", status_code=status.HTTP_404_NOT_FOUND)
+
+        serializer = TokenObtainPairSerializer()
+        token = serializer.get_token(user=user)
+        data = dict()
+        data["refresh_token"] = str(token)
+        data["access_token"] = str(token.access_token)
+        data["office"] = str(office_panel_info.office.id)
+        data["floor"] = str(office_panel_info.floor.id)
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class AccountView(GenericAPIView):
@@ -443,3 +479,22 @@ def custom404(request, exception=None):
         'status_code': 404,
         'message': 'Not found'
     }, status=404)
+
+
+class OfficePanelRegister(GenericAPIView, mixins.CreateModelMixin):
+
+    permission_classes = (IsAdmin, )
+    serializer_class = OfficePanelSerializer
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class OfficePanelUpdate(GenericAPIView, mixins.UpdateModelMixin):
+
+    queryset = Account.objects.all()
+    permission_classes = (IsAdmin, )
+    serializer_class = OfficePanelSerializer
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)

@@ -107,7 +107,8 @@ class BookingSerializer(serializers.ModelSerializer):
         response['office'] = {"id": instance.table.room.floor.office.id,
                               "title": instance.table.room.floor.office.title,
                               "description": instance.table.room.floor.office.description}
-        response['user'] = instance.user_id
+        response['user'] = {'id': instance.user_id,
+                            'phone_number': instance.user.phone_number}
         return response
 
     def create(self, validated_data, *args, **kwargs):
@@ -461,7 +462,8 @@ def employee_statistics(stats):
         "middle_name": stats.middle_name,
         "last_name": stats.last_name,
         "date_from": str(stats.date_from),
-        "date_to": str(stats.date_to)
+        "date_to": str(stats.date_to),
+        "phone_number": str(stats.phone_number)
     }
 
 
@@ -478,6 +480,7 @@ def bookings_future(stats):
         "first_name": stats.first_name,
         "middle_name": stats.middle_name,
         "last_name": stats.last_name,
+        "phone_number": str(stats.phone_number),
         "date_from": str(stats.date_from),
         "date_to": str(stats.date_to),
         "date_activate_until": str(stats.date_activate_until)
