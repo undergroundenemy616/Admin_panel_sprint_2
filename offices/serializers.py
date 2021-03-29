@@ -357,7 +357,7 @@ class CreateOfficeSerializer(OfficeSerializer):
         return response
 
     def validate(self, attrs):
-        if Office.objects.filter(license=attrs['license']).exists():
+        if Office.objects.filter(license=attrs['license']).exclude(pk=self.instance.pk).exists():
             raise ValidationError(detail='Office with this license is already exists', code=400)
         return attrs
 
