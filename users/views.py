@@ -285,7 +285,10 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             serializer = AccountListGetSerializer(data=request.query_params)
             serializer.is_valid(raise_exception=True)
             if serializer.data.get('account_type') == 'kiosk':
-                self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
+                self.serializer_class = OfficePanelSerializer
+                self.queryset = OfficePanelRelation.objects.all().select_related(
+                    'floor', 'office', 'account','account__photo', 'account__user').prefetch_related('account__groups')
+                return self.list(self, request, *args, **kwargs)
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
