@@ -385,7 +385,7 @@ class OperatorPromotionView(GenericAPIView):
                 to=account.email,
                 subject="Добро пожаловать в Simple-Office!",
                 template_args={
-                    'host': request.build_absolute_uri('/'),
+                    'host': os.environ.get('ADMIN_HOST'),
                     'username': account.user.email,
                     'password': password
                 }
