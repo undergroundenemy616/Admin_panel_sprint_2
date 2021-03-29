@@ -63,18 +63,18 @@ pipelines:
     prod_gpn:
       - step:
           <<: *Build
-    
+
     dev_simple_office:
       - step:
           <<: *Build
       - step:
           <<: *Deploy
           deployment: dev-simple-office-liis-su
-  
-    prod_simple-office:
+
+    prod_simple_office:
       - step:
           <<: *Build
-               
+
   custom:
     prod_simple-office-deploy:
       - step:
@@ -92,10 +92,13 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: bplus-simple-office-liis-su
-      
+      - step:
+          <<: *Deploy
+          deployment: platformix-simple-office-liis
+
     prod_gpn-deploy:
       - step:
           <<: *Deploy
           deployment: table-informer-liis-su
-    
-    
+
+
