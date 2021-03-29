@@ -453,8 +453,8 @@ class OfficePanelSerializer(serializers.Serializer):
         return office_panel
 
     def to_representation(self, instance):
-        account = get_object_or_404(Account, pk=instance.account.pk)
-        response = AccountSerializer(account).data
-        response['office_panel'] = instance.pk
+        response = TestAccountSerializer(instance.account).data
+        response['office'] = {"id": instance.office.id, "title": instance.office.title}
+        response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}
         response['access_code'] = instance.access_code
         return response
