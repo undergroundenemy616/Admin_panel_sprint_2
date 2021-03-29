@@ -19,14 +19,16 @@ from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
 from core.authentication import AuthForAccountPut
+from core.handlers import ResponseException
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsOwner
 from groups.models import Group
 from mail import send_html_email_message
-from users.models import Account, User
+from users.models import Account, User, OfficePanelRelation
 from users.registration import confirm_code, send_code
 from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                LoginOrRegisterSerializer,
@@ -38,7 +40,7 @@ from users.serializers import (AccountSerializer, AccountUpdateSerializer,
                                SwaggerAccountListParametr,
                                SwaggerAccountParametr, user_access_serializer,
                                EntranceCollectorSerializer, TestAccountSerializer,
-                               AccountListGetSerializer)
+                               AccountListGetSerializer, OfficePanelSerializer, LoginOfficePanel)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):
@@ -156,6 +158,41 @@ class LoginStaff(GenericAPIView):
         return Response(auth_dict, status=200)
 
 
+class LoginOfficePanel(GenericAPIView):
+    queryset = User.objects.all()
+    authentication_classes = []
+    serializer_class = LoginOfficePanel
+
+    def post(self, request, *args, **kwargs):
+        access_code = request.data.get('access_code')
+
+        if not access_code:
+            raise ResponseException("Invalid Credentials", status_code=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            office_panel_info = OfficePanelRelation.objects.get(access_code=access_code)
+        except OfficePanelRelation.DoesNotExist:
+            raise ResponseException("Data not found", status_code=status.HTTP_404_NOT_FOUND)
+
+        if not office_panel_info.office or not office_panel_info.floor:
+            raise ResponseException("Panel has no office/floor", status_code=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=office_panel_info.account.user.id)
+        except User.DoesNotExist:
+            raise ResponseException("Account not found", status_code=status.HTTP_404_NOT_FOUND)
+
+        serializer = TokenObtainPairSerializer()
+        token = serializer.get_token(user=user)
+        data = dict()
+        data["refresh_token"] = str(token)
+        data["access_token"] = str(token.access_token)
+        data["office"] = str(office_panel_info.office.id)
+        data["floor"] = str(office_panel_info.floor.id)
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
 class AccountView(GenericAPIView):
     serializer_class = AccountSerializer
     queryset = Account.objects.all().select_related('user', 'photo').prefetch_related('groups')
@@ -235,7 +272,7 @@ class RegisterStaffView(GenericAPIView):
 
 class AccountListView(GenericAPIView, mixins.ListModelMixin):
     serializer_class = TestAccountSerializer    # TestAccountSerializer AccountSerializer
-    queryset = Account.objects.all().select_related('user').prefetch_related('photo', 'groups')
+    queryset = Account.objects.all().select_related('user').prefetch_related('photo', 'groups').order_by('-user__is_active')
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
     filter_backends = [filters.SearchFilter]
@@ -248,12 +285,15 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             serializer = AccountListGetSerializer(data=request.query_params)
             serializer.is_valid(raise_exception=True)
             if serializer.data.get('account_type') == 'kiosk':
-                self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
+                self.serializer_class = OfficePanelSerializer
+                self.queryset = OfficePanelRelation.objects.all().select_related(
+                    'floor', 'office', 'account','account__photo', 'account__user').prefetch_related('account__groups')
+                return self.list(self, request, *args, **kwargs)
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
                 self.queryset = self.queryset.filter(groups=serializer.data.get('access_group'))
-            self.queryset.order_by('user__is_active')
+            self.queryset.order_by('-user__is_active')
             return self.list(self, request, *args, **kwargs)
         elif request.query_params.get('access_group'):
             serializer = AccountListGetSerializer(data=request.query_params)
@@ -345,7 +385,7 @@ class OperatorPromotionView(GenericAPIView):
                 to=account.email,
                 subject="Добро пожаловать в Simple-Office!",
                 template_args={
-                    'host': request.build_absolute_uri('/'),
+                    'host': os.environ.get('ADMIN_HOST'),
                     'username': account.user.email,
                     'password': password
                 }
@@ -425,15 +465,13 @@ class RefreshTokenView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         refresh = request.data.get('refresh')
         if not refresh:
-            return Response({"detail": "Refresh parametr is required."}, status=400)
+            return Response({"detail": "Refresh parametr is required"}, status=400)
         refresh_ser = TokenRefreshSerializer(data=request.data)
-        refresh_ser.is_valid(raise_exception=True)
-        # access = refresh_ser.validated_data['access']
-        # payload = jwt.decode(jwt=access, verify=False)
-        # user = get_object_or_404(User, id=payload['user_id'])
+        try:
+            refresh_ser.is_valid(raise_exception=True)
+        except TokenError as e:
+            return Response(data={"detail": 'Refresh ' + ''.join(*e.args).lower()}, status=400)
         auth_dict = dict()
-        # token_serializer = TokenObtainPairSerializer()
-        # token = token_serializer.get_token(user=user)
         auth_dict["refresh_token"] = str(refresh_ser.validated_data['refresh'])
         auth_dict["access_token"] = str(refresh_ser.validated_data['access'])
         return Response(auth_dict, status=200)
@@ -444,3 +482,22 @@ def custom404(request, exception=None):
         'status_code': 404,
         'message': 'Not found'
     }, status=404)
+
+
+class OfficePanelRegister(GenericAPIView, mixins.CreateModelMixin):
+
+    permission_classes = (IsAdmin, )
+    serializer_class = OfficePanelSerializer
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class OfficePanelUpdate(GenericAPIView, mixins.UpdateModelMixin):
+
+    queryset = Account.objects.all()
+    permission_classes = (IsAdmin, )
+    serializer_class = OfficePanelSerializer
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)

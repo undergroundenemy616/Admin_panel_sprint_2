@@ -114,7 +114,8 @@ class TableTagView(ListModelMixin,
         # serializer.is_valid(raise_exception=True)
         self.serializer_class = BaseTableTagSerializer
         self.queryset = TableTag.objects.filter(office_id=get_object_or_404(Office,
-                                                                            pk=request.query_params.get('office')))
+                                                                            pk=request.query_params.get('office'))
+                                                ).select_related('office', 'icon').prefetch_related('office__images')
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):

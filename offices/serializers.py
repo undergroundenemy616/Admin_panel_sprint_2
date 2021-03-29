@@ -351,10 +351,16 @@ class CreateOfficeSerializer(OfficeSerializer):
         response['floors'] = [floor_serializer_for_office(floor) for floor in instance.floors.all()]
         response['floors_number'] = len(response['floors'])
         response['images'] = [image_serializer(image) for image in instance.images.all()]
-        response['zones'] = [zone_serializer_for_office(zone) for zone in instance.zones.all()]
+        response['zones'] = [base_zone_serializer(zone) for zone in instance.zones.all()]
         response['working_hours'] = instance.working_hours
         response['license'] = LicenseSerializer(instance.license).data
         return response
+
+    def validate(self, attrs):
+        if Office.objects.filter(license=attrs['license']).exclude(
+                pk=self.instance.pk if self.instance else None).exists():
+            raise ValidationError(detail='Office with this license is already exists', code=400)
+        return attrs
 
     def create(self, validated_data):
         """Create office with default data.
