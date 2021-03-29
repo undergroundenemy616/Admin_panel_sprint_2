@@ -1,22 +1,25 @@
 import os
 import random
 import ipinfo
+import time
 from smtplib import SMTPException
 from typing import Any, Dict
 
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Q
+from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
+from rest_framework.generics import get_object_or_404
 from booking_api_django_new.settings import DEBUG
 from core.pagination import DefaultPagination
 from files.models import File
 from files.serializers import BaseFileSerializer
 from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
 from mail import send_html_email_message
+from floors.models import Floor
 from offices.models import Office, OfficeZone
-from users.models import Account, User, AppEntrances
+from users.models import Account, User, AppEntrances, OfficePanelRelation
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -274,6 +277,10 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         return instance
 
 
+class LoginOfficePanel(serializers.Serializer):
+    access_code = serializers.IntegerField(required=True)
+
+
 class AccountUpdateSerializer(serializers.ModelSerializer):
     firstname = serializers.CharField(source='first_name', required=False, allow_blank=True, allow_null=True)
     lastname = serializers.CharField(source='last_name', required=False, allow_blank=True, allow_null=True)
@@ -409,10 +416,45 @@ class EntranceCollectorSerializer(serializers.ModelSerializer):
         return attrs
 
 
-# class InfoPanelCreateSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = InfoPanel
-#         fields = '__all__'
-#
-#     def create(self, validated_data):
-#         pass
+class OfficePanelSerializer(serializers.Serializer):
+    firstname = serializers.CharField(max_length=64)
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+
+    @atomic()
+    def create(self, validated_data):
+        user = User.objects.create_user(is_active=True, is_staff=True)
+        group = Group.objects.filter(title='Информационная панель').first()
+        account = Account.objects.create(user=user, first_name=validated_data.get('firstname'), account_type='kiosk')
+        if group:
+            account.groups.add(group)
+        else:
+            group = Group.objects.create(title='Информационная панель', access=2)
+            account.groups.add(group)
+        instance = OfficePanelRelation.objects.create(account=account, office=validated_data.get('office'),
+                                                      floor=validated_data.get('floor'),
+                                                      access_code=int(time.time()))
+        return instance
+
+    @atomic()
+    def update(self, instance, validated_data):
+        office_panel = get_object_or_404(OfficePanelRelation, account__pk=instance.pk)
+        instance.first_name = validated_data.get('firstname')
+        instance.save()
+        office_panel.office = validated_data.get('office')
+        office_panel.floor = validated_data.get('floor')
+        office_panel.save()
+        # account = get_object_or_404(Account, pk=instance.account.pk)
+        # account.first_name = validated_data.get('firstname')
+        # account.save()
+        # instance.office = validated_data.get('office')
+        # instance.floor = validated_data.get('floor')
+        # instance.save()
+        return office_panel
+
+    def to_representation(self, instance):
+        account = get_object_or_404(Account, pk=instance.account.pk)
+        response = AccountSerializer(account).data
+        response['office_panel'] = instance.pk
+        response['access_code'] = instance.access_code
+        return response

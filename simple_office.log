@@ -328,3 +328,478 @@ Traceback (most recent call last):
 IndexError: list index out of range
 [35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '49')}[0m
 [35mb'{"message":"Table already booked for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '49')}[0m
+[35mb'{"message":"Table already booked for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '49')}[0m
+[35mb'{"message":"Table already booked for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '49')}[0m
+[35mb'{"message":"Table already booked for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '49')}[0m
+[35mb'{"message":"Table already booked for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '55')}[0m
+[35mb'{"message":"User already has a booking for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '55')}[0m
+[35mb'{"message":"User already has a booking for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '55')}[0m
+[35mb'{"message":"User already has a booking for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, POST, DELETE, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '55')}[0m
+[35mb'{"message":"User already has a booking for this date."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'www-authenticate': ('WWW-Authenticate', 'Bearer realm="api"'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '58')}[0m
+[35mb'{"detail":"Authentication credentials were not provided."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '267')}[0m
+[35mb'{"date_from":["Date has wrong format. Use one of these formats instead: YYYY-MM-DD."],"date_to":["Date has wrong format. Use one of these formats instead: YYYY-MM-DD."],"message":"Date has wrong format. Use one of these formats instead: YYYY-MM-DD.","code":"invalid"}'[0m
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\win32com\client\dynamic.py", line 81, in _GetGoodDispatch
+    IDispatch = pythoncom.connect(IDispatch)
+pywintypes.com_error: (-2147221008, 'Не был произведен вызов CoInitialize.', None, None)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 342, in get
+    xlApp = client.Dispatch("Excel.Application")
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\win32com\client\__init__.py", line 95, in Dispatch
+    dispatch, userName = dynamic._GetGoodDispatchAndUserName(dispatch,userName,clsctx)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\win32com\client\dynamic.py", line 98, in _GetGoodDispatchAndUserName
+    return (_GetGoodDispatch(IDispatch, clsctx), userName)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\win32com\client\dynamic.py", line 83, in _GetGoodDispatch
+    IDispatch = pythoncom.CoCreateInstance(IDispatch, None, clsctx, pythoncom.IID_IDispatch)
+pywintypes.com_error: (-2147221008, 'Не был произведен вызов CoInitialize.', None, None)
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\configuration.py", line 21, in __init__
+    with open(self.wkhtmltopdf) as f:
+FileNotFoundError: [Errno 2] No such file or directory: b''
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 429, in get
+    pdfkit.from_file(Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')),
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\api.py", line 46, in from_file
+    r = PDFKit(input, 'file', options=options, toc=toc, cover=cover, css=css,
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\pdfkit.py", line 42, in __init__
+    self.configuration = (Configuration() if configuration is None
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\configuration.py", line 24, in __init__
+    raise IOError('No wkhtmltopdf executable found: "%s"\n'
+OSError: No wkhtmltopdf executable found: "b''"
+If this file exists please check that this process can read it. Otherwise please install wkhtmltopdf - https://github.com/JazzCore/python-pdfkit/wiki/Installing-wkhtmltopdf
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\configuration.py", line 21, in __init__
+    with open(self.wkhtmltopdf) as f:
+FileNotFoundError: [Errno 2] No such file or directory: b''
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 429, in get
+    pdfkit.from_file(Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')),
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\api.py", line 46, in from_file
+    r = PDFKit(input, 'file', options=options, toc=toc, cover=cover, css=css,
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\pdfkit.py", line 42, in __init__
+    self.configuration = (Configuration() if configuration is None
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\configuration.py", line 24, in __init__
+    raise IOError('No wkhtmltopdf executable found: "%s"\n'
+OSError: No wkhtmltopdf executable found: "b''"
+If this file exists please check that this process can read it. Otherwise please install wkhtmltopdf - https://github.com/JazzCore/python-pdfkit/wiki/Installing-wkhtmltopdf
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 429, in get
+    pdfkit.from_file(Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')),
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\api.py", line 49, in from_file
+    return r.to_pdf(output_path)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\pdfkit.py", line 126, in to_pdf
+    args = self.command(path)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\pdfkit.py", line 123, in command
+    return list(self._command(path))
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\pdfkit\pdfkit.py", line 112, in _command
+    for s in self.source.source:
+TypeError: 'WindowsPath' object is not iterable
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+Internal Server Error: /book/future
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 648, in get
+    date_validation(serializer.data.get('date'))
+  File "C:\Projects\booking-api-django\bookings\serializers.py", line 506, in date_validation
+    datetime.strptime(date, '%Y-%m-%d')
+TypeError: strptime() argument 1 must be str, not None
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 435, in get
+    response_dict = orjson.loads(response.text)
+UnboundLocalError: local variable 'response' referenced before assignment
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 435, in get
+    response_dict = orjson.loads(response.text)
+UnboundLocalError: local variable 'response' referenced before assignment
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 444, in get
+    Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).stat().st_size,
+  File "C:\Users\AngryNerd\AppData\Local\Programs\Python\Python39\lib\pathlib.py", line 1221, in stat
+    return self._accessor.stat(self)
+FileNotFoundError: [WinError 2] Не удается найти указанный файл: 'C:\\Projects\\booking-api-django\\bed6fb3ba27641d38e032d41625c0093From_2020-01-01_To_2020-12-12.pdf'
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 444, in get
+    Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).stat().st_size,
+  File "C:\Users\AngryNerd\AppData\Local\Programs\Python\Python39\lib\pathlib.py", line 1221, in stat
+    return self._accessor.stat(self)
+FileNotFoundError: [WinError 2] Не удается найти указанный файл: 'C:\\Projects\\booking-api-django\\3900403658844d70a922bf5467431aceFrom_2020-01-01_To_2020-12-12.pdf'
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 438, in get
+    response_dict = orjson.loads(response.text)
+UnboundLocalError: local variable 'response' referenced before assignment
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+Internal Server Error: /book/room_type_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 438, in get
+    response_dict = orjson.loads(response.text)
+UnboundLocalError: local variable 'response' referenced before assignment
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '23')}[0m
+[35mb'{"detail":"Not found."}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'www-authenticate': ('WWW-Authenticate', 'Bearer realm="api"'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '183')}[0m
+[35mb'{"detail":"Given token not valid for any token type","code":"token_not_valid","messages":[{"token_class":"AccessToken","token_type":"access","message":"Token is invalid or expired"}]}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'www-authenticate': ('WWW-Authenticate', 'Bearer realm="api"'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '183')}[0m
+[35mb'{"detail":"Given token not valid for any token type","code":"token_not_valid","messages":[{"token_class":"AccessToken","token_type":"access","message":"Token is invalid or expired"}]}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '267')}[0m
+[35mb'{"date_from":["Date has wrong format. Use one of these formats instead: YYYY-MM-DD."],"date_to":["Date has wrong format. Use one of these formats instead: YYYY-MM-DD."],"message":"Date has wrong format. Use one of these formats instead: YYYY-MM-DD.","code":"invalid"}'[0m
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'POST, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '40')}[0m
+[35mb'{"detail":"Incorrect email or password"}'[0m
+Internal Server Error: /book/employee_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 481, in get
+    month_num = int(strptime(month, '%B').tm_mon)
+  File "C:\Users\AngryNerd\AppData\Local\Programs\Python\Python39\lib\_strptime.py", line 562, in _strptime_time
+    tt = _strptime(data_string, format)[0]
+  File "C:\Users\AngryNerd\AppData\Local\Programs\Python\Python39\lib\_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '03' does not match format '%B'
+Internal Server Error: /book/employee_stats
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 598, in get
+    worksheet.write('B' + str(i), list_rows[j]['phone_number'])
+KeyError: 'phone_number'
+Internal Server Error: /book/future
+Traceback (most recent call last):
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\exception.py", line 47, in inner
+    response = get_response(request)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\core\handlers\base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\decorators\csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\django\views\generic\base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Projects\pythonProject\booking-api-django\venv\lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Projects\booking-api-django\bookings\views.py", line 683, in get
+    sql_results.append(bookings_future(s))
+  File "C:\Projects\booking-api-django\bookings\serializers.py", line 484, in bookings_future
+    "phone_number": str(stats.phone_number),
+AttributeError: 'Booking' object has no attribute 'phone_number'

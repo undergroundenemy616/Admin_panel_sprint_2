@@ -4,7 +4,9 @@ from core.handlers import ResponseException
 from datetime import datetime, timezone, timedelta, date
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
+import pandas as pd
 from pathlib import Path
+import pdfkit
 import requests
 from rest_framework import status
 from rest_framework.filters import SearchFilter
@@ -338,6 +340,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
         date_validation(serializer.data.get('date_to'))
         date_from = serializer.data.get('date_from')
         date_to = serializer.data.get('date_to')
+        doc_format = serializer.data.get('doc_format')
 
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
@@ -404,22 +407,44 @@ class BookingStatisticsRoomTypes(GenericAPIView):
             check_token()
             headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
 
-            try:
-                response = requests.post(
-                    url=FILES_HOST + "/upload",
-                    files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
-                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-                    headers=headers,
-                )
-            except requests.exceptions.RequestException:
-                return {"message": "Error occured during file upload"}, 500
+            if doc_format:
+                if doc_format == 'pdf':
+                    df = pd.read_excel(Path(str(Path.cwd()) + "/" + secure_file_name))
+                    df.to_html(Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')))
+                    pdfkit.from_file(secure_file_name.replace('.xlsx', '.html'),
+                                     secure_file_name.replace('.xlsx', '.pdf'),
+                                     options={'encoding': "utf8"})
+                    try:
+                        response = requests.post(
+                            url=FILES_HOST + "/upload",
+                            files={
+                                "file": (secure_file_name.replace('.xlsx', '.pdf'), open(Path(str(Path.cwd()) + "/" +
+                                                                     secure_file_name.replace('.xlsx', '.pdf')), "rb"),
+                                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                            headers=headers,
+                        )
+                    except requests.exceptions.RequestException:
+                        return {"message": "Error occured during file upload"}, 500
+                elif doc_format == 'xlsx':
+                    try:
+                        response = requests.post(
+                            url=FILES_HOST + "/upload",
+                            files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                            headers=headers,
+                        )
+                    except requests.exceptions.RequestException:
+                        return {"message": "Error occured during file upload"}, 500
 
             response_dict = orjson.loads(response.text)
             file_attrs = {
                 "path": FILES_HOST + str(response_dict.get("path")),
-                "title": secure_file_name,
-                "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+                "title": secure_file_name if doc_format == 'xlsx' else secure_file_name.replace('.xlsx', '.pdf'),
+                "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size if
+                doc_format == 'xlsx' else
+                Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).stat().st_size,
             }
+
             if response_dict.get("thumb"):
                 file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
 
@@ -427,6 +452,11 @@ class BookingStatisticsRoomTypes(GenericAPIView):
             file_storage_object.save()
 
             Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+            try:
+                Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')).unlink()
+                Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).unlink()
+            except FileNotFoundError:
+                pass
 
             return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
         else:
@@ -464,14 +494,13 @@ class BookingEmployeeStatistics(GenericAPIView):
         query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
         oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
-        ua.middle_name as middle_name, ua.last_name as last_name
+        ua.middle_name as middle_name, ua.last_name as last_name, ua.phone_number as phone_number
         FROM bookings_booking b
-        INNER JOIN tables_table tt on b.table_id = tt.id
-        INNER JOIN rooms_room rr on rr.id = tt.room_id
-        INNER JOIN floors_floor ff on rr.floor_id = ff.id
-        INNER JOIN offices_office oo on ff.office_id = oo.id
-        LEFT JOIN users_user uu on b.user_id = uu.id
-        LEFT JOIN users_account ua on uu.id = ua.user_id
+        JOIN tables_table tt on b.table_id = tt.id
+        JOIN rooms_room rr on rr.id = tt.room_id
+        JOIN floors_floor ff on rr.floor_id = ff.id
+        JOIN offices_office oo on ff.office_id = oo.id
+        JOIN users_account ua on b.user_id = ua.id
         WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}"""
 
         if serializer.data.get('office_id'):
@@ -492,6 +521,7 @@ class BookingEmployeeStatistics(GenericAPIView):
                     'first_name': stat['first_name'],
                     'middle_name': stat['middle_name'],
                     'last_name': stat['last_name'],
+                    'phone_number': stat['phone_number'],
                     'office_title': stat['office_title'],
                     'office_id': stat['office_id'],
                     'book_count': 0,
@@ -553,12 +583,13 @@ class BookingEmployeeStatistics(GenericAPIView):
                 i += 1
                 if i == 1:
                     worksheet.write('A1', 'Ф.И.О')
-                    worksheet.write('B1', 'Среднее время брони в день (в часах)')
-                    worksheet.write('C1', 'Общее время бронирования за месяц (в часах)')
-                    worksheet.write('D1', 'Средняя длительность бронирования (в часах)')
-                    worksheet.write('E1', 'Кол-во бронирований')
-                    worksheet.write('F1', 'Офис')
-                    worksheet.write('G1', 'Часто бронируемое место')
+                    worksheet.write('B1', 'Тел. номер')
+                    worksheet.write('C1', 'Среднее время брони в день (в часах)')
+                    worksheet.write('D1', 'Общее время бронирования за месяц (в часах)')
+                    worksheet.write('E1', 'Средняя длительность бронирования (в часах)')
+                    worksheet.write('F1', 'Кол-во бронирований')
+                    worksheet.write('G1', 'Офис')
+                    worksheet.write('H1', 'Часто бронируемое место')
                 else:
                     full_name = str(str(list_rows[j].get('last_name')) + ' ' +
                                     str(list_rows[j].get('first_name')) + ' ' +
@@ -566,12 +597,13 @@ class BookingEmployeeStatistics(GenericAPIView):
                     if not full_name.replace(" ", ""):
                         full_name = "Имя не указано"
                     worksheet.write('A' + str(i), full_name)
-                    worksheet.write('B' + str(i), list_rows[j]['middle_time'])
-                    worksheet.write('C' + str(i), list_rows[j]['time'])
-                    worksheet.write('D' + str(i), list_rows[j]['middle_booking_time'])
-                    worksheet.write('E' + str(i), list_rows[j]['book_count'])
-                    worksheet.write('F' + str(i), list_rows[j]['office_title'])
-                    worksheet.write('G' + str(i), list_rows[j]['table'])
+                    worksheet.write('B' + str(i), list_rows[j]['phone_number'] if list_rows[j]['phone_number'] != 'None' else 'Не указан')
+                    worksheet.write('C' + str(i), list_rows[j]['middle_time'])
+                    worksheet.write('D' + str(i), list_rows[j]['time'])
+                    worksheet.write('E' + str(i), list_rows[j]['middle_booking_time'])
+                    worksheet.write('F' + str(i), list_rows[j]['book_count'])
+                    worksheet.write('G' + str(i), list_rows[j]['office_title'])
+                    worksheet.write('H' + str(i), list_rows[j]['table'])
                     j += 1
 
             worksheet.write('A' + str(len(list_rows) + 2), 'Рабочих дней в месяце:', bold)
@@ -629,16 +661,15 @@ class BookingFuture(GenericAPIView):
 
         query = f"""
         SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
-        ua.last_name as last_name, oo.id as office_id, oo.title as office_title, ff.id as floor_id,
-        ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
+        ua.last_name as last_name, ua.phone_number as phone_number, oo.id as office_id, oo.title as office_title, 
+        ff.id as floor_id, ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
         b.date_activate_until
         FROM bookings_booking b
-        INNER JOIN tables_table tt on b.table_id = tt.id
-        INNER JOIN rooms_room rr on rr.id = tt.room_id
-        INNER JOIN floors_floor ff on rr.floor_id = ff.id
-        INNER JOIN offices_office oo on ff.office_id = oo.id
-        LEFT JOIN users_user uu on b.user_id = uu.id
-        LEFT JOIN users_account ua on uu.id = ua.user_id
+        JOIN tables_table tt on b.table_id = tt.id
+        JOIN rooms_room rr on rr.id = tt.room_id
+        JOIN floors_floor ff on rr.floor_id = ff.id
+        JOIN offices_office oo on ff.office_id = oo.id
+        JOIN users_account ua on b.user_id = ua.id
         WHERE b.date_from::date = '{date}'"""
 
         if serializer.data.get('office_id'):
@@ -664,12 +695,13 @@ class BookingFuture(GenericAPIView):
                 i += 1
                 if i == 1:
                     worksheet.write('A1', 'Ф.И.О')
-                    worksheet.write('B1', 'Начало брони')
-                    worksheet.write('C1', 'Окончание брони')
-                    worksheet.write('D1', 'Продолжительность брони (в часах)')
-                    worksheet.write('E1', 'Офис')
-                    worksheet.write('F1', 'Этаж')
-                    worksheet.write('G1', 'Рабочее место')
+                    worksheet.write('B1', 'Тел. номер')
+                    worksheet.write('C1', 'Начало брони')
+                    worksheet.write('D1', 'Окончание брони')
+                    worksheet.write('E1', 'Продолжительность брони (в часах)')
+                    worksheet.write('F1', 'Офис')
+                    worksheet.write('G1', 'Этаж')
+                    worksheet.write('H1', 'Рабочее место')
                 else:
                     full_name = str(str(sql_results[j].get('last_name')) + ' ' +
                                     str(sql_results[j].get('first_name')) + ' ' +
@@ -693,12 +725,13 @@ class BookingFuture(GenericAPIView):
                                                       '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
 
                     worksheet.write('A' + str(i), full_name)
-                    worksheet.write('B' + str(i), str(r_date_from))
-                    worksheet.write('C' + str(i), str(r_date_to))
-                    worksheet.write('D' + str(i), book_time),
-                    worksheet.write('E' + str(i), str(sql_results[j]['office_title'])),
-                    worksheet.write('F' + str(i), sql_results[j]['floor_title']),
-                    worksheet.write('G' + str(i), str(sql_results[j]['table_title']))
+                    worksheet.write('B' + str(i), sql_results[j]['phone_number'] if sql_results[j]['phone_number'] != 'None' else 'Не указан')
+                    worksheet.write('C' + str(i), str(r_date_from))
+                    worksheet.write('D' + str(i), str(r_date_to))
+                    worksheet.write('E' + str(i), book_time),
+                    worksheet.write('F' + str(i), str(sql_results[j]['office_title'])),
+                    worksheet.write('G' + str(i), sql_results[j]['floor_title']),
+                    worksheet.write('H' + str(i), str(sql_results[j]['table_title']))
                     j += 1
 
             workbook.close()
