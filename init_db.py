@@ -1,7 +1,7 @@
 import subprocess
 
 command_list = [
-                "python manage.py migrate",
+                "python manage.py makemigrations && python manage.py migrate",
                 "python manage.py\
                 loaddata groups users \
                 licenses files offices \
