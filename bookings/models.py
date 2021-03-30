@@ -46,7 +46,7 @@ class BookingManager(models.Manager):
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
-            access = account.groups.aggregate(Min('access'))
+            access = account.groups.aggregate(Min('access')) if account.groups.exists() else {'access__min': EMPLOYEE_ACCESS}
         except AttributeError:
             access = {'access__min': EMPLOYEE_ACCESS}
         if access['access__min'] < EMPLOYEE_ACCESS:
