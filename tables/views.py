@@ -211,7 +211,11 @@ class TableSlotsView(ListModelMixin,
 
         if request.query_params.get('date'):
             occupied = []
-            date = datetime.strptime(request.query_params.get('date'), '%Y-%m-%d')
+            try:
+                date = datetime.strptime(request.query_params.get('date'), '%Y-%m-%d')
+            except Exception as e:
+                request_date = request.query_params.get('date')
+                date = datetime.strptime(request_date.replace(' ', ''), '%Y-%m-%d')
             # !!!!!!!!Monthly never used!!!!!!!
             if request.query_params.get('monthly'):
                 if int(request.query_params.get('monthly')) == 1:
