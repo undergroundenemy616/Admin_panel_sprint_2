@@ -137,27 +137,58 @@ class RoomsView(ListModelMixin,
             if date_from > date_to:
                 return Response({"detail": "Not valid data"}, status=status.HTTP_400_BAD_REQUEST)
 
-            for room in response:
-                bookings = Booking.objects.filter(status__in=['active', 'waiting']).filter(
-                    (
-                            (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
-                            |
-                            (Q(date_from__lte=date_from) & Q(date_to__gte=date_to))
-                            |
-                            (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
-                    )
-                ).filter(table__room__pk=uuid.UUID(room['id'])).select_related('table').values_list('table__id', flat=True)
-                room_tables = room['tables'][:]
-                for table in room['tables']:
-                    if not table.get('marker') and not room['room_type_unified']:
-                        room_tables.remove(table)
-                        continue
-                    if uuid.UUID(table.get('id')) in bookings:
-                        table['is_available'] = False
-                        room['suitable_tables'] -= 1
-                    else:
-                        table['is_available'] = True
-                room['tables'] = room_tables
+            if request.headers._store.get('version'):
+                for room in response:
+                    bookings = Booking.objects.filter(status__in=['active', 'waiting']).filter(
+                        (
+                                (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
+                                |
+                                (Q(date_from__lte=date_from) & Q(date_to__gte=date_to))
+                                |
+                                (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
+                        )
+                    ).filter(table__room__pk=uuid.UUID(room['id'])).select_related('table').values_list('table__id', flat=True)
+                    room_tables = room['tables'][:]
+                    for table in room['tables']:
+                        if not table.get('marker') and not room['room_type_unified']:
+                            room_tables.remove(table)
+                            continue
+                        if uuid.UUID(table.get('id')) in bookings:
+                            table['is_available'] = False
+                            room['suitable_tables'] -= 1
+                        else:
+                            table['is_available'] = True
+                    room['tables'] = room_tables
+            else:
+                "Made for old Version.1 of mobile app"
+                for room in response:
+                    bookings = Booking.objects.filter(status__in=['active', 'waiting']).filter(
+                        (
+                                (Q(date_from__gte=date_from) & Q(date_from__lt=date_to))
+                                |
+                                (Q(date_from__lte=date_from) & Q(date_to__gte=date_to))
+                                |
+                                (Q(date_to__gt=date_from) & Q(date_to__lte=date_to))
+                        )
+                    ).filter(table__room__pk=uuid.UUID(room['id'])).select_related('table').values_list('table__id',
+                                                                                                        flat=True)
+                    room_tables = room['tables'][:]
+                    for table in room['tables']:
+                        if (not table.get('marker') and not room['room_type_unified']) or uuid.UUID(
+                                table.get('id')) in bookings:
+                            table['is_available'] = False
+                            room_tables.remove(table)
+                        else:
+                            table['is_available'] = True
+                        if room['room_type_unified'] and uuid.UUID(table.get('id')) in bookings:
+                            room['booked_table'] = table
+                    room['tables'] = room_tables
+                copy_response = response[:]
+                for room in copy_response:
+                    if len(room['tables']) == 0:
+                        response.remove(room)
+
+
 
         if request.query_params.get('range_to') and request.query_params.get('range_from'):
             not_in_range = []

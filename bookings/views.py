@@ -346,14 +346,14 @@ class BookingStatisticsRoomTypes(GenericAPIView):
         secure_file_name = uuid.uuid4().hex + file_name
 
         query = f"""
-        SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to
+        SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to, b.status
         FROM bookings_booking b
         INNER JOIN tables_table t ON t.id = b.table_id
         INNER JOIN rooms_room rr ON t.room_id = rr.id
         INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
-        WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
+        WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-        (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')"""
+        (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and b.status = 'over'"""
 
         if serializer.data.get('office_id'):
             query = query + f""" and rtr.office_id = '{serializer.data.get('office_id')}'"""
@@ -494,14 +494,15 @@ class BookingEmployeeStatistics(GenericAPIView):
         query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
         oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
-        ua.middle_name as middle_name, ua.last_name as last_name, ua.phone_number as phone_number
+        ua.middle_name as middle_name, ua.last_name as last_name, ua.phone_number as phone_number, b.status
         FROM bookings_booking b
         JOIN tables_table tt on b.table_id = tt.id
         JOIN rooms_room rr on rr.id = tt.room_id
         JOIN floors_floor ff on rr.floor_id = ff.id
         JOIN offices_office oo on ff.office_id = oo.id
         JOIN users_account ua on b.user_id = ua.id
-        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}"""
+        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year} 
+        and (b.status='over' or b.status = 'canceled' or b.status = 'auto_canceled')"""
 
         if serializer.data.get('office_id'):
             query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
@@ -525,6 +526,9 @@ class BookingEmployeeStatistics(GenericAPIView):
                     'office_title': stat['office_title'],
                     'office_id': stat['office_id'],
                     'book_count': 0,
+                    'over_book': 0,
+                    'canceled_book': 0,
+                    'auto_canceled_book': 0,
                     'time': 0,
                     'places': []
                 })
@@ -543,6 +547,12 @@ class BookingEmployeeStatistics(GenericAPIView):
                 for result in sql_results:
                     if result['user_id'] == employee['id'] and result['office_id'] == employee['office_id']:
                         employee['book_count'] = employee['book_count'] + 1
+                        if result['book_status'] == 'over':
+                            employee['over_book'] = employee['over_book'] + 1
+                        elif result['book_status'] == 'canceled':
+                            employee['canceled_book'] = employee['canceled_book'] + 1
+                        elif result['book_status'] == 'auto_canceled':
+                            employee['auto_canceled_book'] = employee['auto_canceled_book'] + 1
                         employee['time'] = employee['time'] + int(
                             datetime.fromisoformat(result['date_to']).timestamp() -
                             datetime.fromisoformat(result['date_from']).timestamp())
@@ -588,8 +598,11 @@ class BookingEmployeeStatistics(GenericAPIView):
                     worksheet.write('D1', 'Общее время бронирования за месяц (в часах)')
                     worksheet.write('E1', 'Средняя длительность бронирования (в часах)')
                     worksheet.write('F1', 'Кол-во бронирований')
-                    worksheet.write('G1', 'Офис')
-                    worksheet.write('H1', 'Часто бронируемое место')
+                    worksheet.write('G1', 'Кол-во завершенных бронирований')
+                    worksheet.write('H1', 'Кол-во отмененных бронирований')
+                    worksheet.write('I1', 'Кол-во бронирований отмененных автоматически')
+                    worksheet.write('J1', 'Офис')
+                    worksheet.write('K1', 'Часто бронируемое место')
                 else:
                     full_name = str(str(list_rows[j].get('last_name')) + ' ' +
                                     str(list_rows[j].get('first_name')) + ' ' +
@@ -602,8 +615,11 @@ class BookingEmployeeStatistics(GenericAPIView):
                     worksheet.write('D' + str(i), list_rows[j]['time'])
                     worksheet.write('E' + str(i), list_rows[j]['middle_booking_time'])
                     worksheet.write('F' + str(i), list_rows[j]['book_count'])
-                    worksheet.write('G' + str(i), list_rows[j]['office_title'])
-                    worksheet.write('H' + str(i), list_rows[j]['table'])
+                    worksheet.write('G' + str(i), list_rows[j]['over_book'])
+                    worksheet.write('H' + str(i), list_rows[j]['canceled_book'])
+                    worksheet.write('I' + str(i), list_rows[j]['auto_canceled_book'])
+                    worksheet.write('J' + str(i), list_rows[j]['office_title'])
+                    worksheet.write('K' + str(i), list_rows[j]['table'])
                     j += 1
 
             worksheet.write('A' + str(len(list_rows) + 2), 'Рабочих дней в месяце:', bold)
@@ -663,14 +679,14 @@ class BookingFuture(GenericAPIView):
         SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
         ua.last_name as last_name, ua.phone_number as phone_number, oo.id as office_id, oo.title as office_title, 
         ff.id as floor_id, ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
-        b.date_activate_until
+        b.date_activate_until, b.status
         FROM bookings_booking b
         JOIN tables_table tt on b.table_id = tt.id
         JOIN rooms_room rr on rr.id = tt.room_id
         JOIN floors_floor ff on rr.floor_id = ff.id
         JOIN offices_office oo on ff.office_id = oo.id
         JOIN users_account ua on b.user_id = ua.id
-        WHERE b.date_from::date = '{date}'"""
+        WHERE b.date_from::date = '{date}' and (b.status = 'waiting' or b.status = 'active')"""
 
         if serializer.data.get('office_id'):
             query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
