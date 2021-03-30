@@ -37,7 +37,6 @@ class ListCreateUpdateOfficeView(ListModelMixin,
     def get(self, request, *args, **kwargs):
         """Get list of all offices."""
         self.serializer_class = OptimizeListOfficeSerializer
-        response = []
         if request.query_params.get('search'):
             return self.list(request, *args, **kwargs)
         if request.query_params.get('start') and request.query_params.get('limit'):
@@ -50,8 +49,6 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                 return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
             return Response(orjson.loads(orjson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
         response = TestOfficeBaseSerializer(instance=self.queryset.all(), many=True).data
-        # for office in self.queryset.all():
-        #     response.append(office_base_serializer(office=office))
         response = {'results': response}
         return Response(data=response, status=status.HTTP_200_OK)
 
