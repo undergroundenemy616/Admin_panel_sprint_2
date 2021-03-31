@@ -95,6 +95,15 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: platformix-simple-office-liis
+      - step:
+          <<: *Deploy
+          deployment: yamahamotor-simple-office-liis
+      - step:
+          <<: *Deploy
+          deployment: designic-simple-office-liis-su
+      - step:
+          <<: *Deploy
+          deployment: blacklight-simple-office-liis
 
     prod_gpn-deploy:
       - step:
