@@ -392,8 +392,8 @@ class BookingListTablesSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['date_from', 'date_to', 'table']
 
-    def validate(self, attrs):
-        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+    # def validate(self, attrs):
+    #     return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
 
 class BookListTableSerializer(serializers.ModelSerializer):
