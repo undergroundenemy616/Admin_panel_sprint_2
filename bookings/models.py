@@ -31,18 +31,19 @@ class BookingManager(models.Manager):
 
     def is_overflowed_with_data(self, table, date_from, date_to):
         """Check for booking availability"""
-        overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
+        overflows = self.model.objects.filter(table=table). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
-                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).select_related(
-            'table')
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
+        # filter((Q(date_from__lt=date_to, date_to__gte=date_to)
+        #             | Q(date_from__lte=date_from, date_to__gt=date_from)
+        #             | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).select_related(
+        #     'table').order_by('-date_from')
         # Q(date_from__gt=date_from, date_from__lt=date_to)
         # | Q(date_from__lt=date_from, date_to__gt=date_to)
         # | Q(date_from__gt=date_from, date_to__lt=date_to)
         # | Q(date_to__gt=date_from, date_to__lt=date_to)
-        if overflows:
-            return overflows
-        return []
+        return overflows
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
