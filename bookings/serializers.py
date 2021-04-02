@@ -463,7 +463,8 @@ def employee_statistics(stats):
         "last_name": stats.last_name,
         "date_from": str(stats.date_from),
         "date_to": str(stats.date_to),
-        "phone_number": str(stats.phone_number),
+        "phone_number1": str(stats.phone_number1),
+        "phone_number2": str(stats.phone_number2),
         "book_status": str(stats.status)
     }
 
