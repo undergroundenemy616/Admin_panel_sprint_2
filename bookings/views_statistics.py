@@ -198,14 +198,16 @@ class BookingEmployeeStatistics(GenericAPIView):
         query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
         oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
-        ua.middle_name as middle_name, ua.last_name as last_name, ua.phone_number as phone_number, b.status
+        ua.middle_name as middle_name, ua.last_name as last_name, uu.phone_number as phone_number1,
+        ua.phone_number as phone_number2, b.status
         FROM bookings_booking b
         JOIN tables_table tt on b.table_id = tt.id
         JOIN rooms_room rr on rr.id = tt.room_id
         JOIN floors_floor ff on rr.floor_id = ff.id
         JOIN offices_office oo on ff.office_id = oo.id
         JOIN users_account ua on b.user_id = ua.id
-        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year} 
+        JOIN users_user uu on ua.user_id = uu.id
+        WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}
         and (b.status='over' or b.status = 'canceled' or b.status = 'auto_canceled')"""
 
         if serializer.data.get('office_id'):
@@ -226,7 +228,7 @@ class BookingEmployeeStatistics(GenericAPIView):
                     'first_name': stat['first_name'],
                     'middle_name': stat['middle_name'],
                     'last_name': stat['last_name'],
-                    'phone_number': stat['phone_number'],
+                    'phone_number': stat.get('phone_number1') if stat.get('phone_number1') else stat.get('phone_number2'),
                     'office_title': stat['office_title'],
                     'office_id': stat['office_id'],
                     'book_count': 0,
