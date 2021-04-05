@@ -170,9 +170,9 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
         # TODO: protected filter for user
         # user = validated_data['user']
         if isinstance(reference_object, Room):
-            tables = list(reference_object.tables)
+            tables = list(reference_object.tables.all())
         elif isinstance(reference_object, Floor):
-            tables = list(Table.objects.filter(room__in=reference_object.rooms))
+            tables = list(Table.objects.filter(room__in=reference_object.rooms.all()))
         elif isinstance(reference_object, Table):
             tables = [reference_object, ]
         else:
