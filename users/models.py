@@ -2,7 +2,6 @@ import random
 import uuid
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.postgres.fields import JSONField
 from django.core.validators import validate_ipv46_address
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
@@ -167,14 +166,14 @@ class AppEntrances(models.Model):
     location = models.CharField(max_length=255)
     feed_view = models.BooleanField(default=False)
     user = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='entrance')
-    device_info = JSONField(encoder=DjangoJSONEncoder)
+    device_info = models.JSONField(encoder=DjangoJSONEncoder)
 
 
 class OfficePanelRelation(models.Model):
     office = models.ForeignKey(Office, null=False, related_name='office_panels', on_delete=models.CASCADE)
     floor = models.ForeignKey(Floor, null=False, related_name='office_panels', on_delete=models.CASCADE)
     account = models.OneToOneField(Account, null=False, related_name='office_panels', on_delete=models.CASCADE)
-    access_code = models.IntegerField(unique=True, max_length=11, null=False)
+    access_code = models.IntegerField(unique=True, null=False)
 
 
 # class InfoPanel(models.Model):
