@@ -104,6 +104,9 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: blacklight-simple-office-liis
+      - step:
+          <<: *Deploy
+          deployment: samokat-simple-office-liis-su
 
     prod_gpn-deploy:
       - step:
