@@ -16,7 +16,7 @@ import logging
 import orjson
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH', default='dev_simple_office') + '.env')
+load_dotenv(dotenv_path='booking_api_django_new/environments/' + os.environ.get('BRANCH', default='master') + '.env')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,14 +29,13 @@ SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
 LOCAL = True if os.getenv('LOCAL') == 'True' else False
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # if os.environ.get('BRANCH') == 'prod_gpn' else True
+DEBUG = False  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
 KEY_EXPIRATION = 60  # 3 minutes
 
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 BOOKING_TIMEDELTA_CHECK = 15
-# PUSH_HOST = "https://push.liis.su"
-PUSH_HOST = "http://127.0.0.1:5100"
+PUSH_HOST = "https://push.liis.su"
 
 SERVER_EMAIL = 'support@liis.su'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
