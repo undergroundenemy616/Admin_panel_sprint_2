@@ -170,9 +170,9 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
         # TODO: protected filter for user
         # user = validated_data['user']
         if isinstance(reference_object, Room):
-            tables = list(reference_object.tables)
+            tables = list(reference_object.tables.all())
         elif isinstance(reference_object, Floor):
-            tables = list(Table.objects.filter(room__in=reference_object.rooms))
+            tables = list(Table.objects.filter(room__in=reference_object.rooms.all()))
         elif isinstance(reference_object, Table):
             tables = [reference_object, ]
         else:
@@ -392,8 +392,8 @@ class BookingListTablesSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['date_from', 'date_to', 'table']
 
-    def validate(self, attrs):
-        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+    # def validate(self, attrs):
+    #     return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
 
 class BookListTableSerializer(serializers.ModelSerializer):
@@ -463,7 +463,8 @@ def employee_statistics(stats):
         "last_name": stats.last_name,
         "date_from": str(stats.date_from),
         "date_to": str(stats.date_to),
-        "phone_number": str(stats.phone_number),
+        "phone_number1": str(stats.phone_number1),
+        "phone_number2": str(stats.phone_number2),
         "book_status": str(stats.status)
     }
 
