@@ -14,7 +14,7 @@ from bookings.serializers import (BookingFastSerializer, BookingListSerializer,
                                   BookingListTablesSerializer,
                                   BookingPersonalSerializer, BookingSerializer,
                                   SwaggerBookListActiveParametrs,
-                                  SwaggerBookListTableParametrs)
+                                  SwaggerBookListTableParametrs, BookingFromOfficePanelSerializer)
 from core.pagination import LimitStartPagination
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -79,6 +79,19 @@ class BookingsAdminView(BookingsView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BookingsFromOfficePanelView(GenericAPIView):
+    queryset = Booking.objects.all()
+    permission_classes = (IsAdmin, )
+    serializer_class = BookingFromOfficePanelSerializer
+
+    def post(self, request, *args, **kwargs):
+        request.data['account'] = request.user.account
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.save()
+        return Response(response.data, status=status.HTTP_201_CREATED)
 
 
 class CreateFastBookingsView(GenericAPIView):
