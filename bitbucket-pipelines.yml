@@ -76,7 +76,7 @@ pipelines:
           <<: *Build
 
   custom:
-    prod_simple-office-deploy:
+    prod_simple-office/prod-deploy:
       - step:
           <<: *Deploy
           deployment: simple-office-liis-su
@@ -107,8 +107,11 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: samokat-simple-office-liis-su
+      - step:
+          <<: *Deploy
+          deployment: vtbcapital-simple-office
 
-    prod_gpn-deploy:
+    prod_gpn/gpn-deploy:
       - step:
           <<: *Deploy
           deployment: table-informer-liis-su
