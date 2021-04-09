@@ -2,6 +2,7 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from django.utils.timezone import now
 import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -125,11 +126,12 @@ class Booking(models.Model):
             return
         instance.is_active = False
         instance.is_over = True
-        if kwargs.get('status'):
-            if kwargs.get('status') == 'auto_canceled':
+        if kwargs.get('kwargs'):
+            if kwargs['kwargs'].get('status') == 'auto_canceled':
                 instance.status = 'auto_canceled'
-            elif kwargs.get('status') == 'over':
+            elif kwargs['kwargs'].get('status') == 'over':
                 instance.status = 'over'
+                instance.date_to = now()
         else:
             instance.status = 'canceled'
         instance.table.set_table_free()
