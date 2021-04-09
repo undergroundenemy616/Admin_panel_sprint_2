@@ -5,7 +5,7 @@ import time
 import random
 
 from rest_framework import serializers, status
-
+from django.utils.timezone import now
 from bookings.models import Booking, Table
 from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
@@ -268,7 +268,16 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # now = datetime.utcnow().replace(tzinfo=timezone.utc)
-        instance.set_booking_over()
+        now_date = now()
+
+        if instance.date_activate_until > now_date and not instance.is_active:
+            instance.set_booking_over()
+
+            return instance
+
+        flag = {'status': 'over'}
+
+        instance.set_booking_over(kwargs=flag)
         # validated_data['date_to'] = now
         return instance
 
