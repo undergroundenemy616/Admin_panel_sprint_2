@@ -541,35 +541,40 @@ class BookingFromOfficePanelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['room', 'slots', 'sms_report', 'account']
+        fields = ['room', 'slots', 'sms_report', 'account', 'theme']
 
     def create(self, validated_data):
-        room = validated_data('room')
-        room_from_db = Room.objects.filter(id=room).first()
+        room = validated_data['room']
+        room_from_db = Room.objects.filter(id=room.id).first()
         if not room_from_db:
             return
         tables_in_room = room_from_db.tables.all()
         if not tables_in_room:
             return
-        booking_tables = []
-        for time_slot in validated_data('slots'):
+        booked = []
+        for time_slot in validated_data['slots']:
             slot = {
                 'date_from': time_slot['date_from'],
                 'date_to': time_slot['date_to']
             }
-
+            n = 0
+            allowed_for_booking = []
             for table in tables_in_room:
                 if self.Meta.model.objects.is_overflowed(table=table, date_from=slot['date_from'], date_to=slot['date_to']):
                     continue
-                if self.Meta.model.objects.is_user_overflowed(account=validated_data('account'), room_type=room_from_db.type.title, date_from=slot['date_from'], date_to=slot['date_to']):
+                if self.Meta.model.objects.is_user_overflowed(account=validated_data['account'], room_type=room_from_db.type.unified, date_from=slot['date_from'], date_to=slot['date_to']):
+                    n += 1
                     break
-                booking_tables.append(table)
-            self.Meta.model.objects.create(
-                date_to=validated_data['date_to'],
-                date_from=validated_data['date_from'],
-                table=validated_data['table'],
-                user=validated_data['user']
-            )
+                allowed_for_booking.append(table)
+            if n >= 1 or len(allowed_for_booking) < 1:
+                continue
+            booked.append(self.Meta.model.objects.create(
+                date_to=slot['date_to'],
+                date_from=slot['date_from'],
+                table=allowed_for_booking[0],
+                user=validated_data['account']
+            ))
+        return booked
 
 
 
