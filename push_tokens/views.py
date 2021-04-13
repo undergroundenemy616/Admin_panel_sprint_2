@@ -1,3 +1,5 @@
+import os
+import requests
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
@@ -7,6 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from booking_api_django_new.settings import PUSH_HOST
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated, IsAuthenticatedOnPost
 from push_tokens.models import PushToken
@@ -44,11 +47,25 @@ class PushTokenSendSingleView(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         account = get_object_or_404(Account, id=serializer.data.get('account'))
-        expo_data = serializer.data.get('expo')
-        response = {}
-        for token in [push_object.token for push_object in account.push_tokens.all()]:
-            response[token] = {}
-            response[token]['type'], response[token]['message'] = send_push_message(token, expo_data)
+        data_for_expo = serializer.data.get('expo')
+        push_group = os.environ.get("PUSH_GROUP")
+
+        expo_data = {
+            "account": str(account.id),
+            "app": push_group,
+            "expo": {
+                "title": data_for_expo.get('title'),
+                "body": data_for_expo.get('body'),
+                "data": data_for_expo.get('data')
+            }
+        }
+
+        response = requests.post(
+            PUSH_HOST + "/send_push",
+            json=expo_data,
+            headers={'content-type': 'application/json'}
+        )
+
         if not response:
             return Response(
                 {
@@ -57,7 +74,8 @@ class PushTokenSendSingleView(GenericAPIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
-        return Response(response, status=status.HTTP_200_OK)
+
+        return Response("Push notification sent", status=status.HTTP_200_OK)
 
 
 class PushTokenSendBroadcastView(PushTokenSendSingleView):
@@ -67,18 +85,35 @@ class PushTokenSendBroadcastView(PushTokenSendSingleView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         accounts = [get_object_or_404(Account, id=account_id) for account_id in serializer.data.get('accounts')]
-        expo_data = serializer.data.get('expo')
-        response = {}
+        data_for_expo = serializer.data.get('expo')
+        push_group = os.environ.get("PUSH_GROUP")
+        responses = {}
+
         for account in accounts:
-            account_response = {}
-            for token in [push_object.token for push_object in account.push_tokens.all()]:
-                account_response[token] = {}
-                account_response[token]['type'], response[token]['message'] = send_push_message(token, expo_data)
-            response[account.id] = account_response or {
-                "type": "error",
-                "message": f"Unable to find tokens for account {account.id}"
+            expo_data = {
+                "account": str(account.id),
+                "app": push_group,
+                "expo": {
+                    "title": data_for_expo.get('title'),
+                    "body": data_for_expo.get('body'),
+                    "data": data_for_expo.get('data')
+                }
             }
-        if not response:
+
+            response = requests.post(
+                PUSH_HOST + "/send_push",
+                json=expo_data,
+                headers={'content-type': 'application/json'}
+            )
+
+            phone_number = account.phone_number if account.phone_number else account.user.phone_number
+
+            if not response:
+                responses[phone_number] = "Unable to send push notification to this account"
+            else:
+                responses[phone_number] = "Push notification sent"
+
+        if not responses:
             return Response(
                 {
                     "type": "error",
@@ -86,4 +121,4 @@ class PushTokenSendBroadcastView(PushTokenSendSingleView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
-        return Response(response, status=status.HTTP_200_OK)
+        return Response(responses, status=status.HTTP_200_OK)
