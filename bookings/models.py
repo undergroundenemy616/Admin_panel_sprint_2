@@ -48,7 +48,8 @@ class BookingManager(models.Manager):
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
-            access = account.groups.aggregate(Min('access')) if account.groups.exists() else {'access__min': EMPLOYEE_ACCESS}
+            access = account.groups.aggregate(Min('access')) if account.groups.exists() else {
+                'access__min': EMPLOYEE_ACCESS}
         except AttributeError:
             access = {'access__min': EMPLOYEE_ACCESS}
         if access['access__min'] < EMPLOYEE_ACCESS:
@@ -251,7 +252,7 @@ class Booking(models.Model):
             func=self.notify_about_oncoming_booking,
             name="oncoming",
             run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (
-                        date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
+                    date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
                 minutes=2),
             misfire_grace_time=10000,
             id="notify_about_oncoming_booking_" + str(self.id),

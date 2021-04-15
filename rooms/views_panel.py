@@ -31,7 +31,7 @@ class PanelRoomsView(GenericAPIView, ListModelMixin):
                 'results': results.data
             }
             return Response(response_dict, status=status.HTTP_200_OK)
-        unified_rooms_on_floor = self.queryset.filter(floor=request.query_params.get('floor'), type__unified=True)
+        unified_rooms_on_floor = self.queryset.filter(floor=request.query_params.get('floor'), type__unified=True, type__bookable=True)
         response = TestRoomSerializer(
             instance=unified_rooms_on_floor.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
                                             'type__icon', 'images').select_related(

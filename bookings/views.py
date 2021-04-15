@@ -1,4 +1,6 @@
 from datetime import datetime
+from operator import itemgetter
+
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.filters import SearchFilter
@@ -97,7 +99,7 @@ class BookingsFromOfficePanelView(GenericAPIView):
         bookings = BookingSerializer(instance=responses, many=True).data
         for book in bookings:
             booking_id_array.append(book['id'])
-        bookings_for_response = Booking.objects.filter(id__in=booking_id_array).distinct('id')
+        bookings_for_response = Booking.objects.filter(id__in=booking_id_array).order_by('id', '-date_from').distinct('id')
         response_to_panel = []
         for response in bookings_for_response:
             format_of_resp = {
@@ -107,6 +109,7 @@ class BookingsFromOfficePanelView(GenericAPIView):
                 'booking': BookingSerializer(instance=response).data
             }
             response_to_panel.append(format_of_resp)
+        # response_to_panel = sorted(response_to_panel, key=itemgetter(1))
         return Response(response_to_panel, status=status.HTTP_201_CREATED)
 
 
@@ -249,7 +252,7 @@ class ActionCheckAvailableSlotsView(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         response = serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class ActionActivateBookingsView(GenericAPIView):
