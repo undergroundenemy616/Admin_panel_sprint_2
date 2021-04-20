@@ -581,7 +581,8 @@ class BookingFromOfficePanelSerializer(serializers.ModelSerializer):
                 date_to=slot['date_to'],
                 date_from=slot['date_from'],
                 table=allowed_for_booking[0],
-                user=validated_data['account']
+                user=validated_data['account'],
+                is_active=True
             ))
         return booked
 
