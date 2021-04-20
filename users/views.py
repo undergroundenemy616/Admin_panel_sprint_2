@@ -92,7 +92,7 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                     if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
                         pass
                     else:
-                        confirm_code(phone_number, sms_code)
+                        confirm_code(phone_number, int(sms_code))
                 else:
                     print('SMS service is off, any code is acceptable')
 
