@@ -268,11 +268,11 @@ SCHEDULER_CONFIG = {
         "class": "django_apscheduler.jobstores:DjangoJobStore"
     },
     'apscheduler.executors.processpool': {
-        "type": "threadpool",
-        "max_workers": "30"
+        "type": "processpool",
+        "max_workers": "2"
     },
     'apscheduler.job_defaults.coalesce': 'false',
-    'apscheduler.job_defaults.max_instances': '5',
+    'apscheduler.job_defaults.max_instances': '2',
 }
 SCHEDULER_AUTOSTART = True
 
