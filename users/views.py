@@ -70,10 +70,8 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
 
         phone_number = serializer.data.get('phone', None)
         sms_code = serializer.data.pop('code', None)
+
         user, created = User.objects.get_or_create(phone_number=phone_number)
-        # if created:
-        #     user.is_active = False
-        #     user.save()
         account, account_created = Account.objects.get_or_create(user=user)
         try:
             data = {}
@@ -89,13 +87,12 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                     'expires_in': 60,
                 }
             elif sms_code:  # Confirm code  and user.is_active
-                # first_login = True if user.last_login is None else False
                 if not os.getenv('SMS_MOCK_CONFIRM'):
                     # Confirmation code
                     if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
                         pass
                     else:
-                        confirm_code(phone_number, sms_code)
+                        confirm_code(phone_number, int(sms_code))
                 else:
                     print('SMS service is off, any code is acceptable')
 
@@ -109,8 +106,6 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                 data["access_token"] = str(token.access_token)
                 data["account"] = account.id
                 data["activated"] = account.user.is_active
-            # elif not user.is_active:
-            #     raise ValueError('User is not active')
             else:
                 raise ValueError('Invalid data!')
         except ValueError as error:

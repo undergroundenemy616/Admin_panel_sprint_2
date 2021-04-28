@@ -5,7 +5,7 @@ import time
 import random
 
 from rest_framework import serializers, status
-
+from django.utils.timezone import now
 from bookings.models import Booking, Table
 from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
@@ -149,8 +149,8 @@ class SlotsSerializer(serializers.Serializer):
     class Meta:
         fields = ['date_from', 'date_to']
 
-    def validate(self, attrs):
-        return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
+    # def validate(self, attrs):
+    #     return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
 
 class BookingSlotsSerializer(serializers.ModelSerializer):
@@ -188,6 +188,7 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
                 raise ResponseException('No suitable tables found', status.HTTP_404_NOT_FOUND)
 
         response = []
+        current_datetime = datetime.utcnow().replace(tzinfo=timezone.utc)
         for slot in validated_data['slots']:
             date_from = slot.get('date_from')
             date_to = slot.get('date_to')
@@ -199,7 +200,7 @@ class BookingSlotsSerializer(serializers.ModelSerializer):
                 "available": True
             }
             for table in list(tables):
-                if self.Meta.model.objects.is_overflowed(table, date_from, date_to):
+                if self.Meta.model.objects.is_overflowed(table, date_from, date_to) or date_to < current_datetime:
                     slot_response['available'] = False
                     break
             response.append(slot_response)
@@ -268,7 +269,16 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # now = datetime.utcnow().replace(tzinfo=timezone.utc)
-        instance.set_booking_over()
+        now_date = now()
+
+        if instance.date_activate_until > now_date and not instance.is_active:
+            instance.set_booking_over()
+
+            return instance
+
+        flag = {'status': 'over'}
+
+        instance.set_booking_over(kwargs=flag)
         # validated_data['date_to'] = now
         return instance
 
@@ -529,3 +539,55 @@ def months_between(start_date, end_date):
             year += 1
         else:
             month += 1
+
+
+class BookingFromOfficePanelSerializer(serializers.ModelSerializer):
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), required=True)
+    slots = SlotsSerializer(many=True, required=True)
+    sms_report = serializers.BooleanField(required=True)
+    theme = serializers.CharField(required=False, default='Без темы')
+    account = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
+
+    class Meta:
+        model = Booking
+        fields = ['room', 'slots', 'sms_report', 'account', 'theme']
+
+    def create(self, validated_data):
+        room = validated_data['room']
+        room_from_db = Room.objects.filter(id=room.id).first()
+        if not room_from_db:
+            return
+        tables_in_room = room_from_db.tables.all()
+        if not tables_in_room:
+            return
+        booked = []
+        for time_slot in validated_data['slots']:
+            slot = {
+                'date_from': time_slot['date_from'],
+                'date_to': time_slot['date_to']
+            }
+            n = 0
+            allowed_for_booking = []
+            for table in tables_in_room:
+                if self.Meta.model.objects.is_overflowed(table=table, date_from=slot['date_from'], date_to=slot['date_to']):
+                    continue
+                if self.Meta.model.objects.is_user_overflowed(account=validated_data['account'], room_type=room_from_db.type.unified, date_from=slot['date_from'], date_to=slot['date_to']):
+                    n += 1
+                    break
+                allowed_for_booking.append(table)
+            if n >= 1 or len(allowed_for_booking) < 1:
+                continue
+            booked.append(self.Meta.model.objects.create(
+                date_to=slot['date_to'],
+                date_from=slot['date_from'],
+                table=allowed_for_booking[0],
+                user=validated_data['account'],
+                is_active=True
+            ))
+        return booked
+
+
+
+
+
+

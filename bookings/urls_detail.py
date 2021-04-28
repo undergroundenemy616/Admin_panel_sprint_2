@@ -1,7 +1,7 @@
 from django.urls import path
 
-from bookings import views_actions
+from bookings import views
 
 urlpatterns = [
-    path('/<uuid:pk>', views_actions.ActionCancelBookingsView.as_view()),
+    path('/<uuid:pk>', views.ActionCancelBookingsView.as_view()),
 ]
