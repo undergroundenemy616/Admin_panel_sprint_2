@@ -496,3 +496,63 @@ class OfficePanelUpdate(GenericAPIView, mixins.UpdateModelMixin):
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
+
+
+class LoginOrRegisterUserFromPanelView(GenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = LoginOrRegisterSerializer
+    authentication_classes = []
+
+    def post(self, request):
+        """Register or login view"""
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        phone_number = serializer.data.get('phone', None)
+        sms_code = serializer.data.pop('code', None)
+
+        user, created = User.objects.get_or_create(phone_number=phone_number)
+        account, account_created = Account.objects.get_or_create(user=user)
+        try:
+            data = {}
+            if not sms_code:  # Register or login user
+                if not os.getenv('SMS_MOCK_CONFIRM'):
+                    send_code(user, created)
+                else:
+                    print('SMS service is off, any code is acceptable')
+                # Creating data for response
+                data = {
+                    'message': "OK",
+                    'new_code_in': 60,
+                    'expires_in': 60,
+                }
+            elif sms_code:  # Confirm code  and user.is_active
+                if not os.getenv('SMS_MOCK_CONFIRM'):
+                    # Confirmation code
+                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
+                        pass
+                    else:
+                        confirm_code(phone_number, sms_code)
+                        if not user.is_active:
+                            user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+                            account.groups.add(user_group)
+                            user.is_active = True
+                            user.save()
+                else:
+                    print('SMS service is off, any code is acceptable')
+
+                user_logged_in.send(sender=user.__class__, user=user, request=request)
+
+                # Creating data for response
+                serializer = TokenObtainPairSerializer()
+                token = serializer.get_token(user=user)
+                data = dict()
+                data["refresh_token"] = str(token)
+                data["access_token"] = str(token.access_token)
+                data["account"] = account.id
+                data["activated"] = account.user.is_active
+            else:
+                raise ValueError('Invalid data!')
+        except ValueError as error:
+            return Response({'detail': str(error), 'message': 'ERROR'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data, status=status.HTTP_200_OK)
