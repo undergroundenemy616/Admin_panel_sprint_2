@@ -31,7 +31,7 @@ class BookingManager(models.Manager):
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
                     | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(
-            date_from__lt=date_to))  # | Q(date_to__gt=date_from, date_to__lt=date_to)
+            date_from__lt=date_to))
         if overflows:
             return True
         return False
@@ -42,14 +42,6 @@ class BookingManager(models.Manager):
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
                     | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
-        # filter((Q(date_from__lt=date_to, date_to__gte=date_to)
-        #             | Q(date_from__lte=date_from, date_to__gt=date_from)
-        #             | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).select_related(
-        #     'table').order_by('-date_from')
-        # Q(date_from__gt=date_from, date_from__lt=date_to)
-        # | Q(date_from__lt=date_from, date_to__gt=date_to)
-        # | Q(date_from__gt=date_from, date_to__lt=date_to)
-        # | Q(date_to__gt=date_from, date_to__lt=date_to)
         return overflows
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
@@ -108,26 +100,6 @@ class Booking(models.Model):
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
-        if not celery_app.tasks.get('notify_about_oncoming_booking_'+str(self.id)):
-            tasks.notify_about_oncoming_booking.apply_async(args=[self.id],
-                eta=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (
-                date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
-                minutes=2),
-                task_id='notify_about_oncoming_booking_'+str(self.id))
-
-        if not celery_app.tasks.get('notify_about_activation_booking_' + str(self.id)):
-            tasks.notify_about_booking_activation.apply_async(args=[self.id],
-                    eta=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else
-                    date_now + timedelta(minutes=3),
-                    task_id='notify_about_activation_booking_' + str(self.id))
-
-        if not celery_app.tasks.get('check_booking_activate_'+str(self.id)):
-            tasks.check_booking_activate.apply_async(args=[self.id], eta=self.date_activate_until,
-                                                     task_id='check_booking_activate_'+str(self.id))
-
-        if not celery_app.tasks.get('make_booking_over'+str(self.id)):
-            tasks.make_booking_over.apply_async(args=[self.id], eta=self.date_to,
-                                                task_id='make_booking_over_'+str(self.id))
         if self.table.room.type.unified:
             status = BOOKING_STATUS_FOR_WS[0]
             phone = self.user.user.phone_number

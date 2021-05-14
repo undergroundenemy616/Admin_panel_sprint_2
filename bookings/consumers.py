@@ -171,6 +171,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                     'theme': str(booking.theme)
                 })
             return result
+        empty_result = []
         rooms = Room.objects.filter(tables__in=[table, ])
         for room in rooms:
             table = room.tables.first()

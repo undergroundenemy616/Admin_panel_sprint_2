@@ -5,7 +5,6 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
 
-from core import filters
 from core.permissions import IsAdmin
 from rooms.models import Room
 from rooms.serializers import RoomSerializer, TestRoomSerializer
@@ -68,7 +67,9 @@ class PanelSingleRoomView(GenericAPIView):
             return Response('Panel not found', status=status.HTTP_404_NOT_FOUND)
         # TODO: Not sure in panel.room maybe need query in db
         if panel.room:
+            context = {'date_from': request.query_params.get('date_from', None),
+                       'date_to': request.query_params.get('date_to', None)}
             room = Room.objects.get(id=panel.room.id)
-            return Response(PanelSingleRoomSerializer(instance=room).data, status=status.HTTP_200_OK)
+            return Response(PanelSingleRoomSerializer(instance=room, context=context).data, status=status.HTTP_200_OK)
         return Response('Panel has no room', status=status.HTTP_404_NOT_FOUND)
 

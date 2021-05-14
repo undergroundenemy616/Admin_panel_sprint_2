@@ -14,11 +14,12 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.urls import include, path
 
 from bookings.consumers import BookingConsumer
+from core.middlewares import RouteNotFoundMiddleware
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings')
 
 application = ProtocolTypeRouter({
-    "websocket": URLRouter([
+    "websocket": RouteNotFoundMiddleware(URLRouter([
             path('ws/room_booking', BookingConsumer.as_asgi())
-        ]),
+        ]),)
 })
