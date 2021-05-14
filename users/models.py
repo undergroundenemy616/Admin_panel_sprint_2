@@ -10,6 +10,7 @@ from django.db import models
 from floors.models import Floor
 from groups.models import Group
 from offices.models import Office
+from rooms.models import Room
 
 
 def activated_code():
@@ -173,6 +174,7 @@ class OfficePanelRelation(models.Model):
     office = models.ForeignKey(Office, null=False, related_name='office_panels', on_delete=models.CASCADE)
     floor = models.ForeignKey(Floor, null=False, related_name='office_panels', on_delete=models.CASCADE)
     account = models.OneToOneField(Account, null=False, related_name='office_panels', on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, related_name='office_panels', null=True, on_delete=models.SET_NULL)
     access_code = models.IntegerField(unique=True, null=False)
 
 

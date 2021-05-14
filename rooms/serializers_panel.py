@@ -7,9 +7,37 @@ from offices.models import Office
 from rooms.serializers import TestRoomSerializer
 from tables.models import Table
 
+class PanelFileSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    path = serializers.CharField()
+    thumb = serializers.CharField()
+
+
+class PanelSingleTableSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    is_occupied = serializers.BooleanField()
+
 
 class PanelRoomGetSerializer(serializers.Serializer):
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
+
+
+class PanelSingleRoomSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    tables = PanelSingleTableSerializer(many=True, required=False)
+    images = PanelFileSerializer(many=True, required=False)
+
+    def to_representation(self, instance):
+        response = super(PanelSingleRoomSerializer, self).to_representation(instance)
+        for table in instance.tables.all():
+            if table.is_occupied:
+                response['status'] = 'occupied'
+            else:
+                response['status'] = 'not occupied'
+        return response
 
 
 class PanelFloorSerializerWithMap(serializers.Serializer):
@@ -21,7 +49,7 @@ class PanelFloorSerializerWithMap(serializers.Serializer):
     def to_representation(self, instance):
         response = super(PanelFloorSerializerWithMap, self).to_representation(instance)
         response['rooms'] = TestRoomSerializer(
-            instance=instance.rooms.filter(type__unified=True, type__bookable=True).prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
+            instance=instance.rooms.filter(type__unified=True).prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
                                                      'type__icon', 'images').select_related(
                 'room_marker', 'type', 'floor', 'zone'), many=True).data
         tables = Table.objects.filter(room__floor=instance)

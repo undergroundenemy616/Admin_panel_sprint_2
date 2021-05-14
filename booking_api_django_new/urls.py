@@ -56,9 +56,9 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Current urls
-    # path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUserFromMobileView.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
+    path('auth_kiosk', views.LoginOfficePanel.as_view()),
     path('refresh', views.RefreshTokenView.as_view()),
     path('register_user', views.RegisterUserFromAdminPanelView.as_view()),
     path('register_employee', views.RegisterStaffView.as_view()),
@@ -102,58 +102,7 @@ urlpatterns = [
     path('send_', include('push_tokens.urls_send')),
     path('pass_change', views.PasswordChangeView.as_view()),
     path('pass_reset', views.PasswordResetView.as_view()),
-    path('panel', include('booking_api_django_new.urls_panel'))
+    path('panel', include('booking_api_django_new.urls_panel')),
+    path('mobile', include('booking_api_django_new.urls_mobile')),
+    path('admin', include('booking_api_django_new.urls_admin'))
 ]
-
-'''
-__AUTH__
-[POST] /auth -> 
-[POST] /refresh
-[POST] /auth_employee
-[POST] /register_employee
-[POST] /register_user
-[POST] /register_guest
-[POST] /register_kiosk
-[PUT] /register_kiosk/<id>
-[POST] /auth_kiosk
-[GET] /account
-[GET] /accounts_list
-[PUT, DELETE] /accounts/<id>
-[POST] /account_confirm
-[GET, POST, PUT, DELETE] /groups
-[] /group/<id>
-[PUT] /groups/update
-[POST] /groups/import_single
-[] /groups/import_list
-[] /groups/import_titles
-[POST] /enter
-[POST] /service/email
-[POST] /pass_change
-[POST] /pass_reset
-[POST] /operator_promotion
-
-__BOOKINGS__
-[] /office
-[] /offices/<id>
-[] /zone
-[] /zones/<id>
-[] /floor
-[] /floor/<id>
-[] /room
-[] /rooms/<id>
-[] /table_tag
-[] /table_tags/<id>
-[] /table
-[] /tables/<id>
-[] /floor_map
-[] /floor_map/clear
-[] /room_map
-[] /table/rate
-[] /table/activate
-[] /table/receive
-[] /table_status_receive
-[] /feedback
-
-__FILE__
-[] /files
-'''

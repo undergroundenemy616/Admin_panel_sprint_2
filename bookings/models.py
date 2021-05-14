@@ -1,21 +1,30 @@
 import os
 import uuid
+import asyncio
+import orjson
+from booking_api_django_new.celery import app as celery_app
+from celery.app.control import Control
+import bookings.tasks as tasks
 from datetime import datetime, timedelta, timezone
 
-from django.utils.timezone import now
 import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q, Min
+from django.db.models import Min, Q
+from django.utils.timezone import now
 
-from booking_api_django_new.settings import BOOKING_PUSH_NOTIFY_UNTIL_MINS, BOOKING_TIMEDELTA_CHECK, PUSH_HOST
+from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
+                                             BOOKING_TIMEDELTA_CHECK,
+                                             PUSH_HOST)
 from core.scheduler import scheduler
-from push_tokens.send_interface import send_push_message
-from tables.models import Table
 from groups.models import EMPLOYEE_ACCESS
+from tables.models import Table
 from users.models import Account, User
 
+from channels.layers import get_channel_layer
+
 MINUTES_TO_ACTIVATE = 15
+BOOKING_STATUS_FOR_WS = ['new', 'over', 'canceled']
 
 
 class BookingManager(models.Manager):
@@ -101,8 +110,31 @@ class Booking(models.Model):
 
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
-        self.job_create_oncoming_notification()
-        self.job_create_change_states()
+        date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        if not celery_app.tasks.get('notify_about_oncoming_booking_'+str(self.id)):
+            tasks.notify_about_oncoming_booking.apply_async(args=[self.id],
+                eta=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (
+                date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
+                minutes=2),
+                task_id='notify_about_oncoming_booking_'+str(self.id))
+
+        if not celery_app.tasks.get('notify_about_activation_booking_' + str(self.id)):
+            tasks.notify_about_booking_activation.apply_async(args=[self.id],
+                    eta=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else
+                    date_now + timedelta(minutes=3),
+                    task_id='notify_about_activation_booking_' + str(self.id))
+
+        if not celery_app.tasks.get('check_booking_activate_'+str(self.id)):
+            tasks.check_booking_activate.apply_async(args=[self.id], eta=self.date_activate_until,
+                                                     task_id='check_booking_activate_'+str(self.id))
+
+        if not celery_app.tasks.get('make_booking_over'+str(self.id)):
+            tasks.make_booking_over.apply_async(args=[self.id], eta=self.date_to,
+                                                task_id='make_booking_over_'+str(self.id))
+        if self.table.room.type.unified:
+            status = BOOKING_STATUS_FOR_WS[0]
+            phone = self.user.user.phone_number
+            asyncio.run(self.websocket_notification_by_date(self, phone, status))
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
@@ -128,13 +160,26 @@ class Booking(models.Model):
         instance.is_active = False
         instance.is_over = True
         if kwargs.get('kwargs'):
+            if kwargs['kwargs'].get('status') != 'auto_over':
+                instance.date_to = now()
+            else:
+                instance.status = 'auto_over'
             if kwargs['kwargs'].get('status') == 'auto_canceled':
                 instance.status = 'auto_canceled'
             elif kwargs['kwargs'].get('status') == 'over':
                 instance.status = 'over'
                 instance.date_to = now()
+                if self.table.room.type.unified:
+                    status = BOOKING_STATUS_FOR_WS[1]
+                    phone = self.user.phone_number
+                    asyncio.run(self.websocket_notification_by_date(self, phone, status))
         else:
+            instance.date_to = now()
             instance.status = 'canceled'
+            if self.table.room.type.unified:
+                status = BOOKING_STATUS_FOR_WS[2]
+                phone = self.user.phone_number
+                asyncio.run(self.websocket_notification_by_date(self, phone, status))
         instance.table.set_table_free()
         # instance = super(self.__class__, self)
         if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
@@ -254,7 +299,7 @@ class Booking(models.Model):
             run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (
                     date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
                 minutes=2),
-            misfire_grace_time=10000,
+            misfire_grace_time=None,
             id="notify_about_oncoming_booking_" + str(self.id),
             replace_existing=True
         )
@@ -263,21 +308,44 @@ class Booking(models.Model):
             name="activation",
             run_date=self.date_from - timedelta(
                 minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
-            misfire_grace_time=10000,
+            misfire_grace_time=None,
             id="notify_about_activation_booking_" + str(self.id),
             replace_existing=True
         )
 
+    @staticmethod
+    async def websocket_notification_by_date(self, phone=None, status=None):
+        if isinstance(self, Booking):
+            json_format = {'event': f'{status}_booking',
+                           'type': 'send_message',
+                           'message': {
+                               'status': status,
+                               'id': self.id,
+                               'date_from': str(self.date_from)[0:16],
+                               'date_to': str(self.date_to)[0:16],
+                               'room_id': self.table.room.id,
+                               'table_id': self.table.id,
+                               'user': {
+                                   'id': self.user.id,
+                                   'phone': phone,
+                                   'firstname': self.user.first_name,
+                                   'lastname': self.user.last_name,
+                                   'middlename': self.user.middle_name,
+                               },
+                               'theme': self.theme
+                           }}
+        else:
+            return
+        channel_layer = get_channel_layer()
+        result_in_json = orjson.loads(orjson.dumps(json_format))
+        print('Send info outside model')
+        await channel_layer.group_send("dimming", result_in_json)
+
+    async def websocket_notification_by_datetime(self):
+        pass
+
     def job_create_change_states(self):
         """Add job for occupied/free states changing"""
-        # scheduler.add_job(
-        #     self.set_booking_active,
-        #     "date",
-        #     run_date=self.date_from,
-        #     misfire_grace_time=900,
-        #     id="set_booking_active_" + str(self.id)
-        # )  # Why we need THIS? Activation is starting when qr code was scanned and then front send request for backend
-        # date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         scheduler.add_job(
             self.make_booking_over,
             "date",

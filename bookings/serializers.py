@@ -79,9 +79,8 @@ class BookingSerializer(serializers.ModelSerializer):
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
-    theme = serializers.CharField(max_length=200, default="Без темы")
+    theme = serializers.CharField(max_length=200, default="Без темы", allow_blank=True)
     user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
-    pagination_class = DefaultPagination
 
     class Meta:
         model = Booking
@@ -107,7 +106,7 @@ class BookingSerializer(serializers.ModelSerializer):
         response['office'] = {"id": instance.table.room.floor.office.id,
                               "title": instance.table.room.floor.office.title,
                               "description": instance.table.room.floor.office.description}
-        response['user'] = {'id': instance.user_id,
+        response['user'] = {'id': str(instance.user_id),
                             'phone_number': instance.user.phone_number}
         return response
 
@@ -126,6 +125,16 @@ class BookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
         if validated_data['table'].room.type.unified:
+            if self.context.get('device', None) == 'panel':
+                return self.Meta.model.objects.create(
+                    date_to=validated_data['date_to'],
+                    date_from=validated_data['date_from'],
+                    table=validated_data['table'],
+                    user=validated_data['user'],
+                    theme=validated_data['theme'],
+                    is_active=True,
+                    status='active'
+                )
             return self.Meta.model.objects.create(
                 date_to=validated_data['date_to'],
                 date_from=validated_data['date_from'],

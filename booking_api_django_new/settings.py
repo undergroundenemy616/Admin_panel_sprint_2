@@ -138,9 +138,33 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django-advanced_password_validation',
+    'channels',
 ]
 # 'django.contrib.admin',
-REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
+#REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
+
+REDIS_HOST = os.environ.get('REDIS_HOST')
+REDIS_PORT = os.environ.get('REDIS_PORT')
+REDIS_SECRET_KEY = os.environ.get('REDIS_SECRET_KEY')
+if REDIS_HOST and REDIS_PORT and REDIS_SECRET_KEY:
+    REDIS_URL = f'redis://:{REDIS_SECRET_KEY}@{REDIS_HOST}:{REDIS_PORT}/0'
+else:
+    REDIS_URL = "redis://2.59.41.133:5556"
+
+
+
+BROKER_PROTOCOL = os.environ.get('BROKER_PROTOCOL')
+BROKER_HOST = os.environ.get('BROKER_HOST')
+BROKER_PORT = os.environ.get('BROKER_PORT')
+BROKER_SECRET_KEY = os.environ.get('BROKER_SECRET_KEY')
+
+if BROKER_PROTOCOL and BROKER_HOST and BROKER_PORT and BROKER_SECRET_KEY:
+    CELERY_BROKER_URL = f'{BROKER_PROTOCOL}://:{BROKER_SECRET_KEY}@{BROKER_HOST}:{BROKER_PORT}/1'
+else:
+    CELERY_BROKER_URL = "redis://2.59.41.133:5556"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_ACCEPT_CONTENT = ['application/json']
 
 CACHES = {
     "default": {
@@ -239,7 +263,17 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = 'booking_api_django_new.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            'hosts': ["redis://2.59.41.133:5556"],
+        },
+    },
+}
 WSGI_APPLICATION = 'booking_api_django_new.wsgi.application'
+
 
 # Database
 
@@ -268,11 +302,11 @@ SCHEDULER_CONFIG = {
         "class": "django_apscheduler.jobstores:DjangoJobStore"
     },
     'apscheduler.executors.processpool': {
-        "type": "threadpool",
-        "max_workers": "30"
+        "type": "processpool",
+        "max_workers": "2"
     },
     'apscheduler.job_defaults.coalesce': 'false',
-    'apscheduler.job_defaults.max_instances': '5',
+    'apscheduler.job_defaults.max_instances': '2',
 }
 SCHEDULER_AUTOSTART = True
 

@@ -9,8 +9,16 @@ https://docs.djangoproject.com/en/3.0/howto/deployment/asgi/
 
 import os
 
-from django.core.asgi import get_asgi_application
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.urls import include, path
+
+from bookings.consumers import BookingConsumer
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings')
 
-application = get_asgi_application()
+application = ProtocolTypeRouter({
+    "websocket": URLRouter([
+            path('ws/room_booking', BookingConsumer.as_asgi())
+        ]),
+})
