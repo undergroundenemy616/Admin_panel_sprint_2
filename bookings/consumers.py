@@ -10,6 +10,9 @@ from bookings.models import Booking
 import asyncio
 from functools import wraps, partial
 
+from rooms.models import Room
+from rooms.serializers_panel import PanelSingleRoomSerializer
+
 
 def async_wrap(func):
     @wraps(func)
@@ -145,7 +148,6 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         local_tz = pytz.timezone('Europe/Moscow')
         date_from = datetime.datetime.strptime(date_from_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
         date_to = datetime.datetime.strptime(date_to_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
-        print(date_to, date_from)
         overflows = Booking.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
@@ -154,7 +156,9 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
             result = []
             for booking in overflows:
                 result.append({
+                    'status': 'occupied',
                     'id': str(booking.id),
+                    'title': str(booking.table.room.title),
                     'date_from': str(booking.date_from.astimezone(local_tz))[:16],
                     'date_to': str(booking.date_to.astimezone(local_tz))[:16],
                     'user': {
@@ -167,4 +171,24 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                     'theme': str(booking.theme)
                 })
             return result
-        return []
+        rooms = Room.objects.filter(tables__in=[table, ])
+        for room in rooms:
+            table = room.tables.first()
+            images = room.images.first()
+            empty_result = {
+                'id': str(room.id),
+                'title': str(room.title),
+                'tables': [
+                    {'id': str(table.id),
+                     'title': str(table.title),
+                     'is_occupied': str(False)}
+                ],
+                'images': [{
+                    'id': str(images.id),
+                    'title': str(images.title),
+                    'path': str(images.path),
+                    'thumb': str(images.thumb)
+                }],
+                'status': 'not occupied'
+            }
+        return [empty_result]
