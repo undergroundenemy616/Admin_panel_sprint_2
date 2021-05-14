@@ -17,7 +17,7 @@ class PanelRoomsView(GenericAPIView, ListModelMixin):
     queryset = Room.objects.all().select_related('type', 'floor', 'zone', 'room_marker').prefetch_related('images')
     permission_classes = (IsAdmin, )
     serializer_class = RoomSerializer
-    filter_backends = [filters.SearchFilter]
+    # filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'type__title', 'description']
     pagination_class = None
 

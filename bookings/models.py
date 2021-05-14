@@ -2,9 +2,6 @@ import os
 import uuid
 import asyncio
 import orjson
-from booking_api_django_new.celery import app as celery_app
-from celery.app.control import Control
-import bookings.tasks as tasks
 from datetime import datetime, timedelta, timezone
 
 import requests
