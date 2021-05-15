@@ -62,6 +62,7 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
             account.groups.add(group)
         instance = OfficePanelRelation.objects.create(account=account, office=validated_data.get('office'),
                                                       floor=validated_data.get('floor'),
+                                                      room=validated_data.get('room'),
                                                       access_code=int(time.time()))
         return instance
 
