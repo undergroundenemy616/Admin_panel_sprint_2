@@ -14,7 +14,7 @@ from floors.models import Floor
 from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
-from users.models import Account, User
+from users.models import Account, User, OfficePanelRelation
 
 
 class SwaggerBookListActiveParametrs(serializers.Serializer):
@@ -79,7 +79,7 @@ class BookingSerializer(serializers.ModelSerializer):
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
-    theme = serializers.CharField(max_length=200, default="Без темы", allow_blank=True)
+    theme = serializers.CharField(max_length=200, default="Без темы", allow_blank=True, allow_null=True)
     user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
 
     class Meta:
@@ -125,13 +125,24 @@ class BookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
         if validated_data['table'].room.type.unified:
+            for_panel = OfficePanelRelation.objects.get(room_id=validated_data['table'].room_id)
             if self.context.get('device', None) == 'panel':
                 return self.Meta.model.objects.create(
                     date_to=validated_data['date_to'],
                     date_from=validated_data['date_from'],
                     table=validated_data['table'],
                     user=validated_data['user'],
-                    theme=validated_data['theme'],
+                    theme=validated_data['theme'] if validated_data['theme'] else 'Без темы',
+                    is_active=True,
+                    status='active'
+                )
+            elif for_panel:
+                return self.Meta.model.objects.create(
+                    date_to=validated_data['date_to'],
+                    date_from=validated_data['date_from'],
+                    table=validated_data['table'],
+                    user=validated_data['user'],
+                    theme=validated_data['theme'] if validated_data['theme'] else 'Без темы',
                     is_active=True,
                     status='active'
                 )

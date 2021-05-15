@@ -4,7 +4,9 @@ import asyncio
 import orjson
 from datetime import datetime, timedelta, timezone
 
+import pytz
 import requests
+from asgiref.sync import async_to_sync, sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Min, Q
@@ -16,12 +18,19 @@ from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
 from core.scheduler import scheduler
 from groups.models import EMPLOYEE_ACCESS
 from tables.models import Table
-from users.models import Account, User
+from users.models import Account, User, OfficePanelRelation
 
 from channels.layers import get_channel_layer
 
 MINUTES_TO_ACTIVATE = 15
 BOOKING_STATUS_FOR_WS = ['new', 'over', 'canceled']
+global GLOBAL_DATE_FROM_WS
+global GLOBAL_DATETIME_FROM_WS
+global GLOBAL_DATETIME_TO_WS
+utc = pytz.UTC
+GLOBAL_DATE_FROM_WS = datetime.now().date()
+GLOBAL_DATETIME_FROM_WS = datetime.now().replace(tzinfo=utc)
+GLOBAL_DATETIME_TO_WS = datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
 
 
 class BookingManager(models.Manager):
@@ -101,9 +110,23 @@ class Booking(models.Model):
         self.date_activate_until = self.calculate_date_activate_until()
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if self.table.room.type.unified:
-            status = BOOKING_STATUS_FOR_WS[0]
-            phone = self.user.user.phone_number
-            asyncio.run(self.websocket_notification_by_date(self, phone, status))
+            if GLOBAL_DATE_FROM_WS == self.date_from.date():
+                result_for_date = self.create_response_for_date_websocket()
+                try:
+                    asyncio.run(self.websocket_notification_by_date(result_for_date))
+                except Exception as e:
+                    pass
+            else:
+                pass
+            if ((GLOBAL_DATETIME_FROM_WS < self.date_to <= GLOBAL_DATETIME_TO_WS)
+                    or (GLOBAL_DATETIME_FROM_WS <= self.date_from < GLOBAL_DATETIME_TO_WS)
+                    or (GLOBAL_DATETIME_FROM_WS >= self.date_from >= GLOBAL_DATETIME_TO_WS)
+                    and (GLOBAL_DATETIME_FROM_WS < self.date_to)):
+                result_for_datetime = self.create_response_for_datetime_websocket()
+                try:
+                    asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                except Exception as e:
+                    pass
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
@@ -138,17 +161,9 @@ class Booking(models.Model):
             elif kwargs['kwargs'].get('status') == 'over':
                 instance.status = 'over'
                 instance.date_to = now()
-                if self.table.room.type.unified:
-                    status = BOOKING_STATUS_FOR_WS[1]
-                    phone = self.user.phone_number
-                    asyncio.run(self.websocket_notification_by_date(self, phone, status))
         else:
             instance.date_to = now()
             instance.status = 'canceled'
-            if self.table.room.type.unified:
-                status = BOOKING_STATUS_FOR_WS[2]
-                phone = self.user.phone_number
-                asyncio.run(self.websocket_notification_by_date(self, phone, status))
         instance.table.set_table_free()
         # instance = super(self.__class__, self)
         if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
@@ -160,6 +175,24 @@ class Booking(models.Model):
         if scheduler.get_job(job_id="set_booking_over_" + str(self.id)):
             scheduler.remove_job(job_id="set_booking_over_" + str(self.id))
         super(Booking, instance).save()
+        if self.table.room.type.unified:
+            if GLOBAL_DATE_FROM_WS == self.date_from.date():
+                result_for_date = self.create_response_for_date_websocket(instance)
+                try:
+                    asyncio.run(self.websocket_notification_by_date(result=result_for_date))
+                except Exception as e:
+                    pass
+            else:
+                pass
+            if ((GLOBAL_DATETIME_FROM_WS < self.date_to <= GLOBAL_DATETIME_TO_WS)
+                    or (GLOBAL_DATETIME_FROM_WS <= self.date_from < GLOBAL_DATETIME_TO_WS)
+                    or (GLOBAL_DATETIME_FROM_WS >= self.date_from >= GLOBAL_DATETIME_TO_WS)
+                    and (GLOBAL_DATETIME_FROM_WS < self.date_to)):
+                result_for_datetime = self.create_response_for_datetime_websocket(instance)
+                try:
+                    asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                except Exception as e:
+                    pass
 
     def check_booking_activate(self, *args, **kwargs):
         try:
@@ -283,35 +316,98 @@ class Booking(models.Model):
         )
 
     @staticmethod
-    async def websocket_notification_by_date(self, phone=None, status=None):
-        if isinstance(self, Booking):
-            json_format = {'event': f'{status}_booking',
-                           'type': 'send_message',
-                           'message': {
-                               'status': status,
-                               'id': self.id,
-                               'date_from': str(self.date_from)[0:16],
-                               'date_to': str(self.date_to)[0:16],
-                               'room_id': self.table.room.id,
-                               'table_id': self.table.id,
-                               'user': {
-                                   'id': self.user.id,
-                                   'phone': phone,
-                                   'firstname': self.user.first_name,
-                                   'lastname': self.user.last_name,
-                                   'middlename': self.user.middle_name,
-                               },
-                               'theme': self.theme
-                           }}
-        else:
-            return
+    async def websocket_notification_by_date(result=None):
+        json_format = {'type': 'send_json',
+                       'text': {
+                        'type': 'timeline',
+                        'data': result
+                             }
+                       }
         channel_layer = get_channel_layer()
+        print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
         print('Send info outside model')
         await channel_layer.group_send("dimming", result_in_json)
 
-    async def websocket_notification_by_datetime(self):
-        pass
+    @staticmethod
+    async def websocket_notification_by_datetime(result=None):
+        json_format = {
+            'type': 'send_json',
+            'text': {
+                'type': 'meeting_block',
+                'data': result
+            }
+        }
+        channel_layer = get_channel_layer()
+        result_in_json = orjson.loads(orjson.dumps(json_format))
+        await channel_layer.group_send("dimming", result_in_json)
+
+    def create_response_for_datetime_websocket(self, instance=None):
+        local_tz = pytz.timezone('Europe/Moscow')
+        result = []
+        if self.status == 'active' and not instance:
+            result.append({
+                'status': 'occupied',
+                'id': str(self.id),
+                'title': str(self.table.room.title),
+                'date_from': str(self.date_from.astimezone(local_tz))[:16],
+                'date_to': str(self.date_to.astimezone(local_tz))[:16],
+                'user': {
+                    'id': str(self.user.id),
+                    'phone': str(self.user.user.phone_number),
+                    'firstname': str(self.user.first_name),
+                    'lastname': str(self.user.last_name),
+                    'middlename': str(self.user.middle_name),
+                },
+                'theme': str(self.theme)
+            })
+        elif instance:
+            image = self.table.images.first()
+            result.append({
+                'id': str(self.table.room.id),
+                'title': str(self.table.room.title),
+                'tables': [
+                    {'id': str(self.table.id),
+                     'title': str(self.table.title),
+                     'is_occupied': str(False)}
+                ],
+                'images': [{
+                    'id': str(image.id),
+                    'title': str(image.title),
+                    'path': str(image.path),
+                    'thumb': str(image.thumb)
+                }],
+                'status': 'not occupied'
+            })
+        return result
+
+    def create_response_for_date_websocket(self, instance=None):
+        try:
+            panel = OfficePanelRelation.objects.get(room_id=self.table.room_id)
+        except OfficePanelRelation.DoesNotExist:
+            return
+        existing_booking = Booking.objects.filter(table=self.table_id,
+                                                  status__in=['waiting', 'active'],
+                                                  date_from__year=str(self.date_from.year),
+                                                  date_from__month=str(self.date_from.month),
+                                                  date_from__day=str(self.date_from.day))
+        result = []
+        local_tz = pytz.timezone('Europe/Moscow')
+        for booking in existing_booking:
+            if instance and instance.id == booking.id:
+                continue
+            result.append({
+                'id': str(booking.id),
+                'date_from': str(booking.date_from.astimezone(local_tz))[0:16],
+                'date_to': str(booking.date_to.astimezone(local_tz))[0:16]
+            })
+        if not instance:
+            result.append({
+                'id': str(self.id),
+                'date_from': str(self.date_from.astimezone(local_tz))[0:16],
+                'date_to': str(self.date_to.astimezone(local_tz))[0:16]
+            })
+        return result
 
     def job_create_change_states(self):
         """Add job for occupied/free states changing"""
