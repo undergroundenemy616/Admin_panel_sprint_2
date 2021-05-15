@@ -1,6 +1,7 @@
 import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from rest_framework import serializers
 
 from bookings.models import Booking
@@ -43,9 +44,10 @@ class PanelSingleRoomSerializer(serializers.Serializer):
                                                  '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
         except Exception as e:
             return
-        existing_booking = Booking.objects.is_overflowed_with_data(table=instance.tables.first(),
-                                                                   date_from=date_from,
-                                                                   date_to=date_to)
+        existing_booking = Booking.objects.filter(table=instance.tables.first(), status__in=['active', 'waiting']). \
+            filter((Q(date_from__lt=date_to, date_to__gte=date_to)
+                    | Q(date_from__lte=date_from, date_to__gt=date_from)
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
         if existing_booking:
             response['status'] = 'occupied'
             response['date_from'] = existing_booking[0].date_from

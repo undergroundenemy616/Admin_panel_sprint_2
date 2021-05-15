@@ -1975,3 +1975,5 @@ Traceback (most recent call last):
   File "/home/crowiant/Desktop/Master CORS/TempDjango/booking-api-django/bookings/models.py", line 180, in set_booking_over
     result_for_date = self.create_response_for_date_websocket(self=instance)
 TypeError: create_response_for_date_websocket() got multiple values for argument 'self'
+[35m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'POST, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '145')}[0m
+[35mb'{"phone":["Ensure this field has no more than 12 characters."],"message":"Ensure this field has no more than 12 characters.","code":"max_length"}'[0m
