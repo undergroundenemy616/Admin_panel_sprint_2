@@ -67,6 +67,9 @@ pipelines:
     feature/so_lahta_panel:
       - step:
           <<: *Build
+      - step:
+          <<: *Deploy
+          deployment: simple-office-lahta
 
     dev_simple_office:
       - step:
