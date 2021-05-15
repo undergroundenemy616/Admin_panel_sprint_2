@@ -64,6 +64,10 @@ pipelines:
       - step:
           <<: *Build
 
+    feature/so_lahta_panel:
+      - step:
+          <<: *Build
+
     dev_simple_office:
       - step:
           <<: *Build
