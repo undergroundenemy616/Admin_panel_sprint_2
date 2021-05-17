@@ -56,6 +56,8 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
         phone_number = serializer.data.get('phone_number', None)
         user, created = User.objects.get_or_create(phone_number=phone_number)
         # Fix if we have user we dont need any actions
+        if not user:
+            return Response("No user found", status=status.HTTP_400_BAD_REQUEST)
 
         account, account_created = Account.objects.get_or_create(user=user)
         if account_created:
