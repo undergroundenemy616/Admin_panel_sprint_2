@@ -321,7 +321,7 @@ class ActionCancelBookingsView(GenericAPIView):
     permission_classes = (IsAuthenticated, )
 
     def delete(self, request, pk=None, *args, **kwargs):
-        existing_booking = get_object_or_404(Booking, pk=pk)
+        existing_booking = get_object_or_404(Booking, pk=str(pk))
         user_is_admin = False
         for group in request.user.account.groups.all():
             if group.title == 'Администратор' and not group.is_deletable:
