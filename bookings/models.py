@@ -373,10 +373,10 @@ class Booking(models.Model):
                      'is_occupied': str(False)}
                 ],
                 'images': [{
-                    'id': str(image.id),
-                    'title': str(image.title),
-                    'path': str(image.path),
-                    'thumb': str(image.thumb)
+                    'id': str(image.id) if image else None,
+                    'title': str(image.title) if image else None,
+                    'path': str(image.path) if image else None,
+                    'thumb': str(image.thumb) if image else None
                 }],
                 'status': 'not occupied'
             })
