@@ -300,8 +300,9 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             if serializer.data.get('account_type') == 'kiosk':
                 self.serializer_class = OfficePanelSerializer
                 self.queryset = OfficePanelRelation.objects.all().select_related(
-                    'floor', 'office', 'account','account__photo', 'account__user').prefetch_related('account__groups')
+                    'floor', 'office', 'account', 'account__photo', 'account__user').prefetch_related('account__groups')
                 return self.list(self, request, *args, **kwargs)
+            self.queryset = self.queryset.filter(account_type='user')
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
@@ -313,6 +314,8 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             serializer.is_valid(raise_exception=True)
             if serializer.data.get('account_type') == 'kiosk':
                 self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
+            else:
+                self.queryset = self.queryset.filter(account_type='user')
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
@@ -320,6 +323,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             return self.list(self, request, *args, **kwargs)
         else:
             self.pagination_class = None
+            self.queryset = self.queryset.filter(account_type='user')
             all_accounts = self.list(self, request, *args, **kwargs)
             response = dict()
             response['results'] = all_accounts.data
