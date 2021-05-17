@@ -364,22 +364,35 @@ class Booking(models.Model):
             })
         elif instance:
             image = self.table.images.first()
-            result.append({
-                'id': str(self.table.room.id),
-                'title': str(self.table.room.title),
-                'tables': [
-                    {'id': str(self.table.id),
-                     'title': str(self.table.title),
-                     'is_occupied': str(False)}
-                ],
-                'images': [{
-                    'id': str(image.id) if image else None,
-                    'title': str(image.title) if image else None,
-                    'path': str(image.path) if image else None,
-                    'thumb': str(image.thumb) if image else None
-                }],
-                'status': 'not occupied'
-            })
+            if image:
+                result.append({
+                    'id': str(self.table.room.id),
+                    'title': str(self.table.room.title),
+                    'tables': [
+                        {'id': str(self.table.id),
+                         'title': str(self.table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [{
+                        'id': str(image.id) if image else None,
+                        'title': str(image.title) if image else None,
+                        'path': str(image.path) if image else None,
+                        'thumb': str(image.thumb) if image else None
+                    }],
+                    'status': 'not occupied'
+                })
+            else:
+                result.append({
+                    'id': str(self.table.room.id),
+                    'title': str(self.table.room.title),
+                    'tables': [
+                        {'id': str(self.table.id),
+                         'title': str(self.table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [],
+                    'status': 'not occupied'
+                })
         return result
 
     def create_response_for_date_websocket(self, instance=None):
