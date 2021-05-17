@@ -109,6 +109,7 @@ class Booking(models.Model):
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.job_create_change_states()
         if self.table.room.type.unified:
             if GLOBAL_DATE_FROM_WS == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket()
