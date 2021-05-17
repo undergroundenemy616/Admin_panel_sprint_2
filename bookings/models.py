@@ -420,11 +420,11 @@ class Booking(models.Model):
             id="set_booking_over_" + str(self.id),
             replace_existing=True
         )
-        scheduler.add_job(
-            self.check_booking_activate,
-            "date",
-            run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
-            misfire_grace_time=10000,
-            id="check_booking_activate_" + str(self.id),
-            replace_existing=True
-        )
+        # scheduler.add_job(
+        #     self.check_booking_activate,
+        #     "date",
+        #     run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
+        #     misfire_grace_time=10000,
+        #     id="check_booking_activate_" + str(self.id),
+        #     replace_existing=True
+        # )
