@@ -185,10 +185,10 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                      'is_occupied': str(False)}
                 ],
                 'images': [{
-                    'id': str(images.id),
-                    'title': str(images.title),
-                    'path': str(images.path),
-                    'thumb': str(images.thumb)
+                    'id': str(images.id) if images else None,
+                    'title': str(images.title) if images else None,
+                    'path': str(images.path) if images else None,
+                    'thumb': str(images.thumb) if images else None
                 }],
                 'status': 'not occupied'
             }
