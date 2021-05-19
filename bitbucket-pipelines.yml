@@ -69,7 +69,7 @@ pipelines:
           <<: *Build
       - step:
           <<: *Deploy
-          deployment: simple-office-lahta
+          deployment: dev-simple-office-lahta
 
     dev_simple_office:
       - step:
