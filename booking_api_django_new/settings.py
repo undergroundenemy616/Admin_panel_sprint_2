@@ -183,7 +183,7 @@ REQUEST_LOGGING_DATA_LOG_LEVEL = logging.WARNING
 
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'formatters': {
             'django.server': {
                 '()': 'django.utils.log.ServerFormatter',
@@ -200,6 +200,9 @@ LOGGING = {
             },
             'not_500': {
                 '()': 'core.filters.Not500'
+            },
+            'base_handler_log': {
+                '()': 'core.filters.FilterBaseHandlerLog'
             }
 
         },
@@ -207,7 +210,8 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'level': 'INFO',
-            'formatter': 'django.server'
+            'formatter': 'django.server',
+            'filters': ['base_handler_log']
         },
         'mail_admins': {
             'level': 'ERROR',
@@ -215,15 +219,17 @@ LOGGING = {
             'filters': ['not_500']
         },
         'logfile': {
-            'level': 'ERROR',
             'class': 'logging.FileHandler',
+            'level': 'INFO',
             'filename': BASE_DIR + '/simple_office.log',
+            'filters': ['base_handler_log'],
+            'formatter': 'django.server'
         },
     },
     'loggers': {
         'django.request': {
-            'handlers': ['console', 'logfile', 'mail_admins'],
-            'level': 'ERROR',
+            'handlers': ['console', 'logfile'],
+            'level': 'INFO',
             'propagate': False,
         },
     },
@@ -233,7 +239,7 @@ MIDDLEWARE = [
     'core.middlewares.CorsMiddleware',
     'core.middlewares.RequestTimeMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'request_logging.middleware.LoggingMiddleware',
+    'core.middlewares.SimpleLogMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -268,7 +274,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            'hosts': [REDIS_URL],
+            'hosts': [REDIS_URL]
         },
     },
 }

@@ -109,6 +109,7 @@ class Booking(models.Model):
     def save(self, *args, **kwargs):
         self.date_activate_until = self.calculate_date_activate_until()
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.job_create_change_states()
         if self.table.room.type.unified:
             if GLOBAL_DATE_FROM_WS == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket()
@@ -363,22 +364,35 @@ class Booking(models.Model):
             })
         elif instance:
             image = self.table.images.first()
-            result.append({
-                'id': str(self.table.room.id),
-                'title': str(self.table.room.title),
-                'tables': [
-                    {'id': str(self.table.id),
-                     'title': str(self.table.title),
-                     'is_occupied': str(False)}
-                ],
-                'images': [{
-                    'id': str(image.id),
-                    'title': str(image.title),
-                    'path': str(image.path),
-                    'thumb': str(image.thumb)
-                }],
-                'status': 'not occupied'
-            })
+            if image:
+                result.append({
+                    'id': str(self.table.room.id),
+                    'title': str(self.table.room.title),
+                    'tables': [
+                        {'id': str(self.table.id),
+                         'title': str(self.table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [{
+                        'id': str(image.id) if image else None,
+                        'title': str(image.title) if image else None,
+                        'path': str(image.path) if image else None,
+                        'thumb': str(image.thumb) if image else None
+                    }],
+                    'status': 'not occupied'
+                })
+            else:
+                result.append({
+                    'id': str(self.table.room.id),
+                    'title': str(self.table.room.title),
+                    'tables': [
+                        {'id': str(self.table.id),
+                         'title': str(self.table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [],
+                    'status': 'not occupied'
+                })
         return result
 
     def create_response_for_date_websocket(self, instance=None):
@@ -419,11 +433,11 @@ class Booking(models.Model):
             id="set_booking_over_" + str(self.id),
             replace_existing=True
         )
-        scheduler.add_job(
-            self.check_booking_activate,
-            "date",
-            run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
-            misfire_grace_time=10000,
-            id="check_booking_activate_" + str(self.id),
-            replace_existing=True
-        )
+        # scheduler.add_job(
+        #     self.check_booking_activate,
+        #     "date",
+        #     run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
+        #     misfire_grace_time=10000,
+        #     id="check_booking_activate_" + str(self.id),
+        #     replace_existing=True
+        # )

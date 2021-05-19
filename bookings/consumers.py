@@ -176,20 +176,33 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         for room in rooms:
             table = room.tables.first()
             images = room.images.first()
-            empty_result = {
-                'id': str(room.id),
-                'title': str(room.title),
-                'tables': [
-                    {'id': str(table.id),
-                     'title': str(table.title),
-                     'is_occupied': str(False)}
-                ],
-                'images': [{
-                    'id': str(images.id),
-                    'title': str(images.title),
-                    'path': str(images.path),
-                    'thumb': str(images.thumb)
-                }],
-                'status': 'not occupied'
-            }
+            if images:
+                empty_result = {
+                    'id': str(room.id),
+                    'title': str(room.title),
+                    'tables': [
+                        {'id': str(table.id),
+                         'title': str(table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [{
+                        'id': str(images.id),
+                        'title': str(images.title),
+                        'path': str(images.path),
+                        'thumb': str(images.thumb)
+                    }],
+                    'status': 'not occupied'
+                }
+            else:
+                empty_result = {
+                    'id': str(room.id),
+                    'title': str(room.title),
+                    'tables': [
+                        {'id': str(table.id),
+                         'title': str(table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [],
+                    'status': 'not occupied'
+                }
         return [empty_result]
