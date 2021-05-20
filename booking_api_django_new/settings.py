@@ -9,9 +9,9 @@ https://docs.djangoproject.com/en/3.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
-from datetime import timedelta
-import os
 import logging
+import os
+from datetime import timedelta
 
 import orjson
 from dotenv import load_dotenv
@@ -53,6 +53,8 @@ ALLOWED_HOSTS = ['*']
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+
     'EXCEPTION_HANDLER': 'core.exception.detail_exception_handler',
 
     'DEFAULT_RENDERER_CLASSES': [
@@ -132,15 +134,39 @@ INSTALLED_APPS = [
     'drf_yasg',
     'mail',
     'django_apscheduler',
+    'django_filters',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.postgres',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django-advanced_password_validation',
 ]
 # 'django.contrib.admin',
-REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
+#REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
+
+REDIS_HOST = os.environ.get('REDIS_HOST')
+REDIS_PORT = os.environ.get('REDIS_PORT')
+REDIS_SECRET_KEY = os.environ.get('REDIS_SECRET_KEY')
+if REDIS_HOST and REDIS_PORT and REDIS_SECRET_KEY:
+    REDIS_URL = f'redis://:{REDIS_SECRET_KEY}@{REDIS_HOST}:{REDIS_PORT}/0'
+else:
+    REDIS_URL = "redis://2.59.41.133:5556"
+
+
+
+BROKER_PROTOCOL = os.environ.get('BROKER_PROTOCOL')
+BROKER_HOST = os.environ.get('BROKER_HOST')
+BROKER_PORT = os.environ.get('BROKER_PORT')
+BROKER_SECRET_KEY = os.environ.get('BROKER_SECRET_KEY')
+
+if BROKER_PROTOCOL and BROKER_HOST and BROKER_PORT and BROKER_SECRET_KEY:
+    CELERY_BROKER_URL = f'{BROKER_PROTOCOL}://:{BROKER_SECRET_KEY}@{BROKER_HOST}:{BROKER_PORT}/1'
+else:
+    CELERY_BROKER_URL = "redis://2.59.41.133:5556"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_ACCEPT_CONTENT = ['application/json']
 
 CACHES = {
     "default": {
@@ -155,11 +181,15 @@ CACHES = {
 
 ADMINS = [('Support', 'support@liis.su'), ]
 
-REQUEST_LOGGING_DATA_LOG_LEVEL = logging.WARNING
+DATA_UPLOAD_MAX_MEMORY_SIZE = 11534336
+
+REQUEST_LOGGING_DATA_LOG_LEVEL = logging.INFO
+
+REQUEST_LOGGING_MAX_BODY_LENGTH = 1000
 
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'formatters': {
             'django.server': {
                 '()': 'django.utils.log.ServerFormatter',
@@ -176,6 +206,9 @@ LOGGING = {
             },
             'not_500': {
                 '()': 'core.filters.Not500'
+            },
+            'base_handler_log': {
+                '()': 'core.filters.FilterBaseHandlerLog'
             }
 
         },
@@ -183,7 +216,8 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'level': 'INFO',
-            'formatter': 'django.server'
+            'formatter': 'django.server',
+            'filters': ['base_handler_log']
         },
         'mail_admins': {
             'level': 'ERROR',
@@ -191,15 +225,17 @@ LOGGING = {
             'filters': ['not_500']
         },
         'logfile': {
-            'level': 'ERROR',
             'class': 'logging.FileHandler',
+            'level': 'INFO',
             'filename': BASE_DIR + '/simple_office.log',
+            'filters': ['base_handler_log'],
+            'formatter': 'django.server'
         },
     },
     'loggers': {
         'django.request': {
-            'handlers': ['console', 'logfile', 'mail_admins'],
-            'level': 'ERROR',
+            'handlers': ['console', 'logfile'],
+            'level': 'INFO',
             'propagate': False,
         },
     },
@@ -207,9 +243,8 @@ LOGGING = {
 
 MIDDLEWARE = [
     'core.middlewares.CorsMiddleware',
-    'core.middlewares.RequestTimeMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'request_logging.middleware.LoggingMiddleware',
+    'core.middlewares.SimpleLogMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -220,6 +255,7 @@ MIDDLEWARE = [
 # 'django.contrib.messages.middleware.MessageMiddleware',
 if LOCAL:
     MIDDLEWARE += ['booking_api_django_new.debug.PrintSqlQuery']
+    MIDDLEWARE += ['core.middlewares.RequestTimeMiddleware']
 
 ROOT_URLCONF = 'booking_api_django_new.urls'
 
@@ -244,12 +280,6 @@ WSGI_APPLICATION = 'booking_api_django_new.wsgi.application'
 # Database
 
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-
-print({
-    'NAME': os.environ.get('DB_NAME'),
-    'USER': os.environ.get('DB_USER'),
-    'PASSWORD': os.environ.get('DB_PASSWORD'),
-})
 
 DATABASES = {
     'default': {
@@ -292,6 +322,30 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsDigitsValidator',
+        'OPTIONS': {
+            'min_digits': 1
+        }
+    },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsUppercaseValidator',
+        'OPTIONS': {
+            'min_uppercase': 1
+        }
+    },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsLowercaseValidator',
+        'OPTIONS': {
+            'min_lowercase': 1
+        }
+    },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsSpecialCharactersValidator',
+        'OPTIONS': {
+            'min_characters': 1
+        }
+    },
 ]
 
 SWAGGER_SETTINGS = {
@@ -326,9 +380,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload/')
 MEDIA_URL = '/media/'
-FILES_USERNAME = os.environ.get('FILES_USERNAME')
-FILES_PASSWORD = os.environ.get('FILES_PASSWORD')
-FILES_HOST = os.environ.get('FILES_HOST')
+FILES_USERNAME = os.environ.get('FILES_USERNAME').replace('"', '') if os.environ.get('FILES_USERNAME') else None
+FILES_PASSWORD = os.environ.get('FILES_PASSWORD').replace('"', '') if os.environ.get('FILES_PASSWORD') else None
+FILES_HOST = os.environ.get('FILES_HOST').replace('"', '') if os.environ.get('FILES_HOST') else None
 
 HARDCODED_PHONE_NUMBER = (
     "+13371337133"  # hardcoded phone number for passing AppStore and PlayMarket tests
