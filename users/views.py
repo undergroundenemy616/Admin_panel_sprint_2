@@ -429,6 +429,7 @@ class PasswordChangeView(GenericAPIView):
 
 class PasswordResetView(GenericAPIView):
     serializer_class = PasswordResetSerializer
+    permission_classes = (IsAdmin, )
 
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -460,7 +461,7 @@ class RefreshTokenView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         refresh = request.data.get('refresh')
         if not refresh:
-            return Response({"detail": "Refresh parametr is required"}, status=400)
+            return Response({"detail": "Refresh parameter is required"}, status=400)
         refresh_ser = TokenRefreshSerializer(data=request.data)
         try:
             refresh_ser.is_valid(raise_exception=True)

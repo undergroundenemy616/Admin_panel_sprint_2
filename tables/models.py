@@ -14,6 +14,9 @@ class TableTag(models.Model):
     title = models.CharField(max_length=256, null=False, blank=False)
     icon = models.ForeignKey(File, on_delete=models.CASCADE, blank=True, null=True)
 
+    class Meta:
+        unique_together = ['title', 'office']
+
 
 class Table(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

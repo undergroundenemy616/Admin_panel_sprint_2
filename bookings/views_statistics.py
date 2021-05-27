@@ -363,4 +363,3 @@ class BookingEmployeeStatistics(GenericAPIView):
             return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
         else:
             return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
-

@@ -409,6 +409,8 @@ class OfficePanelSerializer(serializers.Serializer):
         return office_panel
 
     def to_representation(self, instance):
+        if type(instance) == Account:
+            instance = instance.office_panels
         response = TestAccountSerializer(instance.account).data
         response['office'] = {"id": instance.office.id, "title": instance.office.title}
         response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}
