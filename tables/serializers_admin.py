@@ -58,6 +58,7 @@ class AdminTableCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class AdminTableMarkerSerializer(serializers.ModelSerializer):
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), source='table.room', required=False)
 
     class Meta:
         model = TableMarker

@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from bookings.models import Booking
 from files.serializers_mobile import MobileBaseFileSerializer
-from tables.models import Table, TableTag
+from tables.models import Table, TableTag, TableMarker
 
 
 class MobileTableSerializer(serializers.Serializer):
@@ -83,3 +83,9 @@ class MobileDetailedTableSerializer(serializers.ModelSerializer):
         }
         response['is_bookable'] = True  # Because Oleg, don`t be mad :^(
         return response
+
+
+class MobileTableMarkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TableMarker
+        fields = ['id', 'x', 'y']

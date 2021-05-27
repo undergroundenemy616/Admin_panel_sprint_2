@@ -12,7 +12,7 @@ from reports.serializers_mobile import MobileReportSerializer
 
 
 class MobileReportCreateView(ListModelMixin,
-                       GenericAPIView):
+                             GenericAPIView):
 
     queryset = Report.objects.all()
     permission_classes = (IsAuthenticated, )

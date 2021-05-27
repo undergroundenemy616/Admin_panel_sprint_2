@@ -56,7 +56,7 @@ class MobileRoomGetSerializer(serializers.Serializer):
 class MobileRoomMarkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomMarker
-        fields = '__all__'
+        exclude = ['room']
 
 
 class MobileShortRoomSerializer(serializers.ModelSerializer):

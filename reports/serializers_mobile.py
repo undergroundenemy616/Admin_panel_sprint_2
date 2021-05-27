@@ -1,21 +1,19 @@
 from rest_framework import serializers
 
-from files.models import File
-from files.serializers import TestBaseFileSerializer
+from files.serializers_mobile import MobileBaseFileSerializer
 from reports.models import Report
 
 
 class MobileReportSerializer(serializers.ModelSerializer):
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(),
-                                                required=False,
-                                                many=True)
+    images = MobileBaseFileSerializer(required=False, many=True, allow_null=True)
 
     class Meta:
         fields = '__all__'
         model = Report
 
     def to_representation(self, instance):
-        response = super(ReportSerializer, self).to_representation(instance)
-        response['office'] = {"id": instance.office.id, "title": instance.title}
-        response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
+        response = super(MobileReportSerializer, self).to_representation(instance)
+        response['office'] = {
+            "id": instance.office.id,
+            "title": instance.title}
         return response

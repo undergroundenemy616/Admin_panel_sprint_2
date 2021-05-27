@@ -107,3 +107,7 @@ class AdminCreateUpdateFloorMapSerializer(serializers.ModelSerializer):
         return AdminFloorMapSerializer(instance=instance).data
 
 
+class AdminFloorClearValidation(serializers.Serializer):
+    floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+
+

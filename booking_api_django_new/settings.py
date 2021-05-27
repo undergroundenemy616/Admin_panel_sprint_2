@@ -27,7 +27,7 @@ APPEND_SLASH = False
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
-LOCAL = True if os.getenv('LOCAL') == 'True' else False
+LOCAL = False  # if os.getenv('LOCAL') == 'True' else False
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
@@ -36,6 +36,9 @@ KEY_EXPIRATION = 60  # 3 minutes
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 BOOKING_TIMEDELTA_CHECK = 15
 PUSH_HOST = "https://push.liis.su"
+PUSH_USERNAME = "omniman"
+PUSH_PASSWORD = "slicing_unshipped_stopping_mystified"
+PUSH_TOKEN = ''
 
 SERVER_EMAIL = 'support@liis.su'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -293,18 +296,18 @@ DATABASES = {
     }
 }
 
-SCHEDULER_CONFIG = {
-    "apscheduler.jobstores.default": {
-        "class": "django_apscheduler.jobstores:DjangoJobStore"
-    },
-    'apscheduler.executors.processpool': {
-        "type": "processpool",
-        "max_workers": "2"
-    },
-    'apscheduler.job_defaults.coalesce': 'false',
-    'apscheduler.job_defaults.max_instances': '2',
-}
-SCHEDULER_AUTOSTART = True
+# SCHEDULER_CONFIG = {
+#     "apscheduler.jobstores.default": {
+#         "class": "django_apscheduler.jobstores:DjangoJobStore"
+#     },
+#     'apscheduler.executors.processpool': {
+#         "type": "processpool",
+#         "max_workers": "2"
+#     },
+#     'apscheduler.job_defaults.coalesce': 'false',
+#     'apscheduler.job_defaults.max_instances': '2',
+# }
+# SCHEDULER_AUTOSTART = True
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators

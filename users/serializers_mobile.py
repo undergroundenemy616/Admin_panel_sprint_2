@@ -3,7 +3,6 @@ from rest_framework import serializers
 
 from files.models import File
 from files.serializers_mobile import MobileBaseFileSerializer
-from tables.models import TableTag
 from users.models import Account, AppEntrances, User
 from users.serializers import AccountSerializer
 
@@ -36,7 +35,6 @@ class MobileEntranceCollectorSerializer(serializers.ModelSerializer):
 
 
 class MobileLoginOrRegisterSerializer(serializers.Serializer):
-    """Log in through phone"""
     phone = serializers.CharField(required=True, min_length=11, max_length=12)
     code = serializers.CharField(required=False)
     description = serializers.CharField(required=False, allow_blank=True)
@@ -55,21 +53,20 @@ class MobileLoginOrRegisterSerializer(serializers.Serializer):
 
 
 class MobileAccountSerializer(serializers.ModelSerializer):
+    firstname = serializers.CharField(source='first_name', allow_blank=True, allow_null=True)
+    lastname = serializers.CharField(source='last_name', allow_blank=True, allow_null=True)
+    middlename = serializers.CharField(source='middle_name', allow_blank=True, allow_null=True)
+    birthday = serializers.DateField(source='birth_date', allow_null=True)
+    photo = MobileBaseFileSerializer(required=False, allow_null=True)
+
     class Meta:
         model = Account
-        fields = '__all__'
+        exclude = ['first_name', 'last_name', 'middle_name', 'birth_date']
 
     def to_representation(self, instance):
-        instance: Account
         response = super(MobileAccountSerializer, self).to_representation(instance)
         response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
-        response['firstname'] = response.pop('first_name')
-        response['lastname'] = response.pop('last_name')
-        response['middlename'] = response.pop('middle_name')
-        response['birthday'] = response.pop('birth_date')
         response['email'] = instance.user.email if instance.user.email else instance.email
-        if instance.photo:
-            response['photo'] = MobileBaseFileSerializer(instance=instance.photo).data
         response['has_cp_access'] = True if instance.user.email else False
         return response
 

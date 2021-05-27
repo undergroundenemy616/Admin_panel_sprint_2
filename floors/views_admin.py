@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, status
+from rest_framework.response import Response
 
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
@@ -6,7 +8,7 @@ from floors.filters_admin import AdminFloorFilter
 from floors.models import Floor, FloorMap
 from floors.serializers_admin import (AdminFloorSerializer,
                                       AdminSingleFloorSerializer, AdminFloorMapSerializer,
-                                      AdminCreateUpdateFloorMapSerializer)
+                                      AdminCreateUpdateFloorMapSerializer, AdminFloorClearValidation)
 
 
 class AdminFloorViewSet(viewsets.ModelViewSet):
@@ -25,6 +27,14 @@ class AdminFloorViewSet(viewsets.ModelViewSet):
         if self.request.method == "POST":
             return AdminFloorSerializer
         return self.serializer_class
+
+    def clear_floor(self, request, *args, **kwargs):
+        AdminFloorClearValidation(data=request.data).is_valid(raise_exception=True)
+        instance = self.queryset.get(pk=request.data.get('floor'))
+        for room in instance.rooms.all():
+            if hasattr(room, 'room_marker'):
+                room.room_marker.delete()
+        return Response(data=self.serializer_class(instance=instance).data, status=status.HTTP_200_OK)
 
 
 class AdminFloorMapViewSet(viewsets.ModelViewSet):

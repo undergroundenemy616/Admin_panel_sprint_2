@@ -125,6 +125,9 @@ class MobileFloorMarkers(GenericAPIView):
                 for table_marker in markers[0]['table_markers']:
                     if uuid.UUID(table_marker.get('table_id')) in list(bookings):
                         table_marker['is_available'] = False
+                for room_marker in markers[0]['room_markers_bookable']:
+                    if room_marker.get('table_id') in list(bookings):
+                        room_marker['is_available'] = False
 
         if tag:
             filtered_tables = []
@@ -142,6 +145,9 @@ class MobileFloorMarkers(GenericAPIView):
                     filtered_rooms.append(room_marker)
 
             markers[0]['room_markers_bookable'] = filtered_rooms
+
+        for room_marker in markers[0]['room_markers_bookable']:
+            room_marker.pop('tags', None)
 
         return Response(markers, status=status.HTTP_200_OK)
 
@@ -169,12 +175,15 @@ class MobileSuitableFloorView(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=MobileFloorSuitableParameters)
     def get(self, request, *args, **kwargs):
-        bookings = Booking.objects.filter(
-            Q(date_from__gte=request.query_params.get('date_from'), date_from__lt=request.query_params.get('date_to'))
-            |
-            Q(date_from__lte=request.query_params.get('date_from'), date_to__gte=request.query_params.get('date_to'))
-            |
-            Q(date_to__gt=request.query_params.get('date_from'), date_to__lte=request.query_params.get('date_to')))
+        date_to = request.query_params.get('date_to')
+        date_from = request.query_params.get('date_from')
+        bookings = Booking.objects.filter(Q(status__in=['waiting', 'active'])
+                                          &
+                                          (Q(date_from__lt=date_to, date_to__gte=date_to) |
+                                           Q(date_from__lte=date_from, date_to__gt=date_from) |
+                                           Q(date_from__gte=date_from, date_to__lte=date_to))
+                                          &
+                                          Q(date_from__lt=date_to)).values_list('table__id', flat=True)
 
         serializer = MobileFloorSuitableParameters(data=request.query_params)
         serializer.is_valid(raise_exception=True)
@@ -200,10 +209,9 @@ class MobileSuitableFloorView(GenericAPIView):
                                                     &
                                                     Q(table_marker__isnull=True)
                                                     &
-                                                    ~Q(id__in=bookings)).prefetch_related('table_marker',
-                                                                                          'room__floor',
-                                                                                          'room'
-                                                                                          'tags')
+                                                    ~Q(id__in=bookings)).select_related('table_marker',
+                                                                                        'room__floor',
+                                                                                        'room').prefetch_related('tags')
             else:
                 tables_count = Table.objects.filter(Q(room__floor__in=self.queryset)
                                                     &
@@ -215,10 +223,9 @@ class MobileSuitableFloorView(GenericAPIView):
                                                     &
                                                     Q(table_marker__isnull=False)
                                                     &
-                                                    ~Q(id__in=bookings)).prefetch_related('table_marker',
-                                                                                          'room__floor',
-                                                                                          'room'
-                                                                                          'tags')
+                                                    ~Q(id__in=bookings)).select_related('table_marker',
+                                                                                        'room__floor',
+                                                                                        'room').prefetch_related('tags')
 
             for t in list(tag):
                 tables_count = tables_count.filter(tags__id=t)
@@ -239,8 +246,6 @@ class MobileSuitableFloorView(GenericAPIView):
             if room_type.unified:
                 self.queryset = self.queryset.filter(office_id=request.query_params.get('office')).annotate(
                     suitable=Count('rooms__tables', filter=Q(rooms__type__title=room_type.title)
-                                                           &
-                                                           Q(rooms__tables__is_occupied=False)
                                                            &
                                                            Q(rooms__room_marker__isnull=False)
                                                            &

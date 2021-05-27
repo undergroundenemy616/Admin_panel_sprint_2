@@ -6,11 +6,12 @@ from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from tables.filters_admin import AdminTableFilter, AdminTableTagFiler
-from tables.models import Table, TableTag
+from tables.models import Table, TableTag, TableMarker
 from tables.serializers_admin import (AdminTableListDeleteSerializer,
                                       AdminTableSerializer,
                                       AdminTableTagCreateSerializer,
-                                      AdminTableTagSerializer, AdminTableCreateUpdateSerializer)
+                                      AdminTableTagSerializer, AdminTableCreateUpdateSerializer,
+                                      AdminTableMarkerSerializer)
 
 
 class AdminTableListDeleteView(GenericAPIView):
@@ -68,3 +69,10 @@ class AdminTableViewSet(viewsets.ModelViewSet):
         if self.request.method in ["POST", "PUT"]:
             return AdminTableCreateUpdateSerializer
         return self.serializer_class
+
+
+class AdminTableMarkerViewSet(viewsets.ModelViewSet):
+    queryset = TableMarker.objects.all()
+    serializer_class = AdminTableMarkerSerializer
+    permission_classes = (IsAdmin, )
+    pagination_class = LimitStartPagination

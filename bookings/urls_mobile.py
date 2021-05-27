@@ -6,7 +6,6 @@ from bookings.views_mobile import (MobileActionActivateBookingsView,
                                    MobileBookingsView, MobileCancelBooking)
 from rooms.views_mobile import SuitableRoomsMobileView
 
-# TODO: Rename to one standard? Like "/book/... or /bookings/..."
 urlpatterns = [
     path('', MobileBookingsView.as_view()),
     path('/book_list/my', MobileBookingListPersonalView.as_view()),

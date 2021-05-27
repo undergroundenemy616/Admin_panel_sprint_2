@@ -8,10 +8,7 @@ from rest_framework.response import Response
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
-from offices.serializers import (MobileSimpleOfficeBaseSerializer,
-                                 OptimizeListOfficeSerializer,
-                                 SwaggerOfficeParametrs,
-                                 TestOfficeBaseSerializer)
+from offices.serializers import SwaggerOfficeParametrs
 from offices.serializers_mobile import (MobileOfficeBaseSerializer,
                                         MobileOfficeSerializer)
 

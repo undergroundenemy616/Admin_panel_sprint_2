@@ -3,10 +3,14 @@ from django.shortcuts import get_list_or_404
 from rest_framework import serializers
 
 from files.serializers import TestBaseFileSerializer
-from rooms.models import Room
+from rooms.models import Room, RoomMarker
 from rooms.serializers import room_marker_serializer
 from tables.models import Table
 from tables.serializers_admin import AdminTableSerializer
+
+
+class SwaggerRoomList(serializers.Serializer):
+    tables = serializers.BooleanField(required=False)
 
 
 class AdminRoomSerializer(serializers.ModelSerializer):
@@ -35,7 +39,7 @@ class AdminRoomSerializer(serializers.ModelSerializer):
             response['room_type_color'] = None
             response['room_type_icon'] = None
             response['room_type_unified'] = None
-        response['marker'] = room_marker_serializer(instance.room_marker) if \
+        response['marker'] = AdminRoomMarkerCreateSerializer(instance=instance.room_marker).data if \
             hasattr(instance, 'room_marker') else None
         return response
 
@@ -85,3 +89,9 @@ class AdminRoomListDeleteSerializer(serializers.Serializer):
         query = get_list_or_404(Room, id__in=self.data['rooms'])
         for table in query:
             table.delete()
+
+
+class AdminRoomMarkerCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoomMarker
+        fields = '__all__'

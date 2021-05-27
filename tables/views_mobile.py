@@ -65,7 +65,8 @@ class MobileTableSlotsView(ListModelMixin,
                         if booking.date_from.year == date.year == booking.date_to.year:
                             if booking.date_from.month == date.month == booking.date_to.month:
                                 occupied.append(booking)
-                return Response(MobileBookingSerializerForTableSlots(instance=occupied, many=True).data, status=status.HTTP_200_OK)
+                return Response(MobileBookingSerializerForTableSlots(instance=occupied, many=True).data,
+                                status=status.HTTP_200_OK)
             elif request.query_params.get('daily'):
                 if int(request.query_params.get('daily')) == 1:
                     for booking in bookings:
@@ -89,5 +90,6 @@ class MobileTableViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.method == "GET":
             self.queryset = self.queryset.select_related(
-                'table_marker', 'room', 'room__floor', 'room__floor__office').prefetch_related('images', 'room')
+                'table_marker', 'room',
+                'room__floor', 'room__floor__office').prefetch_related('images', 'tags')
         return self.queryset

@@ -210,7 +210,6 @@ class AdminOfficeCreateSerializer(serializers.ModelSerializer):
 
 
 class AdminOfficeSerializer(serializers.ModelSerializer):
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
     working_hours = serializers.CharField(max_length=128,
                                           required=False,
                                           validators=[working_hours_validator],
@@ -218,7 +217,7 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Office
-        fields = '__all__'
+        exclude = ['images']
 
     def to_representation(self, instance):
         response = super(AdminOfficeSerializer, self).to_representation(instance)
@@ -230,5 +229,12 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
         response['occupied_meeting'] = instance.occupied_meeting
         response['capacity_tables'] = instance.capacity_tables
         response['occupied_tables'] = instance.occupied_tables
+        return response
+
+
+class AdminOfficeSingleSerializer(AdminOfficeSerializer):
+
+    def to_representation(self, instance):
+        response = super(AdminOfficeSingleSerializer, self).to_representation(instance)
         response['images'] = AdminFileForOffice(instance=instance.images, many=True).data
         return response

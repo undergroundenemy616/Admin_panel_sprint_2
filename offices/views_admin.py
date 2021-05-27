@@ -1,9 +1,6 @@
 from django.db.models import Count, Prefetch, Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, status, viewsets
-from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import DestroyModelMixin
-from rest_framework.response import Response
 
 from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
@@ -15,7 +12,8 @@ from offices.serializers_admin import (AdminOfficeCreateSerializer,
                                        AdminOfficeSerializer,
                                        AdminOfficeZoneCreateSerializer,
                                        AdminOfficeZoneSerializer,
-                                       AdminOfficeZoneUpdateSerializer)
+                                       AdminOfficeZoneUpdateSerializer,
+                                       AdminOfficeSingleSerializer)
 
 
 class AdminOfficeViewSet(viewsets.ModelViewSet):
@@ -37,10 +35,12 @@ class AdminOfficeViewSet(viewsets.ModelViewSet):
                 capacity_tables=Count('floors__rooms__tables', filter=Q(floors__rooms__type__unified=False)),
                 occupied_tables=Count('floors__rooms__tables', filter=Q(floors__rooms__type__unified=False) &
                                                                       Q(floors__rooms__tables__is_occupied=True))
-            ).prefetch_related('floors', 'images').select_related('license')
+            ).prefetch_related('floors').select_related('license')
         return self.queryset
 
     def get_serializer_class(self):
+        if self.kwargs.get('pk'):
+            return AdminOfficeSingleSerializer
         if self.request.method == "POST":
             return AdminOfficeCreateSerializer
         return self.serializer_class

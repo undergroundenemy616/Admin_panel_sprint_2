@@ -10,7 +10,6 @@ from bookings.serializers import (BaseBookingSerializer,
 from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
 from core.pagination import DefaultPagination
-from mail import send_html_email_message_booking_for_sleep
 from rooms.models import RoomMarker
 from tables.models import TableMarker
 from tables.serializers_mobile import MobileTableSerializer
@@ -149,20 +148,6 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
-        if validated_data['table'].room.title == 'Капсула сна':
-            try:
-                office_email = validated_data['table'].room.floor.office.service_email
-                subject = "Совершено бронирование капсулы сна!"
-                send_html_email_message_booking_for_sleep(
-                    to=office_email,
-                    subject=subject,
-                    message=f"Было совершено бронирование капсулы сна пользователем "
-                            f"{validated_data['user'].user.phone_number if validated_data['user'].user.phone_number else validated_data['user'].user.email} "
-                            f"c {str(validated_data['date_from'] + timedelta(hours=3))[:16]} "
-                            f"до {str(validated_data['date_to'] + timedelta(hours=3))[:16]}"
-                )
-            except Exception as e:
-                pass
         if validated_data['table'].room.type.unified:
             return self.Meta.model.objects.create(
                 date_to=validated_data['date_to'],
@@ -220,23 +205,16 @@ class MobileBookingDeactivateActionSerializer(serializers.ModelSerializer):
 
 
 class MobileBookingSerializerForTableSlots(serializers.ModelSerializer):
-    date_from = serializers.DateTimeField(required=True)
-    date_to = serializers.DateTimeField(required=True)
-    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
-    theme = serializers.CharField(max_length=200, default="Без темы")
-    user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
+    active = serializers.BooleanField(source='is_active')
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'table', 'theme', 'user']
+        fields = ['id', 'date_from', 'date_to', 'date_activate_until', 'is_over',
+                  'theme', 'status', 'user', 'table', 'active']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
     def to_representation(self, instance):
-        response = BaseBookingSerializer(instance).data
-        response['active'] = response['is_active']
-        del response['is_active']
-        response['user'] = instance.user_id
-        response['table'] = instance.table_id
+        response = super(MobileBookingSerializerForTableSlots, self).to_representation(instance)
         return response

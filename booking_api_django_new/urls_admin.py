@@ -28,7 +28,6 @@ urlpatterns = [
     path('/office_zone/<uuid:pk>', office_admin_view.AdminOfficeZoneViewSet.as_view(url_detail)),
     path('/floor_map', floor_admin_view.AdminFloorMapViewSet.as_view(url_list)),
     path('/floor_map/<uuid:pk>', floor_admin_view.AdminFloorMapViewSet.as_view(url_detail)),
-    path('/table_tag', table_admin_view.AdminTableTagViewSet.as_view(url_list_with_delete)),
-    path('/table_tag/<uuid:pk>', table_admin_view.AdminTableTagViewSet.as_view(url_detail)),
+    path('/push', include('push_tokens.urls_admin'))
 
 ]

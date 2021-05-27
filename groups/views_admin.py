@@ -29,7 +29,7 @@ class AdminGroupViewSet(viewsets.ModelViewSet):
             self.queryset = self.queryset.annotate(
                 count=Count('accounts')
             )
-        return self.queryset.all()
+        return self.queryset.all().order_by('is_deletable', '-access')
 
     def get_serializer_class(self):
         if self.request.method == "GET" and self.request.query_params.get('user'):

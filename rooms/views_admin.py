@@ -1,5 +1,7 @@
 import django_filters
 from django.db.models import Count, Q
+from django.utils.decorators import method_decorator
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -7,12 +9,13 @@ from rest_framework.response import Response
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from rooms.filters_admin import AdminRoomFilter
-from rooms.models import Room
+from rooms.models import Room, RoomMarker
 from rooms.serializers_admin import (AdminRoomListDeleteSerializer,
                                      AdminRoomSerializer, AdminRoomWithTablesSerializer,
-                                     AdminRoomCreateUpdateSerializer)
+                                     AdminRoomCreateUpdateSerializer, AdminRoomMarkerCreateSerializer, SwaggerRoomList)
 
 
+@method_decorator(name='list', decorator=swagger_auto_schema(query_serializer=SwaggerRoomList))
 class AdminRoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     filter_backends = [filters.SearchFilter, django_filters.rest_framework.DjangoFilterBackend]
@@ -51,3 +54,9 @@ class AdminRoomListDeleteView(GenericAPIView):
         serializer.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminRoomMarkerViewSet(viewsets.ModelViewSet):
+    queryset = RoomMarker.objects.all()
+    serializer_class = AdminRoomMarkerCreateSerializer
+    permission_classes = (IsAdmin, )
