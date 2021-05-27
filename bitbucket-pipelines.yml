@@ -18,7 +18,7 @@ definitions:
           - export COMPOSE_HTTP_TIMEOUT=120
           - export BITBUCKET_PROJECT_KEY="${BITBUCKET_PROJECT_KEY,,}"
           - docker login $DOCKER_REG -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-          - docker build -t $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest .
+          - docker build -t $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest -f Dockerfile .
           - docker push $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest
 
     - step: &Deploy
