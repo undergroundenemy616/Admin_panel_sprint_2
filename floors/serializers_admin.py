@@ -65,7 +65,7 @@ class AdminFloorSerializer(serializers.ModelSerializer):
     @atomic()
     def create(self, validated_data):
         floors_to_create = []
-        for floor_title in validated_data.get('titles'):
+        for floor_title in set(validated_data.get('titles')):
             floors_to_create.append(Floor(title=floor_title, office=validated_data.get('office')))
         floors = Floor.objects.bulk_create(floors_to_create)
         return floors

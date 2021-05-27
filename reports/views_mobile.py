@@ -24,10 +24,10 @@ class MobileReportCreateView(ListModelMixin,
             request.data['images'] = []
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        attachments = [i.path for i in serializer.validated_data['images']]
-        body = generate_html(body=serializer.validated_data['body'],
-                             office=serializer.validated_data['office'].title,
-                             account=serializer.validated_data['account'])
+        attachments = [i.path for i in serializer.validated_data.get('images')]
+        body = generate_html(body=serializer.validated_data.get('body'),
+                             office=serializer.validated_data.get('office'),
+                             account=serializer.validated_data.get('account'))
         body = generate_attach(body=body, attachments=attachments)
         try:
             send_mail(message='',

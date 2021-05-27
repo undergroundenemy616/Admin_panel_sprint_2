@@ -73,13 +73,13 @@ class AdminOfficeZoneCreateSerializer(serializers.ModelSerializer):
                 raise ValidationError(detail={"message": "OfficeZone already exists"}, code=400)
 
         if validated_data.get('group_whitelist_visit'):
-            for title in validated_data['titles']:
+            for title in set(validated_data['titles']):
                 zone = OfficeZone(title=title, office=validated_data.get('office'))
                 for group in validated_data['group_whitelist_visit']:
                     zone.groups.add(group)
                 office_zones_to_create.append(zone)
         else:
-            for title in validated_data['titles']:
+            for title in set(validated_data['titles']):
                 office_zones_to_create.append(OfficeZone(title=title, office=validated_data.get('office')))
 
         office_zones = OfficeZone.objects.bulk_create(office_zones_to_create)

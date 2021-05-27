@@ -64,11 +64,11 @@ class AdminUserViewSet(viewsets.ModelViewSet):
                 self.queryset = Account.objects.all()
             self.queryset = self.queryset.select_related('user', 'photo').prefetch_related('groups')
         return self.queryset.all()
-    
+
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         request.data['user'] = instance.user.id
-        if request.data['email'] == "":
+        if request.data.get('email') and request.data['email'] == "":
             request.data['email'] = None
         return super(AdminUserViewSet, self).update(request, *args, **kwargs)
 

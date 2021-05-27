@@ -92,6 +92,16 @@ class AdminUserSerializer(serializers.ModelSerializer):
         response['has_cp_access'] = True if instance.user.email else False
         return response
 
+    @atomic()
+    def update(self, instance, validated_data):
+        if validated_data.get('phone_number'):
+            instance.user.phone_number = validated_data['phone_number']
+            instance.user.save()
+        if validated_data.get('email'):
+            instance.user.email = validated_data['email']
+            instance.user.save()
+        return super(AdminUserSerializer, self).update(instance, validated_data)
+
 
 class AdminUserCreateSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=False, default="", allow_blank=True)

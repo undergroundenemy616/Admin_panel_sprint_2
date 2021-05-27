@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
-from files.serializers_mobile import MobileBaseFileSerializer
+from files.models import File
 from reports.models import Report
 
 
 class MobileReportSerializer(serializers.ModelSerializer):
-    images = MobileBaseFileSerializer(required=False, many=True, allow_null=True)
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
 
     class Meta:
         fields = '__all__'
@@ -15,5 +15,6 @@ class MobileReportSerializer(serializers.ModelSerializer):
         response = super(MobileReportSerializer, self).to_representation(instance)
         response['office'] = {
             "id": instance.office.id,
-            "title": instance.title}
+            "title": instance.office.title}
         return response
+

@@ -75,12 +75,6 @@ class AdminBookingCreateSerializer(serializers.ModelSerializer):
         return response
 
 
-class AdminDetailUserForBookSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Account
-        fields = '__all__'
-
-
 class AdminUserForBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
