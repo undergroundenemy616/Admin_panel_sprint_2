@@ -1,12 +1,12 @@
 FROM python:3.8-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 
+ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 ARG USER=booking-api
 ARG PATH_TO_APP=/home/$USER/app
 
-RUN groupadd --gid 2000 $USER \ 
+RUN groupadd --gid 2000 $USER \
  && useradd --uid 2000 \
             --gid $USER \
             --shell /bin/bash \
@@ -16,12 +16,12 @@ RUN apt-get update \
  && apt-get install -y  \
                     libpq-dev \
                     python-dev \
-                    gcc \ 	
+                    gcc \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir \
-                -r requirements.txt 
+                -r requirements.txt
 
 RUN mkdir -p $PATH_TO_APP\
  && chown -R $USER:$USER \

@@ -23,6 +23,7 @@ class Room(models.Model):
 
     class Meta:
         ordering = ['floor__title', 'title']
+        unique_together = ['title', 'floor']
 
 # capacity_meeting - floor, office
 # capacity_tables - количество столов на floor, office
