@@ -44,6 +44,26 @@ def employee_statistics(stats):
     }
 
 
+def bookings_future(stats):
+    return {
+        "booking_id": str(stats.id),
+        "table_id": str(stats.table_id),
+        "table_title": stats.table_title,
+        "office_id": str(stats.office_id),
+        "office_title": stats.office_title,
+        "floor_id": str(stats.floor_id),
+        "floor_title": stats.floor_title,
+        "user_id": str(stats.user_id),
+        "first_name": stats.first_name,
+        "middle_name": stats.middle_name,
+        "last_name": stats.last_name,
+        "phone_number": str(stats.phone_number),
+        "date_from": str(stats.date_from),
+        "date_to": str(stats.date_to),
+        "date_activate_until": str(stats.date_activate_until)
+    }
+
+
 def get_duration(duration):
     hours = int(duration / 3600)
     minutes = int(duration % 3600 / 60)
@@ -176,6 +196,13 @@ class AdminSwaggerDashboard(serializers.Serializer):
 
 
 class AdminSwaggerBookingEmployee(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    month = serializers.CharField(required=False, max_length=10)
+    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
+
+
+class AdminSwaggerBookingFuture(serializers.Serializer):
     office_id = serializers.UUIDField(required=False, format='hex_verbose')
     month = serializers.CharField(required=False, max_length=10)
     year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
@@ -524,6 +551,131 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
 
         worksheet.write('A' + str(len(list_rows) + 2), 'Рабочих дней в месяце:', bold)
         worksheet.write('B' + str(len(list_rows) + 2), working_days, bold)
+
+        workbook.close()
+
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
+        try:
+            response = requests.post(
+                url=FILES_HOST + "/upload",
+                files={"file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                headers=headers,
+            )
+        except requests.exceptions.RequestException:
+            return {"message": "Error occured during file upload"}, 500
+
+        response_dict = orjson.loads(response.text)
+        file_attrs = {
+            "path": FILES_HOST + str(response_dict.get("path")),
+            "title": secure_file_name,
+            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,
+        }
+        if response_dict.get("thumb"):
+            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+
+        file_storage_object = File(**file_attrs)
+        file_storage_object.save()
+
+        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+
+        return file_storage_object
+
+
+class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
+    month = serializers.CharField(required=False, max_length=10)
+    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    date = serializers.DateField(required=False, format='%Y-%m-%d')
+
+    def get_statistic(self):
+        date_validation(self.data.get('date'))
+        date = self.data.get('date')
+
+        file_name = "future_" + date + '.xlsx'
+
+        query = f"""
+                SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
+                ua.last_name as last_name, ua.phone_number as phone_number, oo.id as office_id, oo.title as office_title, 
+                ff.id as floor_id, ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
+                b.date_activate_until, b.status
+                FROM bookings_booking b
+                JOIN tables_table tt on b.table_id = tt.id
+                JOIN rooms_room rr on rr.id = tt.room_id
+                JOIN floors_floor ff on rr.floor_id = ff.id
+                JOIN offices_office oo on ff.office_id = oo.id
+                JOIN users_account ua on b.user_id = ua.id
+                WHERE b.date_from::date = '{date}' and (b.status = 'waiting' or b.status = 'active')"""
+
+        if self.data.get('office_id'):
+            query = query + f""" and oo.id = '{self.data.get('office_id')}'"""
+
+        stats = Booking.objects.all().raw(query)
+
+        sql_results = []
+
+        for s in stats:
+            sql_results.append(bookings_future(s))
+
+        if not sql_results:
+            raise ResponseException(detail="Data not found", status_code=status.HTTP_404_NOT_FOUND)
+
+        secure_file_name = uuid.uuid4().hex + file_name
+
+        workbook = xlsxwriter.Workbook(secure_file_name)
+
+        worksheet = workbook.add_worksheet()
+
+        j = 0
+
+        for i in range(len(sql_results) + 1):
+            i += 1
+            if i == 1:
+                worksheet.write('A1', 'Ф.И.О')
+                worksheet.write('B1', 'Тел. номер')
+                worksheet.write('C1', 'Начало брони')
+                worksheet.write('D1', 'Окончание брони')
+                worksheet.write('E1', 'Продолжительность брони (в часах)')
+                worksheet.write('F1', 'Офис')
+                worksheet.write('G1', 'Этаж')
+                worksheet.write('H1', 'Рабочее место')
+            else:
+                full_name = str(str(sql_results[j].get('last_name')) + ' ' +
+                                str(sql_results[j].get('first_name')) + ' ' +
+                                str(sql_results[j].get('middle_name'))).replace('None', "")
+                if not full_name.replace(" ", ""):
+                    full_name = "Имя не указано"
+                book_time = float((datetime.fromisoformat(sql_results[j]['date_to']).timestamp() -
+                                   datetime.fromisoformat(
+                                       sql_results[j]['date_from']).timestamp()) / 3600).__round__(2)
+
+                try:
+                    r_date_from = datetime.strptime(sql_results[j]['date_from'].replace("T", " ").split("+")[0],
+                                                    '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    r_date_to = datetime.strptime(sql_results[j]['date_to'].replace("T", " ").split("+")[0],
+                                                  '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                except ValueError:
+                    correct_date_from = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                    correct_date_to = sql_results[j]['date_from'].replace("T", " ").split(".")[0]
+                    r_date_from = datetime.strptime(correct_date_from.replace("T", " ").split("+")[0],
+                                                    '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+                    r_date_to = datetime.strptime(correct_date_to.replace("T", " ").split("+")[0],
+                                                  '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
+
+                worksheet.write('A' + str(i), full_name)
+                worksheet.write('B' + str(i), sql_results[j]['phone_number'] if sql_results[j][
+                                                                                    'phone_number'] != 'None' else 'Не указан')
+                worksheet.write('C' + str(i), str(r_date_from))
+                worksheet.write('D' + str(i), str(r_date_to))
+                worksheet.write('E' + str(i), book_time),
+                worksheet.write('F' + str(i), str(sql_results[j]['office_title'])),
+                worksheet.write('G' + str(i), sql_results[j]['floor_title']),
+                worksheet.write('H' + str(i), str(sql_results[j]['table_title']))
+                j += 1
 
         workbook.close()
 

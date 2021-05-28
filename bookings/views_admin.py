@@ -11,7 +11,8 @@ from bookings.serializers_admin import (AdminBookingCreateFastSerializer,
                                         AdminBookingSerializer,
                                         AdminSwaggerDashboard,
                                         AdminStatisticsSerializer, AdminBookingEmployeeStatisticsSerializer,
-                                        AdminSwaggerBookingEmployee)
+                                        AdminSwaggerBookingEmployee, AdminSwaggerBookingFuture,
+                                        AdminBookingFutureStatisticsSerializer)
 from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
@@ -69,6 +70,19 @@ class AdminBookingEmployeeStatisticsView(GenericAPIView):
     @swagger_auto_schema(query_serializer=AdminSwaggerBookingEmployee)
     def get(self, request, *args, **kwargs):
         serializer = AdminBookingEmployeeStatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.get_statistic()
+
+        return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
+
+
+class AdminBookingFutureStatisticsView(GenericAPIView):
+    queryset = Booking.objects.all()
+    permission_classes = (IsAdmin,)
+
+    @swagger_auto_schema(query_serializer=AdminSwaggerBookingFuture)
+    def get(self, request, *args, **kwargs):
+        serializer = AdminBookingFutureStatisticsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         response = serializer.get_statistic()
 
