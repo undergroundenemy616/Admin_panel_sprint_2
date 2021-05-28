@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, date
 
 import xlsxwriter
 import orjson
+import pandas as pd
+import pdfkit
 import requests
 from django.db.models import Q
 from django.db.transaction import atomic
@@ -100,6 +102,14 @@ def months_between(start_date, end_date):
             year += 1
         else:
             month += 1
+
+
+def room_type_statictic_serializer(stats):
+    return {
+        "booking_id": str(stats.id),
+        "room_type_title": stats.title,
+        "office_id": str(stats.office_id)
+    }
 
 
 class AdminBookingCreateSerializer(serializers.ModelSerializer):
@@ -206,6 +216,12 @@ class AdminSwaggerBookingFuture(serializers.Serializer):
     office_id = serializers.UUIDField(required=False, format='hex_verbose')
     month = serializers.CharField(required=False, max_length=10)
     year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
+
+
+class AdminSwaggerRoomType(serializers.Serializer):
+    date_from = serializers.DateField(required=True, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=True, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
 
@@ -705,5 +721,147 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
         file_storage_object.save()
 
         Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+
+        return file_storage_object
+
+
+class AdminBookingRoomTypeSerializer(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
+    month = serializers.CharField(required=False, max_length=10)
+    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    date = serializers.DateField(required=False, format='%Y-%m-%d')
+    doc_format = serializers.CharField(required=False)
+
+    def get_statistic(self):
+        date_validation(self.data.get('date_from'))
+        date_validation(self.data.get('date_to'))
+        date_from = self.data.get('date_from')
+        date_to = self.data.get('date_to')
+        doc_format = self.data.get('doc_format')
+
+
+
+        file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
+        secure_file_name = uuid.uuid4().hex + file_name
+
+        query = f"""
+                SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to, b.status
+                FROM bookings_booking b
+                INNER JOIN tables_table t ON t.id = b.table_id
+                INNER JOIN rooms_room rr ON t.room_id = rr.id
+                INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
+                WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
+                (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
+                (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and b.status = 'over'"""
+
+        if self.data.get('office_id'):
+            query = query + f""" and rtr.office_id = '{self.data.get('office_id')}'"""
+
+        stats = Booking.objects.all().raw(query)
+        sql_results = []
+        set_of_types = set()
+        list_of_types = []
+        for s in stats:
+            set_of_types.add(s.title)
+            list_of_types.append(s.title)
+            sql_results.append(room_type_statictic_serializer(s))
+        number_of_types = len(set_of_types)
+        counts = {}
+        for i in list_of_types:
+            counts[i] = counts.get(i, 0) + 1
+        if not sql_results:
+            raise ResponseException(detail="Data not found", status_code=status.HTTP_404_NOT_FOUND)
+        workbook = xlsxwriter.Workbook(secure_file_name)
+
+        worksheet = workbook.add_worksheet()
+        bold = workbook.add_format({'bold': 1})
+
+        j = 0
+
+        for i in range(len(set_of_types) + 1):
+            i += 1
+            if i == 1:
+                worksheet.write('A1', 'Тип комнаты')
+                worksheet.write('B1', 'Число бронирований комнат такого типа')
+            else:
+                worksheet.write('A' + str(i), list(set_of_types)[j])
+                worksheet.write('B' + str(i), counts.get(list(set_of_types)[j]))
+                j += 1
+
+        worksheet.write('A' + str(number_of_types + 2), 'Общее число бронирований:', bold)
+        worksheet.write('B' + str(number_of_types + 2), len(sql_results), bold)
+
+        chart = workbook.add_chart({'type': 'pie'})
+
+        chart.add_series({
+            'name': 'Распределение бронирований мест по типам (%)',
+            'categories': '=Sheet1!$A$2:$A$' + str(number_of_types + 1),
+            'values': '=Sheet1!$B$2:$B$' + str(number_of_types + 1),
+            'data_labels': {'percentage': True},
+        })
+
+        worksheet.insert_chart('G2', chart, {'x_offset': 25, 'y_offset': 10})
+
+        workbook.close()
+
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
+
+        if doc_format:
+            if doc_format == 'pdf':
+                df = pd.read_excel(Path(str(Path.cwd()) + "/" + secure_file_name))
+                df.to_html(Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')))
+                pdfkit.from_file(secure_file_name.replace('.xlsx', '.html'),
+                                 secure_file_name.replace('.xlsx', '.pdf'),
+                                 options={'encoding': "utf8"})
+                try:
+                    response = requests.post(
+                        url=FILES_HOST + "/upload",
+                        files={
+                            "file": (secure_file_name.replace('.xlsx', '.pdf'), open(Path(str(Path.cwd()) + "/" +
+                                                                                          secure_file_name.replace(
+                                                                                              '.xlsx', '.pdf')),
+                                                                                     "rb"),
+                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                        headers=headers,
+                    )
+                except requests.exceptions.RequestException:
+                    return {"message": "Error occured during file upload"}, 500
+            elif doc_format == 'xlsx':
+                try:
+                    response = requests.post(
+                        url=FILES_HOST + "/upload",
+                        files={
+                            "file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                        headers=headers,
+                    )
+                except requests.exceptions.RequestException:
+                    return {"message": "Error occured during file upload"}, 500
+
+        response_dict = orjson.loads(response.text)
+        file_attrs = {
+            "path": FILES_HOST + str(response_dict.get("path")),
+            "title": secure_file_name if doc_format == 'xlsx' else secure_file_name.replace('.xlsx', '.pdf'),
+            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size if
+            doc_format == 'xlsx' else
+            Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).stat().st_size,
+        }
+
+        if response_dict.get("thumb"):
+            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+
+        file_storage_object = File(**file_attrs)
+        file_storage_object.save()
+
+        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+        try:
+            Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')).unlink()
+            Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).unlink()
+        except FileNotFoundError:
+            pass
 
         return file_storage_object
