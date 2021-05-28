@@ -1355,3 +1355,237 @@ django.db.utils.ProgrammingError: SELECT DISTINCT ON expressions must match init
 LINE 1: SELECT DISTINCT ON ("bookings_booking"."id") "bookings_booki...
                             ^
 
+[27/May/2021 13:58:29,220] [31m[0m
+[27/May/2021 13:58:29,220] [31mRequest on GET /admin/booking/employee_stats ended with code: 401[0m
+[27/May/2021 13:58:29,220] [31mUser: Anonymous User[0m
+[27/May/2021 13:58:29,221] [31mRequest details:[0m
+[27/May/2021 13:58:29,221] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': 'dd80a3ab-aa85-49c4-be29-69429e382913', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 13:58:29,222] [31mResponse details:[0m
+[27/May/2021 13:58:29,222] [31m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'www-authenticate': ('WWW-Authenticate', 'Bearer realm="api"'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '183')}[0m
+[27/May/2021 13:58:29,222] [31m{"detail":"Given token not valid for any token type","code":"token_not_valid","messages":[{"token_class":"AccessToken","token_type":"access","message":"Token is invalid or expired"}]}[0m
+[27/May/2021 13:58:38,228] [31m[0m
+[27/May/2021 13:58:38,228] [31mRequest on GET /admin/booking/employee_stats ended with code: 401[0m
+[27/May/2021 13:58:38,228] [31mUser: Anonymous User[0m
+[27/May/2021 13:58:38,229] [31mRequest details:[0m
+[27/May/2021 13:58:38,229] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': '9784fc4e-59c5-49b9-b560-e04b18597f88', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 13:58:38,229] [31mResponse details:[0m
+[27/May/2021 13:58:38,229] [31m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'www-authenticate': ('WWW-Authenticate', 'Bearer realm="api"'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '183')}[0m
+[27/May/2021 13:58:38,229] [31m{"detail":"Given token not valid for any token type","code":"token_not_valid","messages":[{"token_class":"AccessToken","token_type":"access","message":"Token is invalid or expired"}]}[0m
+[27/May/2021 13:58:56,467] [35;1m[35;1mInternal Server Error: /admin/booking/employee_stats[0m[0m
+Traceback (most recent call last):
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/decorators/csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/generic/base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/bookings/views_admin.py", line 72, in get
+    response = serializer.get_statistic()
+  File "/home/p7chkn/Dev/booking-api-django/bookings/serializers_admin.py", line 371, in get_statistic
+    if len(self.data.get('month')) > 10 or \
+TypeError: object of type 'NoneType' has no len()
+[27/May/2021 13:58:56,470] [31m[0m
+[27/May/2021 13:58:56,470] [31mRequest on GET /admin/booking/employee_stats ended with code: 500[0m
+[27/May/2021 13:58:56,470] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 13:58:56,470] [31mRequest details:[0m
+[27/May/2021 13:58:56,470] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': '97ff9a8f-283c-4179-8063-741cf7a74fdf', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 13:58:56,470] [31mResponse details:[0m
+[27/May/2021 13:58:56,471] [31mUsed tables: groups_group, users_account, users_account_groups, users_user[0m
+[27/May/2021 13:59:59,767] [35;1m[35;1mInternal Server Error: /admin/booking/employee_stats[0m[0m
+Traceback (most recent call last):
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/decorators/csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/generic/base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/bookings/views_admin.py", line 72, in get
+    response = serializer.get_statistic()
+  File "/home/p7chkn/Dev/booking-api-django/bookings/serializers_admin.py", line 372, in get_statistic
+    int(self.data.get('year')) not in range(1970, 2500):
+TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
+[27/May/2021 13:59:59,767] [31m[0m
+[27/May/2021 13:59:59,768] [31mRequest on GET /admin/booking/employee_stats?month=1 ended with code: 500[0m
+[27/May/2021 13:59:59,768] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 13:59:59,768] [31mRequest details:[0m
+[27/May/2021 13:59:59,768] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': 'cc6e6b07-d585-4ea4-83fd-4d7a07ec18c5', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 13:59:59,769] [31mResponse details:[0m
+[27/May/2021 13:59:59,769] [31mUsed tables: groups_group, users_account, users_account_groups, users_user[0m
+[27/May/2021 14:01:13,890] [35;1m[35;1mInternal Server Error: /admin/booking/employee_stats[0m[0m
+Traceback (most recent call last):
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/decorators/csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/generic/base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/bookings/views_admin.py", line 72, in get
+    response = serializer.get_statistic()
+  File "/home/p7chkn/Dev/booking-api-django/bookings/serializers_admin.py", line 376, in get_statistic
+    month_num = int(strptime(month, '%B').tm_mon)
+  File "/usr/lib/python3.8/_strptime.py", line 562, in _strptime_time
+    tt = _strptime(data_string, format)[0]
+  File "/usr/lib/python3.8/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '1' does not match format '%B'
+[27/May/2021 14:01:13,893] [31m[0m
+[27/May/2021 14:01:13,893] [31mRequest on GET /admin/booking/employee_stats?month=1&year=2001 ended with code: 500[0m
+[27/May/2021 14:01:13,893] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:01:13,893] [31mRequest details:[0m
+[27/May/2021 14:01:13,893] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': '564b1fe8-7d76-4ca2-83af-21997766cc50', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 14:01:13,894] [31mResponse details:[0m
+[27/May/2021 14:01:13,894] [31mUsed tables: groups_group, users_account, users_account_groups, users_user[0m
+[27/May/2021 14:03:24,226] [35;1m[35;1mInternal Server Error: /admin/booking/employee_stats[0m[0m
+Traceback (most recent call last):
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/decorators/csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/generic/base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/bookings/views_admin.py", line 72, in get
+    response = serializer.get_statistic()
+  File "/home/p7chkn/Dev/booking-api-django/bookings/serializers_admin.py", line 376, in get_statistic
+    month_num = int(strptime(month, '%B').tm_mon)
+  File "/usr/lib/python3.8/_strptime.py", line 562, in _strptime_time
+    tt = _strptime(data_string, format)[0]
+  File "/usr/lib/python3.8/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data 'NOV' does not match format '%B'
+[27/May/2021 14:03:24,227] [31m[0m
+[27/May/2021 14:03:24,227] [31mRequest on GET /admin/booking/employee_stats?month=NOV&year=2001 ended with code: 500[0m
+[27/May/2021 14:03:24,228] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:03:24,228] [31mRequest details:[0m
+[27/May/2021 14:03:24,229] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': '2c1084e4-5812-4275-b422-1addbcf11e40', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 14:03:24,229] [31mResponse details:[0m
+[27/May/2021 14:03:24,229] [31mUsed tables: groups_group, users_account, users_account_groups, users_user[0m
+[27/May/2021 14:03:28,759] [35;1m[35;1mInternal Server Error: /admin/booking/employee_stats[0m[0m
+Traceback (most recent call last):
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/exception.py", line 47, in inner
+    response = get_response(request)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/core/handlers/base.py", line 181, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/decorators/csrf.py", line 54, in wrapped_view
+    return view_func(*args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/django/views/generic/base.py", line 70, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/home/p7chkn/Dev/booking-api-django/venv/lib/python3.8/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/home/p7chkn/Dev/booking-api-django/bookings/views_admin.py", line 72, in get
+    response = serializer.get_statistic()
+  File "/home/p7chkn/Dev/booking-api-django/bookings/serializers_admin.py", line 376, in get_statistic
+    month_num = int(strptime(month, '%B').tm_mon)
+  File "/usr/lib/python3.8/_strptime.py", line 562, in _strptime_time
+    tt = _strptime(data_string, format)[0]
+  File "/usr/lib/python3.8/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '12' does not match format '%B'
+[27/May/2021 14:03:28,760] [31m[0m
+[27/May/2021 14:03:28,760] [31mRequest on GET /admin/booking/employee_stats?month=12&year=2001 ended with code: 500[0m
+[27/May/2021 14:03:28,760] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:03:28,760] [31mRequest details:[0m
+[27/May/2021 14:03:28,761] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': '9daf256b-53e9-4ffc-a1a8-e1b307a673af', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 14:03:28,761] [31mResponse details:[0m
+[27/May/2021 14:03:28,762] [31mUsed tables: groups_group, users_account, users_account_groups, users_user[0m
+[27/May/2021 14:04:26,579] [31m[0m
+[27/May/2021 14:04:26,579] [31mRequest on GET /admin/booking/employee_stats?month=September&year=2001 ended with code: 404[0m
+[27/May/2021 14:04:26,579] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:04:26,579] [31mRequest details:[0m
+[27/May/2021 14:04:26,580] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': 'ce0f2205-b805-40f5-8505-f81bf7aa3786', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 14:04:26,580] [31mResponse details:[0m
+[27/May/2021 14:04:26,581] [31m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '14')}[0m
+[27/May/2021 14:04:26,581] [31m{"message":""}[0m
+[27/May/2021 14:04:26,581] [31mUsed tables: groups_group, users_account, users_account_groups, users_user[0m
+[27/May/2021 14:05:19,972] [31m[0m
+[27/May/2021 14:05:19,973] [31mRequest on GET /admin/booking/employee_stats?month=September&year=2001 ended with code: 404[0m
+[27/May/2021 14:05:19,973] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:05:19,973] [31mRequest details:[0m
+[27/May/2021 14:05:19,974] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': '52b5a91d-a668-488e-a840-04c9f7e9c715', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 14:05:19,975] [31mResponse details:[0m
+[27/May/2021 14:05:19,975] [31m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '14')}[0m
+[27/May/2021 14:05:19,975] [31m{"message":""}[0m
+[27/May/2021 14:05:19,976] [31mUsed tables: groups_group, users_account, users_user, users_account_groups[0m
+[27/May/2021 14:05:44,044] [31m[0m
+[27/May/2021 14:05:44,044] [31mRequest on GET /admin/booking/employee_stats?month=September&year=2001 ended with code: 404[0m
+[27/May/2021 14:05:44,044] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:05:44,044] [31mRequest details:[0m
+[27/May/2021 14:05:44,045] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': '780cb440-2ec7-4396-90eb-ace759ce726a', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 14:05:44,046] [31mResponse details:[0m
+[27/May/2021 14:05:44,047] [31m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '14')}[0m
+[27/May/2021 14:05:44,047] [31m{"message":""}[0m
+[27/May/2021 14:05:44,048] [31mUsed tables: users_user, users_account_groups, groups_group, users_account[0m
+[27/May/2021 14:06:35,492] [31m[0m
+[27/May/2021 14:06:35,493] [31mRequest on GET /book/employee_stats?month=September&year=2001 ended with code: 404[0m
+[27/May/2021 14:06:35,493] [31mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:06:35,493] [31mRequest details:[0m
+[27/May/2021 14:06:35,494] [31m{'HTTP_AUTHORIZATION': '*****', 'HTTP_USER_AGENT': 'PostmanRuntime/7.28.0', 'HTTP_ACCEPT': '*/*', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_POSTMAN_TOKEN': 'f9e7905b-5e38-4928-b99c-07255af53e0f', 'HTTP_HOST': '127.0.0.1:8000', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_CONNECTION': 'keep-alive'}[0m
+[27/May/2021 14:06:35,494] [31mResponse details:[0m
+[27/May/2021 14:06:35,495] [31m{'content-type': ('Content-Type', 'application/json; charset=utf-8'), 'vary': ('Vary', 'Accept, Origin'), 'allow': ('Allow', 'GET, HEAD, OPTIONS'), 'x-frame-options': ('X-Frame-Options', 'DENY'), 'content-length': ('Content-Length', '16')}[0m
+[27/May/2021 14:06:35,495] [31m"Data not found"[0m
+[27/May/2021 14:06:35,495] [31mUsed tables: users_user, users_account_groups, groups_group, users_account[0m
+[27/May/2021 14:07:04,910] [32m[0m
+[27/May/2021 14:07:04,910] [32mRequest on GET /book/employee_stats?month=May&year=2021 ended with code: 201[0m
+[27/May/2021 14:07:04,911] [32mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:07:04,911] [32mUsed tables: users_user, users_account_groups, groups_group, users_account[0m
+[27/May/2021 14:07:22,607] [32m[0m
+[27/May/2021 14:07:22,607] [32mRequest on GET /admin/booking/employee_stats?month=May&year=2021 ended with code: 200[0m
+[27/May/2021 14:07:22,607] [32mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:07:22,608] [32mUsed tables: users_user, users_account_groups, groups_group, users_account[0m
+[27/May/2021 14:10:26,213] [32m[0m
+[27/May/2021 14:10:26,214] [32mRequest on GET /admin/booking/employee_stats?month=May&year=2021 ended with code: 200[0m
+[27/May/2021 14:10:26,214] [32mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:10:26,215] [32mUsed tables: groups_group, users_user, users_account_groups, users_account[0m
+[27/May/2021 14:10:44,676] [32m[0m
+[27/May/2021 14:10:44,676] [32mRequest on GET /book/employee_stats?month=May&year=2021 ended with code: 201[0m
+[27/May/2021 14:10:44,676] [32mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:10:44,677] [32mUsed tables: groups_group, users_user, users_account_groups, users_account[0m
+[27/May/2021 14:11:26,270] [32m[0m
+[27/May/2021 14:11:26,270] [32mRequest on GET /admin/booking/employee_stats?month=May&year=2021 ended with code: 200[0m
+[27/May/2021 14:11:26,270] [32mUser: fe87620c-5e80-4a1c-9c30-c4681387483a, Account: 7689fea5-32e6-4b36-a353-e152e8eb814d[0m
+[27/May/2021 14:11:26,271] [32mUsed tables: groups_group, users_user, users_account_groups, users_account[0m
