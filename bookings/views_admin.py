@@ -41,7 +41,6 @@ class AdminBookingViewSet(viewsets.ModelViewSet):
                 return AdminBookingCreateFastSerializer
             elif self.request.data.get('table') and not self.request.data.get('type'):
                 return AdminBookingCreateSerializer
-            # raise ResponseException("Takes only type or table parameter", status_code=status.HTTP_400_BAD_REQUEST)
         return AdminBookingSerializer
 
     def list(self, request, *args, **kwargs):
