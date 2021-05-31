@@ -10,10 +10,14 @@ from bookings.serializers_admin import (AdminBookingCreateFastSerializer,
                                         AdminBookingCreateSerializer,
                                         AdminBookingSerializer,
                                         AdminSwaggerDashboard,
-                                        AdminStatisticsSerializer)
+                                        AdminStatisticsSerializer, AdminBookingEmployeeStatisticsSerializer,
+                                        AdminSwaggerBookingEmployee, AdminSwaggerBookingFuture,
+                                        AdminBookingFutureStatisticsSerializer, AdminSwaggerRoomType,
+                                        AdminBookingRoomTypeSerializer)
 from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
+from files.serializers_admin import AdminFileSerializer
 from users.models import Account
 from users.serializers_admin import AdminUserSerializer
 
@@ -58,3 +62,42 @@ class AdminBookingStatisticsDashboardView(GenericAPIView):
         response = serializer.get_statistic()
 
         return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
+
+
+class AdminBookingEmployeeStatisticsView(GenericAPIView):
+    queryset = Booking.objects.all()
+    permission_classes = (IsAdmin,)
+
+    @swagger_auto_schema(query_serializer=AdminSwaggerBookingEmployee)
+    def get(self, request, *args, **kwargs):
+        serializer = AdminBookingEmployeeStatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.get_statistic()
+
+        return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
+
+
+class AdminBookingFutureStatisticsView(GenericAPIView):
+    queryset = Booking.objects.all()
+    permission_classes = (IsAdmin,)
+
+    @swagger_auto_schema(query_serializer=AdminSwaggerBookingFuture)
+    def get(self, request, *args, **kwargs):
+        serializer = AdminBookingFutureStatisticsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.get_statistic()
+
+        return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
+
+
+class AdminBookingRoomTypeStatisticsView(GenericAPIView):
+    queryset = Booking.objects.all()
+    permission_classes = (IsAdmin,)
+
+    @swagger_auto_schema(query_serializer=AdminSwaggerRoomType)
+    def get(self, request, *args, **kwargs):
+        serializer = AdminBookingRoomTypeSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.get_statistic()
+
+        return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
