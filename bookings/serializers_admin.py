@@ -150,7 +150,7 @@ class AdminBookingCreateSerializer(serializers.ModelSerializer):
 class AdminUserForBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'first_name', 'last_name', 'middle_name']
+        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number']
 
 
 class AdminBookingSerializer(serializers.ModelSerializer):
