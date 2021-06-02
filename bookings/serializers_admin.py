@@ -112,13 +112,29 @@ def room_type_statictic_serializer(stats):
     }
 
 
-class AdminBookingCreateSerializer(serializers.ModelSerializer):
+class AdminUserForBookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number']
+
+
+class AdminBookingSerializer(serializers.ModelSerializer):
+    user = AdminUserForBookSerializer(read_only=True)
+    user_id = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), write_only=True, source='user')
+    floor_title = serializers.CharField(source='table.room.floor.title', read_only=True)
+    office_title = serializers.CharField(source='table.room.floor.office.title', read_only=True)
+    room_title = serializers.CharField(source='table.room.title', read_only=True)
+    table_title = serializers.CharField(source='table.title', read_only=True)
+    table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=False)
+
     class Meta:
         model = Booking
         fields = '__all__'
 
     @atomic()
     def create(self, validated_data, *args, **kwargs):
+        if not validated_data.get('table'):
+            raise ResponseException("Table not specified")
 
         if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
                                                       validated_data['table'].room.type.unified,
@@ -138,42 +154,9 @@ class AdminBookingCreateSerializer(serializers.ModelSerializer):
             theme=validated_data['theme'] if 'theme' in validated_data else "Без темы"
         )
 
-    def to_representation(self, instance):
-        response = super(AdminBookingCreateSerializer, self).to_representation(instance)
-        response['floor_title'] = instance.table.room.floor.title
-        response['office_title'] = instance.table.room.floor.office.title
-        response['room_title'] = instance.table.room.title
-        response['table_title'] = instance.table.title
-        return response
 
-
-class AdminUserForBookSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Account
-        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number']
-
-
-class AdminBookingSerializer(serializers.ModelSerializer):
-    user = AdminUserForBookSerializer()
-
-    class Meta:
-        model = Booking
-        fields = '__all__'
-
-    def to_representation(self, instance):
-        response = super(AdminBookingSerializer, self).to_representation(instance)
-        response['floor_title'] = instance.table.room.floor.title
-        response['office_title'] = instance.table.room.floor.office.title
-        response['room_title'] = instance.table.room.title
-        response['table_title'] = instance.table.title
-        return response
-
-
-class AdminBookingCreateFastSerializer(serializers.Serializer):
-    date_from = serializers.DateTimeField()
-    date_to = serializers.DateTimeField()
-    user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
-    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all())
+class AdminBookingCreateFastSerializer(AdminBookingSerializer):
+    type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), write_only=True)
 
     @atomic()
     def create(self, validated_data, *args, **kwargs):
@@ -194,9 +177,6 @@ class AdminBookingCreateFastSerializer(serializers.Serializer):
                     user=validated_data['user']
                 )
         raise serializers.ValidationError('No table found for fast booking')
-
-    def to_representation(self, instance):
-        return AdminBookingCreateSerializer(instance=instance).data
 
 
 class AdminSwaggerDashboard(serializers.Serializer):
