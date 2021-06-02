@@ -10,6 +10,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from booking_api_django_new.settings import DEBUG
+from core.handlers import ResponseException
 from files.serializers_admin import AdminFileSerializer
 from floors.models import Floor
 from groups.models import Group
@@ -77,20 +78,52 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
+    photo = AdminFileSerializer()
+
     class Meta:
         model = Account
         fields = '__all__'
 
     def to_representation(self, instance):
         response = super(AdminUserSerializer, self).to_representation(instance)
-        response['photo'] = AdminFileSerializer(instance.photo).data
         if not response['phone_number']:
             response['phone_number'] = instance.user.phone_number
         if not response['email']:
             response['email'] = instance.user.email
-        response['is_active'] = instance.user.is_active
         response['has_cp_access'] = True if instance.user.email else False
         return response
+
+
+class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField()
+
+    class Meta:
+        model = Account
+        exclude = ['user']
+
+    def validate(self, attrs):
+        if not self.instance:
+            if User.objects.filter(phone_number=attrs['phone_number']).exists():
+                raise ResponseException("User with this phone already exists")
+            if attrs.get('email') and User.objects.filter(email=attrs['email']):
+                raise ResponseException("User with this email already exists")
+        else:
+            if attrs.get('email') and self.instance.user.email != attrs['email'] and User.objects.filter(email=attrs['email']):
+                raise ResponseException("User with this email already exists")
+            if self.instance.user.phone_number != attrs['phone_number'] and User.objects.filter(phone_number=attrs['phone_number']):
+                raise ResponseException("User with this phone already exists")
+        return attrs
+
+    @atomic()
+    def create(self, validated_data):
+        user = User.objects.create(phone_number=validated_data['phone_number'], is_active=True,
+                                   email=validated_data['email'])
+        validated_data['user'] = user
+        instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
+        user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        instance.groups.add(user_group)
+        return instance
 
     @atomic()
     def update(self, instance, validated_data):
@@ -100,33 +133,10 @@ class AdminUserSerializer(serializers.ModelSerializer):
         if validated_data.get('email'):
             instance.user.email = validated_data['email']
             instance.user.save()
-        return super(AdminUserSerializer, self).update(instance, validated_data)
-
-
-class AdminUserCreateSerializer(serializers.ModelSerializer):
-    description = serializers.CharField(required=False, default="", allow_blank=True)
-
-    class Meta:
-        model = User
-        fields = ['phone_number', 'description']
-
-    @atomic()
-    def create(self, validated_data):
-        description = validated_data.pop('description')
-        instance = super(AdminUserCreateSerializer, self).create(validated_data)
-        account, account_created = Account.objects.get_or_create(user=instance)
-        if account_created:
-            user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
-            account.groups.add(user_group)
-
-        account.description = description
-        account.save()
-        instance.is_active = True
-        instance.save()
-        return instance
+        return super(AdminUserCreateUpdateSerializer, self).update(instance, validated_data)
 
     def to_representation(self, instance):
-        return AdminUserSerializer(instance=instance.account).data
+        return AdminUserSerializer(instance=instance).data
 
 
 class AdminCreateOperatorSerializer(serializers.ModelSerializer):

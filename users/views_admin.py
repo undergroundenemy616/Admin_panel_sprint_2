@@ -19,9 +19,8 @@ from users.serializers_admin import (AdminCreateOperatorSerializer,
                                      AdminPasswordChangeSerializer,
                                      AdminPasswordResetSerializer,
                                      AdminServiceEmailViewValidatorSerializer,
-                                     AdminUserCreateSerializer,
                                      AdminUserSerializer, AdminLoginSerializer,
-                                     AdminPromotionDemotionSerializer)
+                                     AdminPromotionDemotionSerializer, AdminUserCreateUpdateSerializer)
 
 
 class AdminOfficePanelViewSet(viewsets.ModelViewSet):
@@ -78,8 +77,8 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST" and self.request.data.get('operator'):
             return AdminCreateOperatorSerializer
-        if self.request.method == "POST":
-            return AdminUserCreateSerializer
+        if self.request.method in ["POST", "PUT"]:
+            return AdminUserCreateUpdateSerializer
         return self.serializer_class
 
 
