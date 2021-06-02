@@ -7,14 +7,12 @@ from rest_framework.response import Response
 from bookings.filters_admin import AdminBookingFilter
 from bookings.models import Booking
 from bookings.serializers_admin import (AdminBookingCreateFastSerializer,
-                                        AdminBookingCreateSerializer,
                                         AdminBookingSerializer,
                                         AdminSwaggerDashboard,
                                         AdminStatisticsSerializer, AdminBookingEmployeeStatisticsSerializer,
                                         AdminSwaggerBookingEmployee, AdminSwaggerBookingFuture,
                                         AdminBookingFutureStatisticsSerializer, AdminSwaggerRoomType,
                                         AdminBookingRoomTypeSerializer)
-from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from files.serializers_admin import AdminFileSerializer
@@ -39,8 +37,6 @@ class AdminBookingViewSet(viewsets.ModelViewSet):
         if self.request.method == "POST":
             if self.request.data.get('type') and not self.request.data.get('table'):
                 return AdminBookingCreateFastSerializer
-            elif self.request.data.get('table') and not self.request.data.get('type'):
-                return AdminBookingCreateSerializer
         return AdminBookingSerializer
 
     def list(self, request, *args, **kwargs):
