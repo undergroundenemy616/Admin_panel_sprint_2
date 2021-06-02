@@ -63,7 +63,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             if self.request.query_params.get('group'):
                 self.queryset = Account.objects.all()
             self.queryset = self.queryset.select_related('user', 'photo').prefetch_related('groups')
-        return self.queryset.all()
+        return self.queryset.all().order_by('id')
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
