@@ -208,7 +208,7 @@ class BookingEmployeeStatistics(GenericAPIView):
         JOIN users_account ua on b.user_id = ua.id
         JOIN users_user uu on ua.user_id = uu.id
         WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}
-        and (b.status='over' or b.status = 'canceled' or b.status = 'auto_canceled')"""
+        and (b.status='over' or b.status = 'canceled' or b.status = 'auto_canceled' or b.status = 'auto_over')"""
 
         if serializer.data.get('office_id'):
             query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
