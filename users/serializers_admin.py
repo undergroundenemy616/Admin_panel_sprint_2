@@ -3,6 +3,7 @@ import random
 import time
 
 from django.contrib.auth.password_validation import validate_password
+from django.db import IntegrityError
 from django.db.models import Q
 from django.db.transaction import atomic
 from django.shortcuts import get_object_or_404
@@ -53,7 +54,10 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
         if group:
             account.groups.add(group)
         else:
-            group = Group.objects.create(title='Информационная панель', access=2, is_deletable=False)
+            try:
+                group = Group.objects.create(title='Информационная панель', access=2, is_deletable=False)
+            except IntegrityError:
+                raise ResponseException("Problem's with groups. Contact administrator")
             account.groups.add(group)
         instance = OfficePanelRelation.objects.create(account=account, office=validated_data.get('office'),
                                                       floor=validated_data.get('floor'),
