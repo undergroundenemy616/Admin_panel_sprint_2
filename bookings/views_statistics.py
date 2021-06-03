@@ -253,7 +253,7 @@ class BookingEmployeeStatistics(GenericAPIView):
                 for result in sql_results:
                     if result['user_id'] == employee['id'] and result['office_id'] == employee['office_id']:
                         employee['book_count'] = employee['book_count'] + 1
-                        if result['book_status'] == 'over':
+                        if result['book_status'] == 'over' or result['book_status'] == 'auto_over':
                             employee['over_book'] = employee['over_book'] + 1
                         elif result['book_status'] == 'canceled':
                             employee['canceled_book'] = employee['canceled_book'] + 1
