@@ -121,8 +121,9 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
 
     @atomic()
     def create(self, validated_data):
-        user = User.objects.create(phone_number=validated_data['phone_number'], is_active=True,
-                                   email=validated_data['email'])
+        self.create = User.objects.create(phone_number=validated_data['phone_number'], is_active=True,
+                                          email=validated_data.get('email'))
+        user = self.create
         validated_data['user'] = user
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
         user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
@@ -177,7 +178,7 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
 
         send_html_email_message(
             to=email,
-            subject="Добро пожаловать в Газпром!",
+            subject="Добро пожаловать в Simple-Office!",
             template_args={
                 'host': host_domain,
                 'username': email,
@@ -210,7 +211,7 @@ class AdminPasswordResetSerializer(serializers.Serializer):
         account = Account.objects.get(pk=self.data['user'])
         if not account.user.email:
             account.user.email = account.email
-            subject = "Добро пожаловать в Газпром!"
+            subject = "Добро пожаловать в Simple-Office!"
         else:
             subject = "Ваш пароль был успешно сброшен!"
 
@@ -288,7 +289,7 @@ class AdminPromotionDemotionSerializer(serializers.Serializer):
         account.groups.add(group)
         send_html_email_message(
             to=account.email,
-            subject="Добро пожаловать в Газпром!",
+            subject="Добро пожаловать в Simple-Office!",
             template_args={
                 'host': os.environ.get('ADMIN_HOST'),
                 'username': account.user.email,
