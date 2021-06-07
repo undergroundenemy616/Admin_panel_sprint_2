@@ -121,12 +121,14 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
 
     @atomic()
     def create(self, validated_data):
-        self.create = User.objects.create(phone_number=validated_data['phone_number'], is_active=True,
-                                          email=validated_data.get('email'))
-        user = self.create
+        user = User.objects.create(phone_number=validated_data.pop('phone_number'), is_active=True,
+                                   email=validated_data.pop('email'))
         validated_data['user'] = user
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
-        user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        try:
+            user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        except IntegrityError:
+            raise ResponseException("Problem's with groups. Contact administrator")
         instance.groups.add(user_group)
         return instance
 
