@@ -59,8 +59,9 @@ class AdminRoomCreateUpdateSerializer(serializers.ModelSerializer):
 
     @atomic()
     def update(self, instance, validated_data):
-        if instance.type and validated_data.get('type'):
-            if instance.type.unified != validated_data.get('type').unified or \
+        if instance.type and validated_data.get('type') and instance.type != validated_data.get('type'):
+            if validated_data.get('type').unified and validated_data.get('type').bookable or \
+                    instance.type.unified != validated_data.get('type').unified or \
                     instance.type.bookable != validated_data.get('type').bookable:
                 self.context['tables'] = True
                 for table in instance.tables.all():
