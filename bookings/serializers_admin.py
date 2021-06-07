@@ -117,6 +117,12 @@ class AdminUserForBookSerializer(serializers.ModelSerializer):
         model = Account
         fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number']
 
+    def to_representation(self, instance):
+        response = super(AdminUserForBookSerializer, self).to_representation(instance)
+        if not instance.phone_number:
+            response['phone_number'] = instance.user.phone_number
+        return response
+
 
 class AdminBookingSerializer(serializers.ModelSerializer):
     user = AdminUserForBookSerializer(read_only=True)

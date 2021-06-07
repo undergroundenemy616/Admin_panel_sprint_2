@@ -3,6 +3,7 @@ import random
 import time
 
 from django.contrib.auth.password_validation import validate_password
+from django.db import IntegrityError
 from django.db.models import Q
 from django.db.transaction import atomic
 from django.shortcuts import get_object_or_404
@@ -53,7 +54,10 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
         if group:
             account.groups.add(group)
         else:
-            group = Group.objects.create(title='Информационная панель', access=2, is_deletable=False)
+            try:
+                group = Group.objects.create(title='Информационная панель', access=2, is_deletable=False)
+            except IntegrityError:
+                raise ResponseException("Problem's with groups. Contact administrator")
             account.groups.add(group)
         instance = OfficePanelRelation.objects.create(account=account, office=validated_data.get('office'),
                                                       floor=validated_data.get('floor'),
@@ -117,11 +121,14 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
 
     @atomic()
     def create(self, validated_data):
-        user = User.objects.create(phone_number=validated_data['phone_number'], is_active=True,
-                                   email=validated_data['email'])
+        user = User.objects.create(phone_number=validated_data.pop('phone_number'), is_active=True,
+                                   email=validated_data.pop('email'))
         validated_data['user'] = user
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
-        user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        try:
+            user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        except IntegrityError:
+            raise ResponseException("Problem's with groups. Contact administrator")
         instance.groups.add(user_group)
         return instance
 
@@ -173,7 +180,7 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
 
         send_html_email_message(
             to=email,
-            subject="Добро пожаловать в Газпром!",
+            subject="Добро пожаловать в Simple-Office!",
             template_args={
                 'host': host_domain,
                 'username': email,
@@ -206,7 +213,7 @@ class AdminPasswordResetSerializer(serializers.Serializer):
         account = Account.objects.get(pk=self.data['user'])
         if not account.user.email:
             account.user.email = account.email
-            subject = "Добро пожаловать в Газпром!"
+            subject = "Добро пожаловать в Simple-Office!"
         else:
             subject = "Ваш пароль был успешно сброшен!"
 
@@ -284,7 +291,7 @@ class AdminPromotionDemotionSerializer(serializers.Serializer):
         account.groups.add(group)
         send_html_email_message(
             to=account.email,
-            subject="Добро пожаловать в Газпром!",
+            subject="Добро пожаловать в Simple-Office!",
             template_args={
                 'host': os.environ.get('ADMIN_HOST'),
                 'username': account.user.email,
