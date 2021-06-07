@@ -67,7 +67,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         request.data['user'] = instance.user.id
-        if request.data.get('email') and request.data['email'] == "":
+        if (request.data.get('email') and request.data['email'] == "") or not request.data.get('email'):
             request.data['email'] = None
         return super(AdminUserViewSet, self).update(request, *args, **kwargs)
 

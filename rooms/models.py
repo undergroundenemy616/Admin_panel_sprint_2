@@ -3,11 +3,22 @@ import uuid
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.transaction import atomic
+from rest_framework.generics import get_object_or_404
 
 import tables
 from files.models import File
 from floors.models import Floor
+from offices.models import OfficeZone
 from room_types.models import RoomType
+from users.models import Account
+
+
+class RoomManager(models.Manager):
+    def is_allowed(self, user_id):
+        account = get_object_or_404(Account, user=user_id)
+        zones = OfficeZone.objects.filter(groups__in=account.groups.all())
+        return self.model.objects.filter(zone__in=zones)
+
 
 
 class Room(models.Model):
@@ -20,6 +31,7 @@ class Room(models.Model):
     floor = models.ForeignKey(Floor, related_name='rooms', null=True, blank=True, on_delete=models.CASCADE)
     seats_amount = models.IntegerField(default=1, null=False, blank=False)
     # is_bookable = models.BooleanField(default=True, null=False, blank=False)
+    objects = RoomManager()
 
     class Meta:
         ordering = ['floor__title', 'title']

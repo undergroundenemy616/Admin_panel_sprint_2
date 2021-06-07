@@ -62,6 +62,12 @@ class AdminFloorSerializer(serializers.ModelSerializer):
         response['results'] = AdminSingleFloorSerializer(instance=instance, many=True).data
         return response
 
+    def validate(self, attrs):
+        if not self.instance:
+            if Floor.objects.filter(office=attrs.get('office'), title__in=attrs.get('titles')).exists():
+                raise ResponseException(detail="Floor already exists", status_code=status.HTTP_400_BAD_REQUEST)
+        return attrs
+
     @atomic()
     def create(self, validated_data):
         floors_to_create = []

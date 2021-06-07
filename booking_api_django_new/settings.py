@@ -31,7 +31,9 @@ LOCAL = False  # if os.getenv('LOCAL') == 'True' else False
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
-KEY_EXPIRATION = 60  # 3 minutes
+SMS_MOCK_CONFIRM = os.environ.get("SMS_MOCK_CONFIRM")
+
+KEY_EXPIRATION = 60  # seconds
 
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 BOOKING_TIMEDELTA_CHECK = 15

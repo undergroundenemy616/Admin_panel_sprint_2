@@ -68,7 +68,7 @@ def make_booking_over(uuid):
 @shared_task
 def check_booking_status():
     now_date = now()
-    subject = 'About booking'
+    subject = 'About booking on ' + os.environ.get('ADMIN_HOST')
     bad_status = ['active', 'waiting']
     query_booking = bookings.Booking.objects.filter(date_activate_until__lt=now_date, status__in=bad_status)
     if len(query_booking) > 0:

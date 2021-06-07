@@ -1,6 +1,6 @@
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.mixins import Response, status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import FormParser, MultiPartParser
 
 from core.permissions import IsAuthenticated
 from files.models import File
