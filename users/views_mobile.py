@@ -4,13 +4,14 @@ from django.contrib.auth import user_logged_in
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
                                                   TokenRefreshSerializer)
 
 from booking_api_django_new.settings import (HARDCODED_PHONE_NUMBER,
-                                             HARDCODED_SMS_CODE)
+                                             HARDCODED_SMS_CODE, SMS_MOCK_CONFIRM)
 from core.permissions import IsAdmin, IsAuthenticated
 from users.models import Account, User
 from users.registration import confirm_code, send_code
@@ -50,7 +51,7 @@ class MobileLoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIV
         try:
             data = {}
             if not sms_code:  # Register or login user
-                if not os.getenv('SMS_MOCK_CONFIRM'):
+                if SMS_MOCK_CONFIRM != 'True':
                     send_code(user, created)
                 else:
                     print('SMS service is off, any code is acceptable')
@@ -61,7 +62,7 @@ class MobileLoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIV
                     'expires_in': 60,
                 }
             elif sms_code:  # Confirm code  and user.is_active
-                if not os.getenv('SMS_MOCK_CONFIRM'):
+                if SMS_MOCK_CONFIRM != 'True':
                     # Confirmation code
                     if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
                         pass
@@ -132,4 +133,14 @@ class MobileSingleAccountView(GenericAPIView, mixins.DestroyModelMixin):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
+
+
+class MobileFirstCheckView(GenericAPIView):
+    permission_classes = ()
+    authentication_classes = ()
+
+    def get(self, request, *args, **kwargs):
+        if request.headers.get('X-WORKSPACE'):
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
