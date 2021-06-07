@@ -1,4 +1,6 @@
 import os
+import uuid
+
 import orjson
 import requests
 
@@ -57,6 +59,10 @@ class AdminPushGroupView(GenericAPIView):
             if len(i) < 30:
                 continue
             else:
+                try:
+                    _ = uuid.UUID(i)
+                except ValueError:
+                    continue
                 ids.append(i)
         if len(ids) == 0:
             return Response('No accounts to send push', status=status.HTTP_404_NOT_FOUND)
@@ -92,6 +98,10 @@ class AdminPushUserView(GenericAPIView):
             if len(i) < 30:
                 continue
             else:
+                try:
+                    _ = uuid.UUID(i)
+                except ValueError:
+                    continue
                 ids.append(i)
         if len(ids) == 0:
             return Response([], status=status.HTTP_200_OK)

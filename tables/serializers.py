@@ -1,22 +1,17 @@
-from core.handlers import ResponseException
-from datetime import datetime
 from typing import Any, Dict
-import pytz
+
 from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.mixins import status
-import orjson
 
-from groups.serializers import validate_csv_file_extension
+from bookings.models import Booking
 from files.models import File
-from files.serializers import (BaseFileSerializer, FileSerializer,
-                               image_serializer, TestBaseFileSerializer)
+from files.serializers import (BaseFileSerializer, TestBaseFileSerializer,
+                               image_serializer)
+from groups.serializers import validate_csv_file_extension
 from offices.models import Office
 from rooms.models import Room
-from bookings.models import Booking
-from bookings.serializers import BookingSerializer
-from tables.models import Table, TableTag, TableMarker, Rating
+from tables.models import Table, TableMarker, TableTag
 
 
 class SwaggerTableParameters(serializers.Serializer):
@@ -46,20 +41,6 @@ def check_table_tags_exists(tags):
         result = TableTag.objects.filter(id=elem.id).exists()
         if not result:
             raise ValidationError(f'Table_tag {elem} does not exists.')
-
-
-def basic_table_serializer(table: Table) -> Dict[str, Any]:
-    return {
-        'id': str(table.id),
-        'title': table.title,
-        'description': table.description,
-        'room': str(table.room.id),
-        'tags': [table_tag_serializer(tag=tag) for tag in table.tags.all()],
-        'images': [image_serializer(image=image) for image in table.images.all()],
-        'is_occupied': table.is_occupied,
-        'marker': table_marker_serializer(marker=table.table_marker).copy() if hasattr(table, 'table_marker') else None,
-        'rating': table.rating
-    }
 
 
 def table_tag_serializer(tag: TableTag) -> Dict[str, Any]:
@@ -95,7 +76,6 @@ class TestBaseTableTagSerializer(serializers.Serializer):
     def to_representation(self, instance):
         response = super(TestBaseTableTagSerializer, self).to_representation(instance)
         response['icon'] = TestBaseFileSerializer(instance.icon).data if instance.icon else None
-        # response['rating'] = 0
         return response
 
 
@@ -280,7 +260,8 @@ class TestTableMarkerSerializer(serializers.Serializer):
 
 
 class TableSlotsSerializer(serializers.ModelSerializer):
-    date = serializers.DateField(required=False, format="%Y-%m-%d", input_formats=['%Y-%m-%d', 'iso-8601'])
+    date = serializers.DateField(required=False, format="%Y-%m-%d",
+                                 input_formats=['%Y-%m-%d', 'iso-8601'])
     daily = serializers.IntegerField(required=False)
     monthly = serializers.IntegerField(required=False)
 

@@ -1,7 +1,9 @@
+from django.db.transaction import atomic
 from django.shortcuts import get_list_or_404
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
+from core.handlers import ResponseException
 from files.models import File
 from files.serializers import TestBaseFileSerializer
 from files.serializers_admin import AdminFileSerializer
@@ -53,6 +55,13 @@ class AdminTableCreateUpdateSerializer(serializers.ModelSerializer):
         model = Table
         fields = '__all__'
 
+    @atomic()
+    def update(self, instance, validated_data):
+        if validated_data.get('room') and validated_data['room'] != instance.room:
+            instance.table_marker.delete()
+            instance.refresh_from_db()
+        return super(AdminTableCreateUpdateSerializer, self).update(instance, validated_data)
+
     def to_representation(self, instance):
         return AdminTableSerializer(instance=instance).data
 
@@ -101,9 +110,16 @@ class AdminTableTagCreateSerializer(serializers.ModelSerializer):
         response['results'] = AdminTableTagSerializer(instance=instance, many=True).data
         return response
 
+    def validate(self, attrs):
+        if not self.instance:
+            if TableTag.objects.filter(office=attrs.get('office'), title__in=attrs.get('titles')).exists():
+                raise ResponseException(detail="TableTag already exists", status_code=status.HTTP_400_BAD_REQUEST)
+        return attrs
+
+    @atomic()
     def create(self, validated_data):
         tags_to_create = []
-        for tag_title in validated_data.get('titles'):
+        for tag_title in set(validated_data.get('titles')):
             tags_to_create.append(TableTag(title=tag_title, office=validated_data.get('office'),
                                            icon=validated_data.get('icon')))
         tags = TableTag.objects.bulk_create(tags_to_create)

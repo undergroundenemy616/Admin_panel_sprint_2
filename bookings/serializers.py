@@ -91,25 +91,28 @@ class BookingSerializer(serializers.ModelSerializer):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
 
     def to_representation(self, instance):
-        response = TestBaseBookingSerializer(instance).data
-        response['active'] = response['is_active']
-        del response['is_active']
-        response['date_activate_until'] = instance.date_to if instance.is_active else instance.date_activate_until
-        response['table'] = tables.serializers.TestTableSerializer(instance=instance.table).data
-        response['room'] = {"id": instance.table.room.id,
-                            "title": instance.table.room.title,
-                            "type": instance.table.room.type.title,
-                            "zone": {"id": instance.table.room.zone.id,
-                                     "title": instance.table.room.zone.title} if instance.table.room.zone else None
-                            }
-        response['floor'] = {"id": instance.table.room.floor.id,
-                             "title": instance.table.room.floor.title}
-        response['office'] = {"id": instance.table.room.floor.office.id,
-                              "title": instance.table.room.floor.office.title,
-                              "description": instance.table.room.floor.office.description}
-        response['user'] = {'id': instance.user_id,
-                            'phone_number': instance.user.phone_number}
-        return response
+        try:
+            response = TestBaseBookingSerializer(instance).data
+            response['active'] = response['is_active']
+            del response['is_active']
+            response['date_activate_until'] = instance.date_to if instance.is_active else instance.date_activate_until
+            response['table'] = tables.serializers.TestTableSerializer(instance=instance.table).data
+            response['room'] = {"id": instance.table.room.id,
+                                "title": instance.table.room.title,
+                                "type": instance.table.room.type.title,
+                                "zone": {"id": instance.table.room.zone.id,
+                                         "title": instance.table.room.zone.title} if instance.table.room.zone else None
+                                }
+            response['floor'] = {"id": instance.table.room.floor.id,
+                                 "title": instance.table.room.floor.title}
+            response['office'] = {"id": instance.table.room.floor.office.id,
+                                  "title": instance.table.room.floor.office.title,
+                                  "description": instance.table.room.floor.office.description}
+            response['user'] = {'id': str(instance.user_id),
+                                'phone_number': instance.user.phone_number}
+            return response
+        except ObjectDoesNotExist:
+            raise ResponseException("Bookings not found", status_code=status.HTTP_404_NOT_FOUND)
 
     def create(self, validated_data, *args, **kwargs):
         # This is the hack to evade booking by two or more user on the same table in the same time
@@ -270,14 +273,10 @@ class BookingDeactivateActionSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # now = datetime.utcnow().replace(tzinfo=timezone.utc)
         now_date = now()
-
         if instance.date_activate_until > now_date and not instance.is_active:
             instance.set_booking_over()
-
             return instance
-
         flag = {'status': 'over'}
-
         instance.set_booking_over(kwargs=flag)
         # validated_data['date_to'] = now
         return instance
@@ -418,13 +417,19 @@ class BookListTableSerializer(serializers.ModelSerializer):
 
 
 class BookingPersonalSerializer(serializers.ModelSerializer):
+    TIME_CHOICES = (
+        ('future', 'future'),
+        ('past', 'past')
+    )
+
     is_over = serializers.IntegerField(required=False)
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
+    time = serializers.ChoiceField(required=False, choices=TIME_CHOICES)
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'is_over']
+        fields = ['date_from', 'date_to', 'is_over', 'time']
 
 
 class BookingSerializerForTableSlots(serializers.ModelSerializer):

@@ -90,5 +90,5 @@ class UserRedisWrapper(RedisWrapper):
     def verify_code(self, code):
         """Verified given code with existing."""
         cached = self.get_value()
-        if cached != code:
+        if cached != int(code):
             raise ValueError('Invalid sms-code!')

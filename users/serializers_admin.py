@@ -58,6 +58,7 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
                 group = Group.objects.create(title='Информационная панель', access=2, is_deletable=False)
             except IntegrityError:
                 raise ResponseException("Problem's with groups. Contact administrator")
+
             account.groups.add(group)
         instance = OfficePanelRelation.objects.create(account=account, office=validated_data.get('office'),
                                                       floor=validated_data.get('floor'),

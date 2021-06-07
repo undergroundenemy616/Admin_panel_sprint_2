@@ -1,13 +1,12 @@
-import orjson
 import os
-import time
 
+import orjson
 import requests
-from rest_framework import serializers
+from rest_framework import serializers, status
 
 from booking_api_django_new.settings import (FILES_HOST, FILES_PASSWORD,
-                                             FILES_USERNAME, MEDIA_ROOT,
-                                             MEDIA_URL)
+                                             FILES_USERNAME)
+from core.handlers import ResponseException
 from files.models import File
 
 
@@ -24,13 +23,6 @@ def check_token():
         os.environ['FILES_TOKEN'] = str(token.get('access_token'))
     except requests.exceptions.RequestException:
         return {"message": "Failed to get access to file storage"}, 401
-
-
-def create_new_folder(local_dir):
-    newpath = local_dir
-    if not os.path.exists(newpath):
-        os.makedirs(newpath)
-    return newpath
 
 
 def image_serializer(image: File):
@@ -89,12 +81,12 @@ class FileSerializer(serializers.ModelSerializer):
                 headers=headers,
                 )
         except requests.exceptions.RequestException:
-            return {"message": "Error occurred during file upload"}, 500
+            raise ResponseException("Error occurred during file upload", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
         if response.status_code != 200:
             if response.status_code == 401:
-                return {"message": "Problems with authorization"}, 401
+                raise ResponseException("Problems with authorization", status_code=status.HTTP_401_UNAUTHORIZED)
             if response.status_code == 400:
-                return {"message": "Bad request"}, 400
+                raise ResponseException("Bad request", status_code=status.HTTP_401_UNAUTHORIZED)
 
         response_dict = orjson.loads(response.text)
         file_attrs = {

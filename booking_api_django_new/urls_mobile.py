@@ -1,6 +1,9 @@
 from django.urls import include, path
 
+from users.views_mobile import MobileFirstCheckView
+
 urlpatterns = [
+    path('', MobileFirstCheckView.as_view()),
     path('/booking', include('bookings.urls_mobile')),
     path('/file', include('files.urls_mobile')),
     path('/floor', include('floors.urls_mobile')),
