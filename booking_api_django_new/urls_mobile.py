@@ -1,5 +1,6 @@
 from django.urls import include, path
 
+from users.views import AccountFirstPutView
 from users.views_mobile import MobileFirstCheckView
 
 urlpatterns = [
@@ -11,5 +12,6 @@ urlpatterns = [
     path('/report', include('reports.urls_mobile')),
     path('/table', include('tables.urls_mobile')),
     path('/user', include('users.urls_mobile')),
-    path('/room', include('rooms.urls_mobile'))
+    path('/room', include('rooms.urls_mobile')),
+    path('accounts_first/<uuid:pk>', AccountFirstPutView.as_view())
 ]
