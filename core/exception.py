@@ -4,12 +4,13 @@ from django.core.mail import mail_admins
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import UnsupportedMediaType
 
+from booking_api_django_new.settings import LOCAL, ADMIN_HOST
+
 
 def detail_exception_handler(exc, context):
     response = exception_handler(exc, context)
+    subject = f"Error occurred on {ADMIN_HOST}"
 
-    branch = os.environ.get('BRANCH', default='local')
-    subject = f"Error occurred on {branch}"
     """
     if we can't parse data from request, then we mock this data
     """
@@ -33,7 +34,7 @@ def detail_exception_handler(exc, context):
                 response.data.update(error[0])
         except AttributeError:
             pass
-        if response.status_code >= 500:
+        if response.status_code >= 500 and not LOCAL:
             subject += f' with code {response.status_code}'
             path = context['request'].get_full_path()
             message = f"User: {str(context['request'].user.id)}\n"
@@ -42,9 +43,8 @@ def detail_exception_handler(exc, context):
             message += f"Data: {request_data}\n"
             message += f"Response data: {response.data}\n"
             message += f"View: {context['view']}\n"
-            if branch != 'local':
-                mail_admins(subject, message)
-    else:
+            mail_admins(subject, message)
+    elif not LOCAL:
         message = 'User: Anonymous User\n'
         path = context['request'].get_full_path()
         if hasattr(context['request'].auth, 'payload'):
@@ -53,6 +53,5 @@ def detail_exception_handler(exc, context):
         message += f"Exception: {type(exc).__repr__(exc)}, {exc}\n"
         message += f"Data: {request_data}\n"
         message += f"View: {context['view']}\n"
-        if branch != 'local':
-            mail_admins(subject, message)
+        mail_admins(subject, message)
     return response

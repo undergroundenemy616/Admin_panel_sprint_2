@@ -38,9 +38,6 @@ class AdminGroupSerializer(serializers.ModelSerializer):
         response = super(AdminGroupSerializer, self).to_representation(instance)
         response['pre_defined'] = not instance.is_deletable
         response['count'] = instance.count if hasattr(instance, 'count') else instance.accounts.count()
-        legacy_access = Group.to_legacy_access(access=instance.access)
-        if not legacy_access:
-            raise serializers.ValidationError('Invalid group access')
         return response
 
 
