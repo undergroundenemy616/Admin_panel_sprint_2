@@ -1,18 +1,18 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count
+from django.db.models import Count, Min
 from django.db.transaction import atomic
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from booking_api_django_new.validate_phone_number import validate_phone_number
 from core.handlers import ResponseException
-from groups.models import Group
+from groups.models import Group, ADMIN_ACCESS, GUEST_ACCESS
 from offices.models import Office, OfficeZone
 from users.models import Account, User
 
 
 def validate_csv_file_extension(file):
-    if '.csv' not in str(file):
+    if '.csv' not in str(file).lower():
         raise ValidationError('Unsupported file extension')
 
 
@@ -64,6 +64,20 @@ class AdminGroupCreateSerializer(serializers.ModelSerializer):
         model = Group
         fields = ['title', 'description', 'access', 'users']
 
+    @atomic()
+    def create(self, validated_data):
+        if validated_data['access'] == ADMIN_ACCESS:
+            for account in validated_data['accounts']:
+                account.user.is_staff = True
+                account.user.save()
+
+        for account in validated_data['accounts']:
+            if not account.user.is_active:
+                account.user.is_active = True
+                account.user.save()
+
+        return super(AdminGroupCreateSerializer, self).create(validated_data)
+
     def to_representation(self, instance):
         return AdminGroupSerializer(instance=instance).data
 
@@ -101,12 +115,29 @@ class AdminGroupUpdateSerializer(serializers.ModelSerializer):
 
         for account in validated_data['users_add']:
             account.user.is_active = True
+            if instance.access == ADMIN_ACCESS:
+                account.user.is_staff = True
             account.user.save()
 
         for account in validated_data['users_remove']:
+            access = account.groups.aggregate(Min('access'))['access__min']
+            # If group WAS admins and users was removed from there and user have no other admin groups he
+            # demoted to usual user
+            if instance.access == ADMIN_ACCESS and (not access or access < 2):
+                account.user.is_staff = False
             if not account.groups.all():
                 account.user.is_active = False
                 account.user.save()
+
+        if validated_data.get('access') and instance.access != validated_data['access']:
+            if validated_data['access'] == GUEST_ACCESS:
+                for account in instance.accounts.all():
+                    account.user.is_staff = False
+                    account.user.save()
+            elif validated_data['access'] == ADMIN_ACCESS:
+                for account in instance.accounts.all():
+                    account.user.is_staff = True
+                    account.user.save()
 
         return super(AdminGroupUpdateSerializer, self).update(instance, validated_data)
 

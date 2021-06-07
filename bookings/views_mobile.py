@@ -60,7 +60,7 @@ class MobileBookingListPersonalView(GenericAPIView, ListModelMixin):
         time = serializer.data.get('time')
         if time == 'past':
             req_booking = self.queryset.filter(user=request.user.account.id).filter(
-                Q(status__in=['canceled', 'early_end', 'over']))
+                Q(status__in=['auto_over', 'over']))
         elif time == 'future':
             req_booking = self.queryset.filter(user=request.user.account.id).filter(
                 Q(status__in=['waiting', 'active']))
@@ -77,13 +77,15 @@ class MobileCancelBooking(GenericAPIView):
 
     def put(self, request, pk=None, *args, **kwargs):
         instance = get_object_or_404(Booking, pk=pk)
-        now_date = now()
-        if now_date < instance.date_activate_until and instance.status != 'active':
+        if instance.status == 'waiting':
             instance.delete()
             return Response(data={"result": "Booking is deleted"}, status=status.HTTP_204_NO_CONTENT)
-        flag = {'status': 'over'}
-        instance.set_booking_over(kwargs=flag)
-        return Response(data={"result": "Booking is over"}, status=status.HTTP_200_OK)
+        elif instance.status == 'active':
+            flag = {'status': 'over'}
+            instance.set_booking_over(kwargs=flag)
+            return Response(data={"result": "Booking is over"}, status=status.HTTP_200_OK)
+        else:
+            return Response(data={"result": "Booking already is over"}, status=status.HTTP_200_OK)
 
 
 class MobileActionActivateBookingsView(GenericAPIView):

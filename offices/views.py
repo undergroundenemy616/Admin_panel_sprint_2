@@ -6,9 +6,7 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, RetrieveModelMixin,
                                    UpdateModelMixin)
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-import orjson
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated

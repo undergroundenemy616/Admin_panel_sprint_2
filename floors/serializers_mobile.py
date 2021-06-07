@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from floors.models import Floor
@@ -30,72 +31,84 @@ class MobileFloorSuitableParameters(serializers.Serializer):
     tag = serializers.ListField(required=False)
 
 
-class MobileFloorMarkerSerializer(serializers.BaseSerializer):
+class MobileFloorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Floor
+        fields = ['id', 'title']
+
+
+class MobileFloorMarkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Floor
+        fields = '__all__'
+
     def to_representation(self, instance):
         response = []
         room_markers_bookable = []
         room_markers_not_bookable = []
         table_markers = []
-        for marker in instance:
-            if marker.bookable and marker.room_marker_id:
-                room_marker_bookable = {
-                    "id": marker.room_marker_id,
-                    "room_id": str(marker.id),
-                    "is_bookable": marker.bookable,
-                    "room_marker_x": marker.room_marker_x,
-                    "room_marker_y": marker.room_marker_y,
-                    "room_marker_icon": marker.room_marker_icon,
-                    "room_type_color": marker.room_type_color,
-                    "room_type_unified": marker.room_type_unified,
-                    "room_type_title": marker.room_type_title,
-                    "room_type_thumb": marker.room_type_thumb
-                }
-                if room_marker_bookable.get('room_type_unified'):
-                    room_marker_bookable['table_id'] = marker.table_id
-                    room_marker_bookable['table_title'] = marker.table_title
-                    room_marker_bookable['is_available'] = True if not marker.is_occupied else False
-                    room_marker_bookable['tags'] = []
-                room_markers_bookable.append(room_marker_bookable)
-            elif not marker.bookable and marker.room_marker_id:
-                room_marker_not_bookable = {
-                    "id": marker.room_marker_id,
-                    "room_id": str(marker.id),
-                    "is_bookable": marker.bookable,
-                    "room_marker_x": marker.room_marker_x,
-                    "room_marker_y": marker.room_marker_y,
-                    "room_marker_icon": marker.room_marker_icon,
-                    "room_type_color": marker.room_type_color,
-                    "room_type_unified": marker.room_type_unified,
-                    "room_type_title": marker.room_type_title,
-                    "room_type_thumb": marker.room_type_thumb
-                }
-                room_markers_not_bookable.append(room_marker_not_bookable)
-            if marker.table_marker_id:
-                table_markers.append({
-                    "id": marker.table_marker_id,
-                    "table_id": str(marker.table_with_marker_id),
-                    "table_title": marker.table_title,
-                    "table_marker_x": marker.table_marker_x,
-                    "table_marker_y": marker.table_marker_y,
-                    "is_available": True if not marker.is_occupied else False,
-                    "room_id": str(marker.room_id),
-                    "tags": []
-                })
 
-        for marker in instance:
-            for table_marker in table_markers:
-                if marker.tag_id and table_marker['table_id'] == str(marker.table_with_marker_id):
-                    table_marker['tags'].append(str(marker.tag_id))
+        for room in instance.rooms.all():
+            try:
+                if room.type.bookable and room.room_marker:
+                    room_marker_bookable = {
+                        "id": room.room_marker.id,
+                        "room_id": str(room.id),
+                        "is_bookable": room.type.bookable,
+                        "room_marker_x": room.room_marker.x,
+                        "room_marker_y": room.room_marker.y,
+                        "room_marker_icon": room.room_marker.icon,
+                        "room_type_color": room.type.color,
+                        "room_type_unified": room.type.unified,
+                        "room_type_title": room.type.title,
+                    }
+                    if room.type.icon and room.type.icon.thumb:
+                        room_marker_bookable["room_type_thumb"] = room.type.icon.thumb
+                    elif room.type.icon and not room.type.icon.thumb:
+                        room_marker_bookable["room_type_thumb"] = room.type.icon.path
+                    else:
+                        room_marker_bookable["room_type_thumb"] = None
+                    if room.type.unified:
+                        for table in room.tables.all():
+                            room_marker_bookable['table_id'] = table.id
+                            room_marker_bookable['table_title'] = table.title
+                            room_marker_bookable['is_available'] = True if not table.is_occupied else False
+                    room_markers_bookable.append(room_marker_bookable)
+                elif not room.type.bookable and room.room_marker.id:
+                    room_marker_not_bookable = {
+                        "id": room.room_marker.id,
+                        "room_id": str(room.id),
+                        "is_bookable": room.type.bookable,
+                        "room_marker_x": room.room_marker.x,
+                        "room_marker_y": room.room_marker.y,
+                        "room_marker_icon": room.room_marker.icon,
+                        "room_type_color": room.type.color,
+                        "room_type_unified": room.type.unified,
+                        "room_type_title": room.type.title,
+                    }
+                    if room.type.icon and room.type.icon.thumb:
+                        room_marker_not_bookable["room_type_thumb"] = room.type.icon.thumb
+                    elif room.type.icon and not room.type.icon.thumb:
+                        room_marker_not_bookable["room_type_thumb"] = room.type.icon.path
+                    else:
+                        room_marker_not_bookable["room_type_thumb"] = None
+                    room_markers_not_bookable.append(room_marker_not_bookable)
+            except ObjectDoesNotExist:
+                pass
 
-        for marker in instance:
-            for room_marker in room_markers_bookable:
-                if marker.tag_id and str(room_marker.get('table_id')) == str(marker.table_id):
-                    room_marker['tags'].append(str(marker.tag_id))
-
-        room_markers_bookable = list({room_marker['id']: room_marker for room_marker in room_markers_bookable}.values())
-        room_markers_not_bookable = list({room_marker['id']: room_marker for room_marker in
-                                          room_markers_not_bookable}.values())
-        table_markers = list({table_marker.get('id'): table_marker for table_marker in table_markers}.values())
+            for table in room.tables.all():
+                try:
+                    table_markers.append({
+                        "id": table.table_marker.id,
+                        "table_id": str(table.id),
+                        "table_title": table.title,
+                        "table_marker_x": table.table_marker.x,
+                        "table_marker_y": table.table_marker.y,
+                        "is_available": True if not table.is_occupied else False,
+                        "room_id": str(table.room_id),
+                    })
+                except ObjectDoesNotExist:
+                    pass
 
         response.append({
             "room_markers_bookable": room_markers_bookable,
@@ -104,10 +117,3 @@ class MobileFloorMarkerSerializer(serializers.BaseSerializer):
         })
 
         return response
-
-
-class MobileFloorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Floor
-        fields = ['id', 'title']
-

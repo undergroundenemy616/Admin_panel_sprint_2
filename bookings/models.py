@@ -52,8 +52,7 @@ class BookingManager(models.Manager):
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
-            access = account.groups.aggregate(Min('access')) if account.groups.exists() else {
-                'access__min': EMPLOYEE_ACCESS}
+            access = account.groups.aggregate(Min('access')) if account.groups.exists() else {'access__min': EMPLOYEE_ACCESS}
         except AttributeError:
             access = {'access__min': EMPLOYEE_ACCESS}
         if access['access__min'] < EMPLOYEE_ACCESS:
@@ -263,7 +262,7 @@ class Booking(models.Model):
                 "app": push_group,
                 "expo": {
                     "title": "Открыто подтверждение!",
-                    "body": f"Вы можете подтвердить бронирование QR-кодом в течение 30 минут.",
+                    "body": "Вы можете подтвердить бронирование QR-кодом в течение 30 минут.",
                     "data": {
                         "go_booking": True
                     }

@@ -1,22 +1,12 @@
-import os
 import uuid
 from calendar import monthrange
-from collections import Counter
-from datetime import datetime, timedelta, date
+from datetime import datetime, date, timedelta
 
-import xlsxwriter
-import orjson
-import pandas as pd
-import pdfkit
-import requests
 from django.db.models import Q
 from django.db.transaction import atomic
 from rest_framework import serializers, status
 from workalendar.europe import Russia
 
-from pathlib import Path
-from time import strptime
-from booking_api_django_new.settings import FILES_HOST
 from bookings.models import Booking
 from core.handlers import ResponseException
 from files.serializers_admin import check_token
@@ -169,6 +159,7 @@ class AdminBookingCreateFastSerializer(AdminBookingSerializer):
         date_from = validated_data['date_from']
         date_to = validated_data['date_to']
         tables = Table.objects.filter(room__type__id=validated_data['type'].id)
+
         if Booking.objects.is_user_overflowed(validated_data['user'],
                                               validated_data['type'].unified,
                                               validated_data['date_from'],

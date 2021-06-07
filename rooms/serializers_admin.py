@@ -45,6 +45,8 @@ class AdminRoomSerializer(serializers.ModelSerializer):
 
 
 class AdminRoomCreateUpdateSerializer(serializers.ModelSerializer):
+    icon = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = Room
         fields = '__all__'
@@ -59,6 +61,9 @@ class AdminRoomCreateUpdateSerializer(serializers.ModelSerializer):
 
     @atomic()
     def update(self, instance, validated_data):
+        if hasattr(instance, 'room_marker') and validated_data.get('icon'):
+            instance.room_marker.icon = validated_data['icon']
+            instance.room_marker.save()
         if instance.type and validated_data.get('type'):
             if instance.type.unified != validated_data.get('type').unified or \
                     instance.type.bookable != validated_data.get('type').bookable:

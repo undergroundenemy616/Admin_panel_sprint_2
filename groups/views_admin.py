@@ -1,4 +1,5 @@
-from django.db.models import Count
+from django.db.models import Count, Min
+from django.db.transaction import atomic
 from rest_framework import viewsets, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -7,7 +8,7 @@ from rest_framework.response import Response
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from groups.filters_admin import AdminGroupFilter
-from groups.models import Group
+from groups.models import Group, ADMIN_ACCESS
 from groups.serializers_admin import (AdminGroupCreateSerializer,
                                       AdminGroupSerializer,
                                       AdminGroupUpdateSerializer,
@@ -34,11 +35,24 @@ class AdminGroupViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET" and self.request.query_params.get('user'):
             return AdminGroupUserAccessSerializer
-        if self.request.method in "POST":
+        if self.request.method == "POST":
             return AdminGroupCreateSerializer
         if self.request.method == "PUT":
             return AdminGroupUpdateSerializer
         return self.serializer_class
+
+    @atomic()
+    def perform_destroy(self, instance):
+        for account in instance.accounts.all():
+            access = account.groups.exclude(id=instance.id).aggregate(Min('access'))['access__min']
+            # If group WAS admins and users was removed from there and user have no other admin groups he
+            # demoted to usual user
+            if instance.access == ADMIN_ACCESS and (not access or access < 2):
+                account.user.is_staff = False
+            if not account.groups.exclude(id=instance.id):
+                account.user.is_active = False
+            account.user.save()
+        return super(AdminGroupViewSet, self).perform_destroy(instance)
 
 
 class AdminGroupAccessView(GenericAPIView):
