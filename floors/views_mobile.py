@@ -15,7 +15,7 @@ from floors.serializers_mobile import (MobileFloorMapBaseSerializer,
                                        MobileFloorMarkerParameters,
                                        MobileFloorMarkerSerializer,
                                        MobileFloorSerializer,
-                                       MobileFloorSuitableParameters)
+                                       MobileFloorSuitableParameters, MobileNewFloorMarkerSerializer)
 from rooms.models import RoomType, Room
 from tables.models import Table
 
@@ -188,7 +188,7 @@ class MobileSuitableFloorView(GenericAPIView):
 class MobileFloorMarkers(GenericAPIView):
     queryset = Floor.objects.all()
     permission_classes = (IsAdminOrReadOnly,)
-    serializer_class = MobileFloorMarkerSerializer
+    serializer_class = MobileNewFloorMarkerSerializer
 
     @swagger_auto_schema(query_serializer=MobileFloorMarkerParameters)
     def get(self, request, pk=None, *args, **kwargs):
@@ -202,10 +202,9 @@ class MobileFloorMarkers(GenericAPIView):
         allowed_rooms = Room.objects.is_allowed(user_id=request.user.id).filter(floor__id=pk).\
             select_related("room_marker", "type", "type__icon").prefetch_related("tables", "tables__table_marker")
 
-        try:
-            self.queryset = self.queryset.filter(id=pk)
-        except Floor.DoesNotExist:
-            raise ResponseException("Floor not found", status_code=status.HTTP_404_NOT_FOUND)
+        self.queryset = self.queryset.filter(pk=pk)
+        if self.queryset.count() == 0:
+            raise ResponseException("Floor not found", status_code=404)
 
         if serializer.data.get('room_type'):
             try:
