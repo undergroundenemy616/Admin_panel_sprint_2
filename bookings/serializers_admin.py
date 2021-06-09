@@ -612,7 +612,7 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
                 JOIN floors_floor ff on rr.floor_id = ff.id
                 JOIN offices_office oo on ff.office_id = oo.id
                 JOIN users_account ua on b.user_id = ua.id
-                WHERE b.date_from::date = '{date}' and (b.status = 'waiting' or b.status = 'active')"""
+                WHERE b.date_from::date = '{date}' and (b.status = 'waiting' or b.status = 'active' or b.status = 'over' or b.status = 'auto_over')"""
 
         if self.data.get('office_id'):
             query = query + f""" and oo.id = '{self.data.get('office_id')}'"""
