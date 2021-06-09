@@ -53,80 +53,14 @@ pipelines:
     compile:
       - step: *Compile
 
-    master:
-      - step:
-          <<: *Build
-      - step:
-          <<: *Deploy
-          deployment: pg-simple-office-liis-su
-
-    prod_gpn:
+    simple-office/prod:
       - step:
           <<: *Build
 
-    dev_simple_office:
-      - step:
-          <<: *Build
-      - step:
-          <<: *Deploy
-          deployment: dev-simple-office-liis-su
-
-    prod_simple_office:
-      - step:
-          <<: *Build
-
-  custom:
-    prod_simple-office/prod-deploy:
+    simple-office/prod-deploy:
       - step:
           <<: *Deploy
           deployment: simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: statio-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: nbcom-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: semrush-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: bplus-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: platformix-simple-office-liis
-      - step:
-          <<: *Deploy
-          deployment: designic-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: blacklight-simple-office-liis
-      - step:
-          <<: *Deploy
-          deployment: samokat-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: vtbcapital-simple-office
-      - step:
-          <<: *Deploy
-          deployment: alrosa-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: softmachine-simple-office
-      - step:
-          <<: *Deploy
-          deployment: dinord-simple-office
-      - step:
-          <<: *Deploy
-          deployment: ngenix-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: knightfrank-simple-office
-
-    prod_gpn/gpn-deploy:
-      - step:
-          <<: *Deploy
-          deployment: table-informer-liis-su
     
     compile-for-avito:
       - step: 
