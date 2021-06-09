@@ -741,7 +741,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
                 INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
                 WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
                 (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-                (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and b.status = 'over'"""
+                (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and (b.status = 'over' or b.status = 'auto_over')"""
 
         if self.data.get('office_id'):
             query = query + f""" and rtr.office_id = '{self.data.get('office_id')}'"""
