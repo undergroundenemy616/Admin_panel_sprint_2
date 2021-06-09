@@ -843,10 +843,10 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         response_dict = orjson.loads(response.text)
         file_attrs = {
             "path": FILES_HOST + str(response_dict.get("path")),
-            "title": secure_file_name if doc_format == 'xlsx' else secure_file_name.replace('.xlsx', '.pdf'),
-            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size if
-            doc_format == 'xlsx' else
-            Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).stat().st_size,
+            "title": secure_file_name,  # if doc_format == 'xlsx' else secure_file_name.replace('.xlsx', '.pdf'),
+            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,  #if
+            # doc_format == 'xlsx' else
+            # Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).stat().st_size,
         }
 
         if response_dict.get("thumb"):
