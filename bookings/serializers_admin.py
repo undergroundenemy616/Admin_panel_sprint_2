@@ -828,6 +828,17 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
                     )
                 except requests.exceptions.RequestException:
                     return {"message": "Error occured during file upload"}, 500
+        if not doc_format:
+            try:
+                response = requests.post(
+                    url=FILES_HOST + "/upload",
+                    files={
+                        "file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                    headers=headers,
+                )
+            except requests.exceptions.RequestException:
+                return {"message": "Error occured during file upload"}, 500
 
         response_dict = orjson.loads(response.text)
         file_attrs = {
