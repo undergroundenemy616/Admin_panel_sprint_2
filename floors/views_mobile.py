@@ -15,7 +15,7 @@ from floors.serializers_mobile import (MobileFloorMapBaseSerializer,
                                        MobileFloorMarkerParameters,
                                        MobileFloorMarkerSerializer,
                                        MobileFloorSerializer,
-                                       MobileFloorSuitableParameters, MobileNewFloorMarkerSerializer)
+                                       MobileFloorSuitableParameters)
 from rooms.models import RoomType, Room
 from tables.models import Table
 
@@ -188,7 +188,7 @@ class MobileSuitableFloorView(GenericAPIView):
 class MobileFloorMarkers(GenericAPIView):
     queryset = Floor.objects.all()
     permission_classes = (IsAdminOrReadOnly,)
-    serializer_class = MobileNewFloorMarkerSerializer
+    serializer_class = MobileFloorMarkerSerializer
 
     @swagger_auto_schema(query_serializer=MobileFloorMarkerParameters)
     def get(self, request, pk=None, *args, **kwargs):
@@ -205,48 +205,19 @@ class MobileFloorMarkers(GenericAPIView):
         self.queryset = self.queryset.filter(pk=pk)
         if self.queryset.count() == 0:
             raise ResponseException("Floor not found", status_code=404)
-
         if serializer.data.get('room_type'):
-            try:
-                room_type = RoomType.objects.get(title=serializer.data.get('room_type'),
-                                                 office__floors__id=pk)
-            except ObjectDoesNotExist:
-                raise ResponseException("RoomType not found", status_code=status.HTTP_404_NOT_FOUND)
+            room_type = RoomType.objects.get(title=serializer.data.get('room_type'),
+                                             office__floors__id=pk)
 
-            if room_type.bookable and room_type.unified and not room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=True,
-                                                       type__is_deletable=False)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
-            elif room_type.bookable and not room_type.unified and not room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=False,
-                                                       type__is_deletable=False)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
-            elif room_type.bookable and not room_type.unified and room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=False,
-                                                       type__is_deletable=True)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
-            elif room_type.bookable and room_type.unified and room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=True,
-                                                       type__is_deletable=True)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
+            allowed_rooms = allowed_rooms.filter(Q(type__bookable=room_type.bookable,
+                                                   type__unified=room_type.unified,
+                                                   type__is_deletable=room_type.is_deletable)
+                                                 |
+                                                 Q(type__bookable=False,
+                                                   type__unified=False,
+                                                   type__is_deletable=True))
 
-        if serializer.data.get('tag'):
+        if tag:
             tables_with_tag = Table.objects.filter(tags__id__in=tag)
             allowed_rooms = allowed_rooms.filter(Q(tables__id__in=tables_with_tag)
                                                  |
@@ -268,16 +239,16 @@ class MobileFloorMarkers(GenericAPIView):
         if date_from and date_to:
             bookings = Booking.objects.filter(Q(status__in=['waiting', 'active']) &
                                               (Q(date_from__lt=date_to, date_to__gte=date_to)
-                                               | Q(date_from__lte=date_from, date_to__gt=date_from)
-                                               | Q(date_from__gte=date_from, date_to__lte=date_to)) &
+                                              | Q(date_from__lte=date_from, date_to__gt=date_from)
+                                              | Q(date_from__gte=date_from, date_to__lte=date_to)) &
                                               Q(date_from__lt=date_to)).values_list('table__id', flat=True)
 
             if bookings:
-                for table_marker in markers[0]['table_markers']:
-                    if uuid.UUID(table_marker.get('table_id')) in list(bookings):
+                for table_marker in markers['table_markers']:
+                    if table_marker.get('table_id') and uuid.UUID(table_marker.get('table_id')) in bookings:
                         table_marker['is_available'] = False
-                for room_marker in markers[0]['room_markers_bookable']:
-                    if room_marker.get('table_id') in list(bookings):
+                for room_marker in markers['room_markers_bookable']:
+                    if room_marker.get('table_id') and room_marker.get('table_id') in bookings:
                         room_marker['is_available'] = False
 
         return Response(markers, status=status.HTTP_200_OK)
