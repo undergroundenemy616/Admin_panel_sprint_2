@@ -1,25 +1,18 @@
 import os
+
 import requests
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin, RetrieveModelMixin,
-                                   UpdateModelMixin)
-from rest_framework.permissions import AllowAny
+from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
 
 from booking_api_django_new.settings import PUSH_HOST
 from core.pagination import DefaultPagination
-from core.permissions import IsAdmin, IsAuthenticated, IsAuthenticatedOnPost
+from core.permissions import IsAdmin, IsAuthenticatedOnPost
 from push_tokens.models import PushToken
-from push_tokens.send_interface import send_push_message
 from push_tokens.serializers import (PushSendBroadcastSerializer,
                                      PushSendSingleSerializer,
                                      PushTokenSerializer)
-from tables.models import Table, TableTag
-from tables.serializers import (CreateTableSerializer, TableSerializer,
-                                TableTagSerializer)
 from users.models import Account
 
 

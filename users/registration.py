@@ -4,6 +4,7 @@ from rest_framework.exceptions import ValidationError
 
 from users.broadcasts import SMSBroadcast
 from users.models import activated_code
+from users.tasks import send_sms_code
 
 
 def send_code(user, is_created):
@@ -19,15 +20,16 @@ def send_code(user, is_created):
                                       "time": ttl}, code=400)
 
     # Send created code to user's phone.
-    broadcast = SMSBroadcast(phone_number=user.phone_number)
-    message = f'Your activation code is: {code}'
-    broadcast.send(message=message)  # TODO create celery
-
-    # If something went wrong, user will be deleted and anyway raised exception.
-    if not broadcast.is_sent:
-        if is_created:
-            user.delete()
-        raise ValueError('Message was not send!')
+    send_sms_code.delay(user_id=user.id, is_created=is_created, code=code)
+    # broadcast = SMSBroadcast(phone_number=user.phone_number)
+    # message = f'Your activation code is: {code}'
+    # broadcast.send(message=message)  # TODO create celery
+    #
+    # # If something went wrong, user will be deleted and anyway raised exception.
+    # if not broadcast.is_sent:
+    #     if is_created:
+    #         user.delete()
+    #     raise ValueError('Message was not send!')
 
     # Cache code to redis for 3 minutes
     # import django_redis
@@ -88,5 +90,5 @@ class UserRedisWrapper(RedisWrapper):
     def verify_code(self, code):
         """Verified given code with existing."""
         cached = self.get_value()
-        if cached != code:
+        if cached != int(code):
             raise ValueError('Invalid sms-code!')

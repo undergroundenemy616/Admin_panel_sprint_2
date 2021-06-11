@@ -1,46 +1,41 @@
 import os
 import random
-import jwt
 
-import orjson
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
-
-from django.http import JsonResponse
-from booking_api_django_new.settings import EMAIL_HOST_USER
 from django.contrib.auth import user_logged_in
 from django.core.mail import send_mail
-from django.db.models import Q
+from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, status, filters
-from rest_framework.decorators import api_view
+from rest_framework import filters, mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
-from rest_framework_jwt.settings import api_settings
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
+                                                  TokenRefreshSerializer)
 
-from booking_api_django_new.settings import HARDCODED_PHONE_NUMBER, HARDCODED_SMS_CODE
+from booking_api_django_new.settings import (EMAIL_HOST_USER,
+                                             HARDCODED_PHONE_NUMBER,
+                                             HARDCODED_SMS_CODE, SMS_MOCK_CONFIRM)
 from core.authentication import AuthForAccountPut
 from core.handlers import ResponseException
-from core.pagination import DefaultPagination, LimitStartPagination
-from core.permissions import IsAdmin, IsAuthenticated, IsOwner
+from core.pagination import LimitStartPagination
+from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from mail import send_html_email_message
-from users.models import Account, User, OfficePanelRelation
+from users.models import Account, OfficePanelRelation, User
 from users.registration import confirm_code, send_code
-from users.serializers import (AccountSerializer, AccountUpdateSerializer,
+from users.serializers import (AccountListGetSerializer, AccountSerializer,
+                               AccountUpdateSerializer,
+                               EntranceCollectorSerializer, LoginOfficePanel,
                                LoginOrRegisterSerializer,
                                LoginOrRegisterStaffSerializer,
-                               PasswordChangeSerializer,
+                               OfficePanelSerializer, PasswordChangeSerializer,
                                PasswordResetSerializer,
                                RegisterStaffSerializer,
                                RegisterUserFromAPSerializer,
                                SwaggerAccountListParametr,
-                               SwaggerAccountParametr, user_access_serializer,
-                               EntranceCollectorSerializer, TestAccountSerializer,
-                               AccountListGetSerializer, OfficePanelSerializer, LoginOfficePanel)
+                               SwaggerAccountParametr, TestAccountSerializer,
+                               user_access_serializer)
 
 
 class RegisterUserFromAdminPanelView(GenericAPIView):
@@ -76,7 +71,7 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
         try:
             data = {}
             if not sms_code:  # Register or login user
-                if not os.getenv('SMS_MOCK_CONFIRM'):
+                if SMS_MOCK_CONFIRM != 'True':
                     send_code(user, created)
                 else:
                     print('SMS service is off, any code is acceptable')
@@ -87,12 +82,12 @@ class LoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
                     'expires_in': 60,
                 }
             elif sms_code:  # Confirm code  and user.is_active
-                if not os.getenv('SMS_MOCK_CONFIRM'):
+                if SMS_MOCK_CONFIRM != 'True':
                     # Confirmation code
                     if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
                         pass
                     else:
-                        confirm_code(phone_number, int(sms_code))
+                        confirm_code(phone_number, sms_code)
                 else:
                     print('SMS service is off, any code is acceptable')
 
@@ -429,6 +424,7 @@ class PasswordChangeView(GenericAPIView):
 
 class PasswordResetView(GenericAPIView):
     serializer_class = PasswordResetSerializer
+    permission_classes = (IsAdmin, )
 
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -460,7 +456,7 @@ class RefreshTokenView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         refresh = request.data.get('refresh')
         if not refresh:
-            return Response({"detail": "Refresh parametr is required"}, status=400)
+            return Response({"detail": "Refresh parameter is required"}, status=400)
         refresh_ser = TokenRefreshSerializer(data=request.data)
         try:
             refresh_ser.is_valid(raise_exception=True)

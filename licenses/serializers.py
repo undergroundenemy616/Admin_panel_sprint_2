@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from licenses.models import License
-from offices.models import Office
 
 
 class SwaggerLicenseParametrs(serializers.Serializer):

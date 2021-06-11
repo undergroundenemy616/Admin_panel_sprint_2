@@ -2,9 +2,9 @@ import random
 import uuid
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.core.validators import validate_ipv46_address
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.validators import validate_ipv46_address
 from django.db import models
 
 from floors.models import Floor

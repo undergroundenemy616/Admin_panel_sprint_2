@@ -1,8 +1,6 @@
 from django.urls import path
 
-from bookings import views
-from bookings import views_statistics
-from bookings import views_statistics_FD
+from bookings import views, views_statistics, views_statistics_FD
 
 urlpatterns = [
     path('', views.BookingsView.as_view()),

@@ -10,3 +10,5 @@ drop_db.py
 /upload/
 /.vscode/
 simple_office.log
+/celerybeat-schedule
+/celerybeat.pid

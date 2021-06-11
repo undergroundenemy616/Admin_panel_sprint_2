@@ -1,20 +1,21 @@
 from typing import Any, Dict
 
 from django.db import IntegrityError
-from django.db.models import Q, Count, Case, When
+from django.db.models import Case, Count, When
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
+from files.serializers import TestBaseFileSerializer, image_serializer
 from floors.models import Floor
 from groups.serializers import validate_csv_file_extension
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
 from room_types.serializers import RoomTypeSerializer
 from rooms.models import Room, RoomMarker
-from tables.models import Rating, Table, TableTag, TableMarker
-from tables.serializers import TableSerializer, table_tag_serializer, table_marker_serializer, TestTableSerializer
+from tables.models import Table, TableMarker, TableTag
+from tables.serializers import (TableSerializer, TestTableSerializer,
+                                table_marker_serializer, table_tag_serializer)
 
 
 class SwaggerRoomParameters(serializers.Serializer):
@@ -91,13 +92,6 @@ def floor_serializer_for_room(floor: Floor) -> Dict[str, Any]:
 
 
 def table_serializer_for_room(table: Table) -> Dict[str, Any]:
-    # tags = table.tags.all()
-    # images = table.images.first()
-    ratings = Rating.objects.raw(f"""select table_id as id, cast(sum(rating) as decimal)/count(rating) as table_rating, 
-        count(rating) as number_of_votes
-        from tables_rating
-        where table_id = '{table.id}'
-        group by table_id""")
     table_rating = 0
     table_ratings = 0
     for result in table_ratings:
@@ -109,7 +103,6 @@ def table_serializer_for_room(table: Table) -> Dict[str, Any]:
         'tags': [table_tag_serializer(tag=tag).copy() for tag in table.tags.all()],
         'images': list(image_serializer(image=table.images.first())) if table.images.first() else [],
         'rating': table_rating,
-        # 'ratings': Rating.objects.filter(table_id=table.id).count(),
         'ratings': table_ratings,
         'description': table.description,
         'is_occupied': table.is_occupied,
@@ -126,20 +119,25 @@ def room_marker_serializer(marker: RoomMarker) -> Dict[str, Any]:
     }
 
 
-class TestRoomSerializer(serializers.Serializer):
+class TestRoomSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField()
     title = serializers.CharField()
     description = serializers.CharField()
     type = serializers.PrimaryKeyRelatedField(read_only=True)
     zone = serializers.PrimaryKeyRelatedField(read_only=True)
-    images = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
+    images = TestBaseFileSerializer(read_only=True, required=False, many=True, allow_null=True)
+    tables = TestTableSerializer(read_only=True, required=False, many=True, allow_null=True)
+    room_type_icon = TestBaseFileSerializer(read_only=True, required=False, many=True, allow_null=True)
     floor = serializers.PrimaryKeyRelatedField(read_only=True)
     seats_amount = serializers.IntegerField()
 
+    class Meta:
+        model = Room
+        fields = ['id', 'title', 'description', 'type', 'zone', 'images',
+                  'tables', 'room_type_icon', 'floor', 'seats_amount']
+
     def to_representation(self, instance):
-        # response = BaseRoomSerializer(instance=instance).data
         response = super(TestRoomSerializer, self).to_representation(instance)
-        # room_type = response.pop('type')
         tables = instance.tables.aggregate(
             capacity=Count('*'),
             occupied=Count(Case(When(is_occupied=True, then=1))),
@@ -148,19 +146,19 @@ class TestRoomSerializer(serializers.Serializer):
         response['type'] = instance.type.title if instance.type else None
         response['room_type_color'] = instance.type.color if instance.type else None
         response['room_type_unified'] = instance.type.unified if instance.type else None
-        response['zone'] = {'id': instance.zone.id,
-                            'title': instance.zone.title}
+        try:
+            response['zone'] = {'id': instance.zone.id,
+                                'title': instance.zone.title}
+        except AttributeError:
+            response['zone'] = None
         response['floor'] = {'id': instance.floor.id,
                              'title': instance.floor.title}
         response['is_bookable'] = instance.type.bookable if instance.type else None
-        response['room_type_icon'] = TestBaseFileSerializer(instance=instance.type.icon).data if instance.type.icon else None
-        response['tables'] = TestTableSerializer(instance=instance.tables, many=True).data
         response['capacity'] = tables['capacity']
         response['marker'] = room_marker_serializer(instance.room_marker) if \
              hasattr(instance, 'room_marker') else None
         response['occupied'] = tables['occupied']
         response['suitable_tables'] = tables['suitable_tables']
-        response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         return response
 
 
@@ -175,9 +173,7 @@ class RoomSerializer(serializers.ModelSerializer):
         fields = '__all__'  # ['tables', 'images', 'type']
 
     def to_representation(self, instance):
-        # response = BaseRoomSerializer(instance=instance).data
         response = super(RoomSerializer, self).to_representation(instance)
-        # room_type = response.pop('type')
         response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}
         response['zone'] = {"id": instance.zone.id, "title": instance.zone.title}
         response['type'] = instance.type.title if instance.type else None
@@ -277,7 +273,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
         data['capacity'] = instance.tables.count()
         data['occupied'] = 0
         data['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
-        data['type'] = instance.type.title  # RoomTypeSerializer(instance=instance.type).data
+        data['type'] = RoomTypeSerializer(instance=instance.type).data
         data['room_type_color'] = instance.type.color
         data['room_type_unified'] = instance.type.unified
         data['is_bookable'] = instance.type.bookable

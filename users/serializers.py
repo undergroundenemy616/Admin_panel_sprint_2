@@ -1,25 +1,22 @@
 import os
 import random
-import ipinfo
 import time
-from smtplib import SMTPException
-from typing import Any, Dict
 
+import ipinfo
 from django.contrib.auth.password_validation import validate_password
-from django.db.models import Q
 from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
+
 from booking_api_django_new.settings import DEBUG
-from core.pagination import DefaultPagination
 from files.models import File
 from files.serializers import BaseFileSerializer
-from groups.models import GUEST_ACCESS, OWNER_ACCESS, Group
-from mail import send_html_email_message
 from floors.models import Floor
+from groups.models import Group
+from mail import send_html_email_message
 from offices.models import Office, OfficeZone
-from users.models import Account, User, AppEntrances, OfficePanelRelation
+from users.models import Account, AppEntrances, OfficePanelRelation, User
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -409,6 +406,8 @@ class OfficePanelSerializer(serializers.Serializer):
         return office_panel
 
     def to_representation(self, instance):
+        if type(instance) == Account:
+            instance = instance.office_panels
         response = TestAccountSerializer(instance.account).data
         response['office'] = {"id": instance.office.id, "title": instance.office.title}
         response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}

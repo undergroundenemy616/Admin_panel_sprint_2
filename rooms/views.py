@@ -1,9 +1,9 @@
+import uuid
 from datetime import datetime
-from typing import Dict, Optional
 
 import orjson
-from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Q, Prefetch
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters
@@ -12,22 +12,20 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
-from rest_framework.request import Request
+from rest_framework.parsers import FormParser, MultiPartParser
 
-import uuid
-from groups.models import Group, GUEST_ACCESS, ADMIN_ACCESS
 from bookings.models import Booking
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
-from floors.models import Floor
-from offices.models import Office, OfficeZone
-from rooms.models import Room, RoomMarker
+from groups.models import ADMIN_ACCESS, Group
+from offices.models import OfficeZone
+from rooms.models import Room, RoomMarker, RoomType
 from rooms.serializers import (CreateRoomSerializer, FilterRoomSerializer,
-                               RoomMarkerSerializer, RoomSerializer,
-                               SwaggerRoomParameters, UpdateRoomSerializer,
-                               base_serialize_room, table_serializer_for_room,
-                               RoomGetSerializer, RoomSerializerCSV, TestRoomSerializer)
-from tables.serializers import Table, TableSerializer, TestTableSerializer
+                               RoomGetSerializer, RoomMarkerSerializer,
+                               RoomSerializer, RoomSerializerCSV,
+                               SwaggerRoomParameters, TestRoomSerializer,
+                               UpdateRoomSerializer)
+from tables.serializers import Table, TestTableSerializer
 
 
 class RoomsView(ListModelMixin,
@@ -227,7 +225,7 @@ class RoomsView(ListModelMixin,
         suitable_tables = 0
 
         for room in response:
-            suitable_tables += room['suitable_tables']
+            suitable_tables += len(room.get('tables'))
 
         response_dict = {
             'results': response,

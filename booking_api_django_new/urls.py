@@ -15,17 +15,14 @@ Including another URLconf
 """
 from typing import Any
 
-from django.conf import settings
 from django.conf.urls import url
-from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import include, path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from users import views
+
 from tables.views import TableSlotsView
+from users import views
 from users.views import custom404
 
 handler404 = custom404
@@ -56,9 +53,9 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Current urls
-    # path('admin', admin.site.urls),
     path('auth', views.LoginOrRegisterUserFromMobileView.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
+    path('auth_kiosk', views.LoginOfficePanel.as_view()),
     path('refresh', views.RefreshTokenView.as_view()),
     path('register_user', views.RegisterUserFromAdminPanelView.as_view()),
     path('register_employee', views.RegisterStaffView.as_view()),
@@ -102,7 +99,9 @@ urlpatterns = [
     path('send_', include('push_tokens.urls_send')),
     path('pass_change', views.PasswordChangeView.as_view()),
     path('pass_reset', views.PasswordResetView.as_view()),
-    path('panel', include('booking_api_django_new.urls_panel'))
+    path('panel', include('booking_api_django_new.urls_panel')),
+    path('mobile', include('booking_api_django_new.urls_mobile')),
+    path('admin', include('booking_api_django_new.urls_admin'))
 ]
 
 '''

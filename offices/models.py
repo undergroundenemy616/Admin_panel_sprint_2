@@ -22,7 +22,8 @@ class Office(models.Model):
         return self.title
 
     class Meta:
-        ordering = ['created_at']
+        ordering = ['-created_at']
+
 
 class OfficeZone(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

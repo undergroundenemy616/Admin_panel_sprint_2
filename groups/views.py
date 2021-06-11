@@ -2,28 +2,28 @@ from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters
 from rest_framework.generics import (GenericAPIView, ListCreateAPIView,
-                                     UpdateAPIView, get_object_or_404)
+                                     get_object_or_404)
 from rest_framework.mixins import (DestroyModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
-from rest_framework.parsers import MultiPartParser, FormParser
-
+from rest_framework.parsers import FormParser, MultiPartParser
 
 from core.permissions import IsAdmin, IsAuthenticated
 from groups.models import Group
 from groups.serializers import (CreateGroupSerializer, GroupSerializer,
+                                GroupSerializerCSV, GroupSerializerLite,
+                                GroupSerializerOnlyAccountsCSV,
+                                GroupSerializerWithAccountsCSV,
                                 SwaggerGroupsParametrs, UpdateGroupSerializer,
-                                UpdateGroupUsersSerializer, GroupSerializerCSV,
-                                GroupSerializerWithAccountsCSV, GroupSerializerOnlyAccountsCSV,
-                                GroupSerializerLite)
-from users.models import Account, User
+                                UpdateGroupUsersSerializer)
+from users.models import Account
 
 
 class ListCreateGroupAPIView(ListCreateAPIView):
     queryset = Group.objects.all().prefetch_related('accounts__user')
     serializer_class = GroupSerializer
     pagination_class = None
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdmin,)
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', ]
 

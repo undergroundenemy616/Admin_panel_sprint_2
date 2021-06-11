@@ -2,10 +2,10 @@ from rest_framework import serializers
 
 from files.models import File
 from files.serializers import TestBaseFileSerializer
-from tables.models import Table
 from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
+from tables.models import Table
 
 
 class SwaggerRoomTypeParametrs(serializers.Serializer):
