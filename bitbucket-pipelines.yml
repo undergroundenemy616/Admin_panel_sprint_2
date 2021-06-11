@@ -1,0 +1,87 @@
+options:
+  docker: true
+
+clone:
+  depth: full
+
+definitions:
+  steps:
+    - step: &Build
+        name: Create Docker image
+        image: python:3.8
+        caches:
+          - docker
+          - pip
+        script:
+          - export PYTHONPATH=$PYTHONPATH:$PWD
+          - export DOCKER_CLIENT_TIMEOUT=120
+          - export COMPOSE_HTTP_TIMEOUT=120
+          - export BITBUCKET_PROJECT_KEY="${BITBUCKET_PROJECT_KEY,,}"
+          - docker login $DOCKER_REG -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+          - docker build -t $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest -f Dockerfile .
+          - docker push $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest
+
+    - step: &Deploy
+        name: Restart compose network
+        script:
+          - pipe: atlassian/trigger-pipeline:4.2.1
+            variables:
+              BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+              BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+              REPOSITORY: 'simpleoffice-deploy'
+              CUSTOM_PIPELINE_NAME: $DEPLOYMENT
+              WAIT: 'true'
+
+    - step: &Compile
+      name: Compile
+      image: python:3.8
+      script:
+        - pip install --user -r requirements.txt
+        - pip install pyarmor
+        - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+        - find . -name '*.py' -type f -delete
+        - cp -rf . /var/distribute
+        - tar -cvf api-test.tar /var/distribute
+        - pipe: atlassian/bitbucket-upload-file:0.1.2
+          variables:
+            BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+            BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+            FILENAME: "api-test.tar"
+  
+pipelines:
+  branches:
+    compile:
+      - step: *Compile
+
+    simple-office/prod:
+      - step:
+          <<: *Build
+
+    simple-office/prod-deploy:
+      - step:
+          <<: *Deploy
+          deployment: simple-office-liis-su
+    
+    simple-office/dev:
+      - step:
+          <<: *Build
+      - step:
+          <<: *Deploy
+          deployment: dev-simple-office-liis-su
+        
+    compile-for-avito:
+      - step: 
+          name: Compile for avito
+          image: python:3.8
+          script:
+            - pip install --user -r requirements.txt
+            - pip install pyarmor
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+            - find . -name '*.py' -type f -delete
+            - cp -rf . /var/distribute
+            - tar -cvf api-avito-compile.tar /var/distribute
+            - pipe: atlassian/bitbucket-upload-file:0.1.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: "api-avito-compile.tar"
