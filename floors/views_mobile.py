@@ -1,5 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Q, When, Case, Prefetch
+from django.db.models import Count, Q, Prefetch
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, Response, status
@@ -217,15 +217,17 @@ class MobileFloorMarkers(GenericAPIView):
                                                    type__unified=False,
                                                    type__is_deletable=True))
 
+        tables = Table.objects.filter(room__in=allowed_rooms)
         if tag:
-            tables_with_tag = Table.objects.filter(tags__id__in=tag)
-            allowed_rooms = allowed_rooms.filter(Q(tables__id__in=tables_with_tag)
+            for t in tag:
+                tables = tables.filter(tags=t)
+            allowed_rooms = allowed_rooms.filter(Q(tables__id__in=tables)
                                                  |
                                                  Q(type__bookable=False))
 
         self.queryset = self.queryset.prefetch_related(Prefetch("rooms", queryset=allowed_rooms))
 
-        markers = self.serializer_class(instance=self.queryset, many=True).data
+        markers = self.serializer_class(instance=self.queryset, many=True, context={'tables': tables}).data
 
         try:
             markers = markers[0]

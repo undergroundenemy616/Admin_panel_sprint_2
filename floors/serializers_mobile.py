@@ -77,7 +77,7 @@ class MobileFloorMarkerSerializer(serializers.Serializer):
         return MobileRoomMarkersSerializer(instance=instance, many=True).data
 
     def get_table_markers(self, obj):
-        instance = TableMarker.objects.filter(table__room__in=obj.rooms.all()).select_related('table__room')
+        instance = TableMarker.objects.filter(table__in=self.context['tables']).select_related('table__room')
         return MobileTableMarkersSerializer(instance=instance, many=True).data
 
     def get_max_room_marker_radius(self, obj):
