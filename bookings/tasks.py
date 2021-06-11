@@ -18,7 +18,7 @@ def all_job_delete(uuid):
 
 
 def job_execution(job_name, uuid):
-    job = bookings.JobStore.objects.filter(job_id=job_name+str(uuid))
+    job = bookings.JobStore.objects.filter(job_id=job_name+'_'+str(uuid))
     if job:
         job[0].executed = True
         job[0].save()
@@ -48,7 +48,7 @@ def check_booking_activate(uuid):
         control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
         all_job_execution(uuid)
 
-    job_execution('check_booking_activate_', uuid)
+    job_execution('check_booking_activate', uuid)
 
 
 @shared_task
