@@ -61,14 +61,7 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: simple-office-liis-su
-    
-    simple-office/dev:
-      - step:
-          <<: *Build
-      - step:
-          <<: *Deploy
-          deployment: dev-simple-office-liis-su
-    
+        
     compile-for-avito:
       - step: 
           name: Compile for avito
