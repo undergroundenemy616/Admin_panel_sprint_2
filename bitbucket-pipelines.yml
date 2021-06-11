@@ -18,7 +18,7 @@ definitions:
           - export COMPOSE_HTTP_TIMEOUT=120
           - export BITBUCKET_PROJECT_KEY="${BITBUCKET_PROJECT_KEY,,}"
           - docker login $DOCKER_REG -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-          - docker build -t $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest .
+          - docker build -t $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest -f Dockerfile .
           - docker push $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest
 
     - step: &Deploy
@@ -47,7 +47,7 @@ definitions:
             BITBUCKET_USERNAME: $BITBUCKET_USERNAME
             BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
             FILENAME: "api-test.tar"
-
+  
 pipelines:
   branches:
     compile:
@@ -62,6 +62,13 @@ pipelines:
           <<: *Deploy
           deployment: simple-office-liis-su
     
+    simple-office/dev:
+      - step:
+          <<: *Build
+      - step:
+          <<: *Deploy
+          deployment: dev-simple-office-liis-su
+        
     compile-for-avito:
       - step: 
           name: Compile for avito
@@ -78,4 +85,3 @@ pipelines:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: "api-avito-compile.tar"
-
