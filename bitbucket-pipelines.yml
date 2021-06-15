@@ -96,11 +96,11 @@ pipelines:
             - pip install pyarmor
             - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
             - find . -name '*.py' -type f -delete
-            - cp -rf . /var/distribute
-            - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/so-avito-api.git
-            - cd so-avito-api
-            - rm -rf *
-            - mv /var/distribute/* ./
             - rm -f booking-api-django/booking_api_django_new/environments/*
             - rm -f bitbucket-pipelines.yml
+            - cp -rf . /var/distribute
+            - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/so-avito-api.git
+            - rm -rf /so-avito-api/*
+            - cd /so-avito-api
+            - mv /var/distribute/* ./
             - git add . && git commit -m 'Update' && git push
