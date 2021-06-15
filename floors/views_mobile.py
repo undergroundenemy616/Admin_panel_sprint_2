@@ -217,7 +217,9 @@ class MobileFloorMarkers(GenericAPIView):
                                                    type__unified=False,
                                                    type__is_deletable=True))
 
-        tables = Table.objects.filter(room__in=allowed_rooms, table_marker__isnull=False)
+        tables = Table.objects.filter(Q(room__in=allowed_rooms), Q(Q(table_marker__isnull=False)
+                                                                   | Q(room__type__unified=True)))
+
         if tag:
             for t in tag:
                 tables = tables.filter(tags=t)
