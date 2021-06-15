@@ -100,7 +100,7 @@ pipelines:
             - rm -f bitbucket-pipelines.yml
             - cp -rf . /var/distribute
             - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/so-avito-api.git
-            - rm -rf /so-avito-api/*
             - cd /so-avito-api
+            - rm -rf ./*
             - mv /var/distribute/* ./
             - git add . && git commit -m 'Update' && git push
