@@ -90,6 +90,7 @@ pipelines:
       - step: 
           name: Compile for avito TEST
           image: python:3.8
+          deployment: Avito
           script:
             - pip install --user -r requirements.txt
             - pip install pyarmor
