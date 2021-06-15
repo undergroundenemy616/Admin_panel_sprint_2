@@ -120,8 +120,9 @@ class AdminGroupUpdateSerializer(serializers.ModelSerializer):
             access = account.groups.aggregate(Min('access'))['access__min']
             # If group WAS admins and users was removed from there and user have no other admin groups he
             # demoted to usual user
-            if instance.access == ADMIN_ACCESS and (not access or access < 2):
+            if instance.access == ADMIN_ACCESS and (not access or access > 2):
                 account.user.is_staff = False
+                account.user.save()
             if not account.groups.all():
                 account.user.is_active = False
                 account.user.save()
