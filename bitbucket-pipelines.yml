@@ -85,3 +85,25 @@ pipelines:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: "api-avito-compile.tar"
+    
+  custom:  
+    AVITO-obfuscate_and_deploy_code_to_Avito_repo:
+      - step: 
+          name: Compile for avito TEST
+          image: python:3.8
+          deployment: Avito
+          script:
+            - pip install --user -r requirements.txt
+            - pip install pyarmor
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+            - find . -name '*.py' -type f -delete
+            - rm -f booking-api-django/booking_api_django_new/environments/*
+            - rm -f bitbucket-pipelines.yml
+            - cp -rf . /var/distribute
+            - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/so-avito-api.git
+            - git config --global user.email "you@example.com"
+            - git config --global user.name "avito_update"
+            - cd so-avito-api
+            - rm -rf ./*
+            - mv /var/distribute/* ./
+            - git add . && git commit -m 'Update' && git push
