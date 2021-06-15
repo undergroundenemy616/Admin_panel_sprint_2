@@ -97,8 +97,7 @@ pipelines:
             - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
             - find . -name '*.py' -type f -delete
             - cp -rf . /var/distribute
-            - echo $SSH_KEY | base64 -d > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-            - git clone $GIT_REPO_URL
+            - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/so-avito-api.git
             - cd so-avito-api
             - rm -rf ./
             - mv /var/distribute/* ./
