@@ -217,13 +217,13 @@ class MobileFloorMarkers(GenericAPIView):
                                                    type__unified=False,
                                                    type__is_deletable=True))
 
-        tables = Table.objects.filter(room__in=allowed_rooms)
+        tables = Table.objects.filter(room__in=allowed_rooms, table_marker__isnull=False)
         if tag:
             for t in tag:
                 tables = tables.filter(tags=t)
-            allowed_rooms = allowed_rooms.filter(Q(tables__id__in=tables)
-                                                 |
-                                                 Q(type__bookable=False))
+        allowed_rooms = allowed_rooms.filter(Q(tables__id__in=tables)
+                                             |
+                                             Q(type__bookable=False))
 
         self.queryset = self.queryset.prefetch_related(Prefetch("rooms", queryset=allowed_rooms))
 
