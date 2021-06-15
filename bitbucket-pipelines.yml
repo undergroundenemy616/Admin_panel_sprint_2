@@ -101,4 +101,6 @@ pipelines:
             - cd so-avito-api
             - rm -rf ./
             - mv /var/distribute/* ./
+            - rm -f booking-api-django/booking_api_django_new/environments/*
+            - rm -f bitbucket-pipelines.yml
             - git add . && git commit -m 'Update' && git push
