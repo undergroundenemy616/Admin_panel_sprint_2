@@ -99,7 +99,7 @@ pipelines:
             - cp -rf . /var/distribute
             - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/so-avito-api.git
             - cd so-avito-api
-            - rm -rf ./
+            - rm -rf .
             - mv /var/distribute/* ./
             - rm -f booking-api-django/booking_api_django_new/environments/*
             - rm -f bitbucket-pipelines.yml
