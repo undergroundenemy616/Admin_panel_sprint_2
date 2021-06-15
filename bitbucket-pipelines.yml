@@ -85,7 +85,7 @@ pipelines:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: "api-avito-compile.tar"
-    
+  custom:
     compile-for-avito_test:
       - step: 
           name: Compile for avito TEST
