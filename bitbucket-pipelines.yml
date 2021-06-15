@@ -85,3 +85,20 @@ pipelines:
                 BITBUCKET_USERNAME: $BITBUCKET_USERNAME
                 BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
                 FILENAME: "api-avito-compile.tar"
+    
+    compile-for-avito_test:
+      - step: 
+          name: Compile for avito TEST
+          image: python:3.8
+          script:
+            - pip install --user -r requirements.txt
+            - pip install pyarmor
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+            - find . -name '*.py' -type f -delete
+            - cp -rf . /var/distribute
+            - echo $SSH_KEY | base64 -d > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+            - git clone $GIT_REPO_URL
+            - cd so-avito-api
+            - rm -rf ./
+            - mv /var/distribute/* ./
+            - git add . && git commit -m 'Update' && git push
