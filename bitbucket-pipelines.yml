@@ -47,12 +47,41 @@ definitions:
             BITBUCKET_USERNAME: $BITBUCKET_USERNAME
             BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
             FILENAME: "api-test.tar"
-
+  
 pipelines:
   branches:
+    compile:
+      - step: *Compile
+
+    simple-office/prod:
+      - step:
+          <<: *Build
+
+    simple-office/prod-deploy:
+      - step:
+          <<: *Deploy
+          deployment: simple-office-liis-su
+    
     simple-office/dev:
       - step:
           <<: *Build
       - step:
           <<: *Deploy
           deployment: dev-simple-office-liis-su
+        
+    compile-for-avito:
+      - step: 
+          name: Compile for avito
+          image: python:3.8
+          script:
+            - pip install --user -r requirements.txt
+            - pip install pyarmor
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+            - find . -name '*.py' -type f -delete
+            - cp -rf . /var/distribute
+            - tar -cvf api-avito-compile.tar /var/distribute
+            - pipe: atlassian/bitbucket-upload-file:0.1.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: "api-avito-compile.tar"
