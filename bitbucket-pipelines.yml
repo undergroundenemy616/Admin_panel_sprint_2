@@ -47,7 +47,7 @@ definitions:
             BITBUCKET_USERNAME: $BITBUCKET_USERNAME
             BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
             FILENAME: "api-test.tar"
-  
+
 pipelines:
   branches:
     compile:
@@ -61,16 +61,16 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: simple-office-liis-su
-    
+
     simple-office/dev:
       - step:
           <<: *Build
       - step:
           <<: *Deploy
           deployment: dev-simple-office-liis-su
-  custom:  
+  custom:
     AVITO-obfuscate_and_deploy_code_to_Avito_repo:
-      - step: 
+      - step:
           name: Compile for avito TEST
           image: python:3.8
           deployment: Avito
