@@ -441,7 +441,7 @@ class PasswordResetView(GenericAPIView):
 
 class EntranceCollectorView(GenericAPIView):
     serializer_class = EntranceCollectorSerializer
-    authentication_classes = (AuthForAccountPut, )
+    permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
