@@ -38,13 +38,7 @@ definitions:
           script:
             - pip install --user -r requirements.txt
             - pip install pyarmor
-            - pyarmor obfuscate --src="."
-                                --exclude venv,
-                                         booking_api_django_new/__init__.py,
-                                         booking_api_django_new/celery.py
-                                         bookings/tasks.py
-                                         users/tasks.py
-                                -r --output=/var/distribute manage.py
+            - pyarmor obfuscate --src="." -r --output=/var/distribute manage.py --exclude venv, booking_api_django_new/__init__.py, booking_api_django_new/celery.py bookings/tasks.py users/tasks.py
             - find . -name '*.py' -type f -delete
             - rm -f booking_api_django_new/environments/*
             - rm -f bitbucket-pipelines.yml
