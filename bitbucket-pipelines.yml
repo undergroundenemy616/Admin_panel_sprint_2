@@ -48,7 +48,7 @@ definitions:
             - git config --global user.name "avito_update"
             - cd ${REPO_NAME}
             - rm -rf ./*
-            - cp -rf /var/distribute/ ./
+            - mv /var/distribute/* ./
             - git add . && git commit -m 'Update' && git push
 
     - step: &Compile
