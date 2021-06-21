@@ -38,7 +38,7 @@ definitions:
           script:
             - pip install --user -r requirements.txt
             - pip install pyarmor
-            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute entrypoint.py
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
             - find . -name '*.py' -type f -delete
             - rm -f booking_api_django_new/environments/*
             - rm -f bitbucket-pipelines.yml
