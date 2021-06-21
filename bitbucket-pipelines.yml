@@ -38,7 +38,7 @@ definitions:
           script:
             - pip install --user -r requirements.txt
             - pip install pyarmor
-            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute entrypoint.py
             - find . -name '*.py' -type f -delete
             - rm -f booking_api_django_new/environments/*
             - rm -f bitbucket-pipelines.yml
@@ -48,7 +48,7 @@ definitions:
             - git config --global user.name "avito_update"
             - cd ${REPO_NAME}
             - rm -rf ./*
-            - mv /var/distribute/* ./
+            - cp -rf /var/distribute/ ./
             - git add . && git commit -m 'Update' && git push
 
     - step: &Compile
