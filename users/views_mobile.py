@@ -64,7 +64,7 @@ class MobileLoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIV
             elif sms_code:  # Confirm code  and user.is_active
                 if SMS_MOCK_CONFIRM != 'True':
                     # Confirmation code
-                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
+                    if phone_number == HARDCODED_PHONE_NUMBER and int(sms_code) == HARDCODED_SMS_CODE:
                         pass
                     else:
                         confirm_code(phone_number, sms_code)
