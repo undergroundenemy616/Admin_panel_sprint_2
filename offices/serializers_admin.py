@@ -234,6 +234,10 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
 
 class AdminOfficeSingleSerializer(AdminOfficeSerializer):
 
+    class Meta:
+        model = Office
+        fields = '__all__'
+
     def to_representation(self, instance):
         response = super(AdminOfficeSingleSerializer, self).to_representation(instance)
         response['images'] = AdminFileForOffice(instance=instance.images, many=True).data
