@@ -233,6 +233,7 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
 
 
 class AdminOfficeSingleSerializer(AdminOfficeSerializer):
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True)
 
     class Meta:
         model = Office
