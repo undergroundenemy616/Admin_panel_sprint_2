@@ -81,7 +81,7 @@ def most_frequent(List):
 def date_validation(date):
     try:
         datetime.strptime(date, '%Y-%m-%d')
-    except ValueError:
+    except:
         raise ResponseException("Wrong date format, should be YYYY-MM-DD")
     return True
 
@@ -201,12 +201,12 @@ class AdminSwaggerBookingEmployee(serializers.Serializer):
 
 class AdminSwaggerBookingFuture(serializers.Serializer):
     office_id = serializers.UUIDField(required=False, format='hex_verbose')
-    month = serializers.CharField(required=False, max_length=10)
-    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    date = serializers.DateField(required=False, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
 
 class AdminSwaggerRoomType(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
     date_from = serializers.DateField(required=True, format='%Y-%m-%d')
     date_to = serializers.DateField(required=True, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
@@ -589,11 +589,8 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
 
 class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
     office_id = serializers.UUIDField(required=False, format='hex_verbose')
-    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
-    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
-    month = serializers.CharField(required=False, max_length=10)
-    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
     date = serializers.DateField(required=False, format='%Y-%m-%d')
+    doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
     def get_statistic(self):
         date_validation(self.data.get('date'))
@@ -727,8 +724,6 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         date_from = self.data.get('date_from')
         date_to = self.data.get('date_to')
         doc_format = self.data.get('doc_format')
-
-
 
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
