@@ -102,12 +102,19 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
+    email = serializers.EmailField(required=False, allow_blank=True)
 
     class Meta:
         model = Account
         exclude = ['user']
 
     def validate(self, attrs):
+        if not attrs.get('email'):
+            attrs['email'] = None
+        try:
+            attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
+        except ValueError as e:
+            raise ResponseException(e)
         if not self.instance:
             if User.objects.filter(phone_number=attrs['phone_number']).exists():
                 raise ResponseException("User with this phone already exists")

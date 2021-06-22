@@ -233,6 +233,11 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
 
 
 class AdminOfficeSingleSerializer(AdminOfficeSerializer):
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True)
+
+    class Meta:
+        model = Office
+        fields = '__all__'
 
     def to_representation(self, instance):
         response = super(AdminOfficeSingleSerializer, self).to_representation(instance)
