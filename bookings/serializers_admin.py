@@ -256,7 +256,7 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                               (Q(date_to__date__gt=date_from) &
                                                                Q(date_to__date__lte=date_to))
                                                       )
-                                                      ).count()
+                                                 ).count()
             number_of_activated_bookings = bookings.filter(Q(status__in=['active', 'over']) &
                                                                 Q(table__room__floor__office_id=valid_office_id) &
                                                                 (
@@ -292,13 +292,13 @@ class AdminStatisticsSerializer(serializers.Serializer):
             tables_with_markers = TableMarker.objects.filter(Q(table__room__type__is_deletable=False) &
                                                              Q(table__room__type__bookable=True)).count()
             number_of_bookings = bookings.filter((Q(date_from__date__gte=date_from) &
-                                                       Q(date_from__date__lt=date_to))
-                                                      |
-                                                      (Q(date_from__date__lte=date_from) &
-                                                       Q(date_to__date__gte=date_to))
-                                                      |
-                                                      (Q(date_to__date__gt=date_from) &
-                                                       Q(date_to__date__lte=date_to))).count()
+                                                  Q(date_from__date__lt=date_to))
+                                                 |
+                                                 (Q(date_from__date__lte=date_from) &
+                                                  Q(date_to__date__gte=date_to))
+                                                 |
+                                                 (Q(date_to__date__gt=date_from) &
+                                                  Q(date_to__date__lte=date_to))).count()
             number_of_activated_bookings = bookings.filter(status__in=['active', 'over']).count()
             bookings_with_hours = bookings.raw(f"""SELECT 
                                 DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
@@ -332,9 +332,17 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                month=int(month.strftime("%m %Y").split(" ")[0]), day=i + 1)):
                     working_days = working_days - 1
 
-        tables_available_for_booking = all_tables.filter(is_occupied=False).count()
+        tables_available_for_booking = all_tables.filter(is_occupied=False,
+                                                         room__type__unified=False,
+                                                         room__type__is_deletable=False,
+                                                         room__type__bookable=True).count()
         active_users = all_accounts.count()
-        total_tables = Table.objects.filter(room__floor__office_id=valid_office_id).count()
+        total_tables = Table.objects.filter(room__floor__office_id=valid_office_id,
+                                            room__type__unified=False,
+                                            room__type__is_deletable=False,
+                                            room__type__bookable=True
+                                            ).count()
+
 
         list_of_booked_tables = []
         for table in tables_from_booking:
