@@ -59,7 +59,8 @@ def bookings_future(stats):
         "first_name": stats.first_name,
         "middle_name": stats.middle_name,
         "last_name": stats.last_name,
-        "phone_number": str(stats.phone_number),
+        "phone_number_1": str(stats.phone_number_1),
+        "phone_number_2": str(stats.phone_number_2),
         "date_from": str(stats.date_from),
         "date_to": str(stats.date_to),
         "date_activate_until": str(stats.date_activate_until)
@@ -608,15 +609,16 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
 
         query = f"""
                 SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
-                ua.last_name as last_name, ua.phone_number as phone_number, oo.id as office_id, oo.title as office_title, 
+                ua.last_name as last_name, ua.phone_number as phone_number_1, oo.id as office_id, oo.title as office_title, 
                 ff.id as floor_id, ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
-                b.date_activate_until, b.status
+                b.date_activate_until, b.status, uu.phone_number as phone_number_2
                 FROM bookings_booking b
                 JOIN tables_table tt on b.table_id = tt.id
                 JOIN rooms_room rr on rr.id = tt.room_id
                 JOIN floors_floor ff on rr.floor_id = ff.id
                 JOIN offices_office oo on ff.office_id = oo.id
                 JOIN users_account ua on b.user_id = ua.id
+                JOIN users_user uu on ua.user_id = uu.id
                 WHERE b.date_from::date = '{date}' and (b.status = 'waiting' or b.status = 'active' or b.status = 'over' or b.status = 'auto_over')"""
 
         if self.data.get('office_id'):
@@ -674,9 +676,14 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
                     r_date_to = datetime.strptime(correct_date_to.replace("T", " ").split("+")[0],
                                                   '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
 
+                phone_number = None
+                if sql_results[j]['phone_number_1'] != 'None':
+                    phone_number = sql_results[j]['phone_number_1']
+                elif sql_results[j]['phone_number_2'] != 'None':
+                    phone_number = sql_results[j]['phone_number_2']
+
                 worksheet.write('A' + str(i), full_name)
-                worksheet.write('B' + str(i), sql_results[j]['phone_number'] if sql_results[j][
-                                                                                    'phone_number'] != 'None' else 'Не указан')
+                worksheet.write('B' + str(i), phone_number if phone_number else 'Не указан')
                 worksheet.write('C' + str(i), str(r_date_from))
                 worksheet.write('D' + str(i), str(r_date_to))
                 worksheet.write('E' + str(i), book_time),
