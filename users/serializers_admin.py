@@ -102,7 +102,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
-    email = serializers.EmailField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Account
