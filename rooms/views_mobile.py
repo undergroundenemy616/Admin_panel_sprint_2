@@ -42,8 +42,8 @@ class SuitableRoomsMobileView(GenericAPIView):
 
         rooms = Room.objects.is_allowed(user_id=request.user.id).filter(floor__office_id=office, type=room_type)
 
-        tables = Table.objects.filter(room__id__in=rooms, is_occupied=False).select_related('table_marker', 'room',
-                                                                                            'room__floor', 'room__zone')
+        tables = Table.objects.filter(room__id__in=rooms).select_related('table_marker', 'room',
+                                                                         'room__floor', 'room__zone')
 
         bookings = Booking.objects.filter(Q(table__id__in=tables, status__in=['waiting', 'active']) &
                                           (Q(date_from__lt=date_to, date_to__gte=date_to)
