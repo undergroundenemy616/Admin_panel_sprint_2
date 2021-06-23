@@ -166,5 +166,5 @@ class MobileAccountMeetingSearchView(ListAPIView):
             return self.get_paginated_response(serializer.data)
 
         serializer = MobileAccountMeetingSearchSerializer(instance=queryset, data=request.query_params, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
