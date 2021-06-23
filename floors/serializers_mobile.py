@@ -123,7 +123,7 @@ class MobileRoomMarkersSerializer(serializers.Serializer):
         if instance.room.type.unified:
             response['table_id'] = instance.room.tables.first().id
             response['table_title'] = instance.room.tables.first().title
-            response['is_available'] = not instance.room.tables.first().is_occupied
+            response['is_available'] = True
         return response
 
 
@@ -137,4 +137,4 @@ class MobileTableMarkersSerializer(serializers.Serializer):
     room_id = serializers.UUIDField(source='table.room.id')
 
     def get_is_available(self, obj):
-        return not obj.table.is_occupied
+        return True
