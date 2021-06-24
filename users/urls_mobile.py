@@ -3,7 +3,8 @@ from django.urls import path
 from users.views_mobile import (MobileAccountView, MobileEntranceCollectorView,
                                 MobileLoginOrRegisterUserFromMobileView,
                                 MobileRefreshTokenView,
-                                MobileSingleAccountView)
+                                MobileSingleAccountView,
+                                MobileAccountMeetingSearchView)
 
 urlpatterns = [
     path('/auth', MobileLoginOrRegisterUserFromMobileView.as_view()),
@@ -11,4 +12,5 @@ urlpatterns = [
     path('/account/<uuid:pk>', MobileSingleAccountView.as_view()),
     path('/enter', MobileEntranceCollectorView.as_view()),
     path('/refresh', MobileRefreshTokenView.as_view()),
+    path('/account_search', MobileAccountMeetingSearchView.as_view())
 ]

@@ -1,6 +1,8 @@
 import ipinfo
+from django.db.models import Q
 from rest_framework import serializers
 
+from bookings.models import Booking
 from files.models import File
 from files.serializers_mobile import MobileBaseFileSerializer
 from users.models import Account, AppEntrances, User
@@ -97,3 +99,41 @@ class MobileAccountUpdateSerializer(serializers.ModelSerializer):
             attrs['email'] = None
         return attrs
 
+
+class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField(source='user.phone_number', required=False)
+
+    class Meta:
+        model = Account
+        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number']
+
+    def to_representation(self, instance):
+        response = super(MobileAccountMeetingSearchSerializer, self).to_representation(instance)
+        account_bookings = Booking.objects.filter(Q(user_id=response['id'])
+                                                  &
+                                                  Q(status__in=['waiting', 'active'])
+                                                  &
+                                                  (Q(date_from__lt=self.context['request'].query_params.get('date_to'),
+                                                     date_to__gte=self.context['request'].query_params.get('date_to'))
+                                                   |
+                                                   Q(date_from__lte=self.context['request'].query_params.get('date_from'),
+                                                     date_to__gt=self.context['request'].query_params.get('date_from'))
+                                                   |
+                                                   Q(date_from__gte=self.context['request'].query_params.get('date_from'),
+                                                     date_to__lte=self.context['request'].query_params.get('date_to')))
+                                                  &
+                                                  Q(date_from__lt=self.context['request'].query_params.get('date_to')))
+
+        if account_bookings:
+            response['occupied_time'] = []
+            for booking in account_bookings:
+                response['occupied_time'].append({
+                    'date_from': booking.date_from,
+                    'date_to': booking.date_to
+                })
+            response['is_available'] = False
+        else:
+            response['occupied_time'] = []
+            response['is_available'] = True
+
+        return response
