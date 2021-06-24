@@ -1,12 +1,8 @@
-import os
-
 from django.contrib.auth import user_logged_in
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404, ListAPIView
-from rest_framework.mixins import ListModelMixin
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
@@ -14,7 +10,7 @@ from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
 
 from booking_api_django_new.settings import (HARDCODED_PHONE_NUMBER,
                                              HARDCODED_SMS_CODE, SMS_MOCK_CONFIRM)
-from core.pagination import DefaultPagination
+from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from users.models import Account, User
 from users.registration import confirm_code, send_code
@@ -152,7 +148,7 @@ class MobileFirstCheckView(GenericAPIView):
 class MobileAccountMeetingSearchView(ListAPIView):
     serializer_class = MobileAccountMeetingSearchSerializer
     queryset = Account.objects.all().select_related('user')
-    pagination_class = DefaultPagination
+    pagination_class = LimitStartPagination
     filter_backends = [SearchFilter]
     search_fields = ['first_name', 'last_name', 'user__phone_number']
     permission_classes = (IsAuthenticated,)
