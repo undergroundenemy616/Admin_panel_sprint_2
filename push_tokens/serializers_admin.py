@@ -30,6 +30,7 @@ class AdminAccountForPushSerializer(serializers.Serializer):
     def to_representation(self, instance):
         response = super(AdminAccountForPushSerializer, self).to_representation(instance)
         response['phone_number'] = instance.user.phone_number
+        response['email'] = instance.user.email
         response['groups_id'] = [group.id for group in instance.groups.all()]
         return response
 
