@@ -12,3 +12,12 @@ def send_html_email_message(to: str, subject: str, template_args: dict):
         message='\n'.join([f"{key}: {val}" for key, val in template_args.items()]),
         html_message=render_to_string("mail.html", template_args)
     )
+
+
+def send_html_email_message_booking_for_sleep(to: str, subject: str, message: str):
+    send_mail(
+        recipient_list=[to],
+        from_email=EMAIL_HOST_USER,
+        subject=subject,
+        message=message
+    )

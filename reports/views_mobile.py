@@ -8,7 +8,7 @@ from booking_api_django_new.settings import EMAIL_HOST_USER
 from core.permissions import IsAuthenticated
 from reports.generate_html import generate_attach, generate_html
 from reports.models import Report
-from reports.serializers_mobile import MobileReportSerializer
+from reports.serializers_mobile import MobileReportSerializer, MobileRequestDemoSerializer
 
 
 class MobileReportCreateView(ListModelMixin,
@@ -40,3 +40,15 @@ class MobileReportCreateView(ListModelMixin,
         serializer.validated_data['id_delivered'] = True
         report = serializer.save()
         return Response(serializer.to_representation(report), status=status.HTTP_201_CREATED)
+
+
+class MobileRequestDemoView(GenericAPIView):
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = MobileRequestDemoSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.sent_email()
+        return Response(data={"message": "Email sent"}, status=status.HTTP_200_OK)

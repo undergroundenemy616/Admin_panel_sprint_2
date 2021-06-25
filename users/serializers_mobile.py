@@ -1,12 +1,39 @@
+import random
+
+from django.contrib.auth.password_validation import validate_password
 import ipinfo
+from django.contrib.auth import user_logged_in
+from django.core.validators import validate_email
+from django.core.cache import cache
+from django.db.transaction import atomic
 from django.db.models import Q
 from rest_framework import serializers
+from django.core.exceptions import ValidationError as ValErr
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import get_object_or_404
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from booking_api_django_new.settings import DEBUG, KEY_EXPIRATION_EMAIL
+from core.handlers import ResponseException
 from bookings.models import Booking
 from files.models import File
 from files.serializers_mobile import MobileBaseFileSerializer
 from users.models import Account, AppEntrances, User
 from users.serializers import AccountSerializer
+from users.tasks import send_email, send_sms
+
+
+def sent_conformation_code(recipient: str, subject="", ttl=60, key=None, phone=False) -> None:
+    conformation_code = "".join([random.choice("0123456789") for _ in range(4)])
+    if not key:
+        key = recipient
+    cache.set(key, conformation_code, ttl)
+    if not phone:
+        send_email.delay(email=recipient, subject=subject,
+                         message="Код подтверждения: " + conformation_code)
+    else:
+        send_sms.delay(phone_number=recipient, message="Код подтверждения: " + conformation_code)
+
 
 
 class MobileEntranceCollectorSerializer(serializers.ModelSerializer):
@@ -99,6 +126,185 @@ class MobileAccountUpdateSerializer(serializers.ModelSerializer):
             attrs['email'] = None
         return attrs
 
+
+class MobileUserRegisterSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    phone_number = serializers.CharField(required=False)
+    password = serializers.CharField(required=False)
+    code = serializers.CharField(required=False)
+    description = serializers.CharField(required=False)
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    middle_name = serializers.CharField(required=False)
+    gender = serializers.CharField(required=False)
+    birth_date = serializers.DateField(required=False)
+
+    def validate(self, attrs):
+        if User.objects.filter(email=attrs['email']).exists():
+            raise ResponseException("User with this email already exists")
+        if attrs.get('password'):
+            if not DEBUG:
+                validate_password(attrs.get('password'))
+        if attrs.get('phone_number'):
+            try:
+                attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
+            except ValueError as e:
+                raise ResponseException(e)
+        return attrs
+
+
+    @atomic()
+    def register(self):
+        if self.context['request'].session.get('confirm') and self.validated_data.get('password'):
+            # if not self.validated_data.get('password'):
+            #     raise ResponseException("Password is required field", status_code=400)
+            user = User.objects.create(email=self.validated_data.pop('email'))
+            user.set_password(self.validated_data.pop('password'))
+            user.save()
+            if self.validated_data.get('code'):
+                self.validated_data.pop('code')
+            Account.objects.create(user=user, **self.validated_data)
+            response = dict()
+            token_serializer = TokenObtainPairSerializer()
+            token = token_serializer.get_token(user=user)
+            user_logged_in.send(sender=user.__class__, user=user)
+            response["refresh_token"] = str(token)
+            response["access_token"] = str(token.access_token)
+            del self.context['request'].session['confirm']
+            return response
+
+        if self.validated_data.get('code'):
+            if cache.get(self.validated_data.get('email')) == self.validated_data.get('code'):
+                self.context['request'].session['confirm'] = True
+                cache.delete(self.validated_data.get('email'))
+                return {'message': 'email confirm'}
+            else:
+                raise ResponseException("Wrong or expired code")
+
+        sent_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты",
+                               ttl=KEY_EXPIRATION_EMAIL)
+
+        return {'message': 'email with conformation code sent'}
+
+
+class MobileUserLoginSerializer(serializers.Serializer):
+    user_identification = serializers.CharField(write_only=True)
+    password = serializers.CharField(required=False)
+    user_has_password = serializers.BooleanField(read_only=True)
+    refresh_token = serializers.CharField(read_only=True)
+    access_token = serializers.CharField(read_only=True)
+    activated = serializers.BooleanField(read_only=True)
+
+    def validate(self, attrs):
+        email = False
+        try:
+            validate_email(attrs.get('user_identification'))
+            email = True
+        except ValErr:
+            try:
+                attrs['user_identification'] = User.normalize_phone(attrs.get('user_identification'))
+            except ValueError:
+                raise ResponseException("Wrong format of email or phone", status_code=400)
+        if email:
+            user = User.objects.filter(email=attrs.get('user_identification'))
+        else:
+            user = User.objects.filter(phone_number=attrs.get('user_identification'))
+
+        if not user:
+            raise ResponseException("User doesn't exists")
+
+        if attrs.get('password'):
+            response = dict()
+            if not user:
+                raise ResponseException("Incorrect email or password", status_code=400)
+            user = user[0]
+            if not user.password:
+                raise ResponseException("Incorrect email or password", status_code=400)
+            is_correct = user.check_password(attrs.get('password'))
+            if not is_correct:
+                raise ResponseException('Incorrect email or password', status_code=400)
+            user_logged_in.send(sender=user.__class__, user=user)
+            token_serializer = TokenObtainPairSerializer()
+            token = token_serializer.get_token(user=user)
+            response["refresh_token"] = str(token)
+            response["access_token"] = str(token.access_token)
+            response["activated"] = user.is_active
+            return response
+        attrs['user_has_password'] = bool(user[0].password)
+        return attrs
+
+
+class MobilePasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(max_length=512)
+    new_password = serializers.CharField(max_length=512)
+
+    def validate(self, attrs):
+        if not self.context['request'].user.check_password(attrs['old_password']):
+            raise ValidationError(detail="wrong password", code=400)
+        if not DEBUG:
+            validate_password(attrs['new_password'], user=self.context['request'].user)
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        user.set_password(self.data['new_password'])
+        user.save()
+
+
+class MobilePasswordResetSetializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(required=False)
+
+    def validate(self, attrs):
+        if not User.objects.filter(email=attrs.get('email')).exists():
+            raise ResponseException("Wrong email")
+        return attrs
+
+    @atomic()
+    def reset(self):
+        if self.validated_data.get('code'):
+            if cache.get(self.validated_data.get('email')) == self.validated_data.get('code'):
+                password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+                send_email.delay(email=self.validated_data.get('email'), subject="Сброс пароля",
+                                 message="Новый пароль: " + password)
+                user = get_object_or_404(User, email=self.validated_data.get('email'))
+                user.set_password(password)
+                user.save()
+                cache.delete(self.validated_data.get('email'))
+                return {'message': 'password reset'}
+            else:
+                raise ResponseException("Wrong or expired code")
+
+        sent_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты для сброса пароля",
+                               ttl=KEY_EXPIRATION_EMAIL)
+
+        return {'message': 'email with conformation code sent'}
+
+
+class MobileEmailConformationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def sent_code(self):
+        key = self.validated_data.get('email') + '_' + self.context['id']
+        sent_conformation_code(recipient=self.validated_data.get('email'),
+                               subject="Подтверждене почты", ttl=KEY_EXPIRATION_EMAIL,
+                               key=key)
+
+
+class MobilePhoneConformationSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+
+    def validate(self, attrs):
+        try:
+            attrs['phone_number'] = User.normalize_phone(attrs.get('phone_number'))
+        except ValueError as e:
+            raise ResponseException(e)
+        return attrs
+
+    def sent_code(self):
+        key = self.validated_data.get('phone_number') + '_' + self.context['id']
+        sent_conformation_code(recipient=self.validated_data.get('phone_number'),
+                               ttl=KEY_EXPIRATION_EMAIL, key=key, phone=True)
 
 class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(source='user.phone_number', required=False)

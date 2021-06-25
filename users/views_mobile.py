@@ -1,8 +1,11 @@
 from django.contrib.auth import user_logged_in
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404, ListAPIView
+from rest_framework import mixins, status, viewsets
+from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
@@ -15,6 +18,11 @@ from core.permissions import IsAdmin, IsAuthenticated
 from users.models import Account, User
 from users.registration import confirm_code, send_code
 from users.serializers import SwaggerAccountParametr
+from users.serializers_mobile import (MobileAccountSerializer, MobileAccountUpdateSerializer,
+                                      MobileEntranceCollectorSerializer, MobileLoginOrRegisterSerializer,
+                                      MobilePasswordChangeSerializer, MobilePasswordResetSetializer,
+                                      MobileUserLoginSerializer, MobileUserRegisterSerializer,
+                                      MobileEmailConformationSerializer, MobilePhoneConformationSerializer)
 from users.serializers_mobile import (MobileAccountSerializer,
                                       MobileAccountUpdateSerializer,
                                       MobileEntranceCollectorSerializer,
@@ -30,7 +38,8 @@ class MobileEntranceCollectorView(GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"message": "OK"}, status=status.HTTP_200_OK)
+        return Response({"message": "OK",
+                         "email": bool(request.user.email)}, status=status.HTTP_200_OK)
 
 
 class MobileLoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
@@ -144,6 +153,102 @@ class MobileFirstCheckView(GenericAPIView):
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+
+class MobileMyAccountViewSet(GenericAPIView):
+    queryset = Account.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = None
+
+    def post(self, request, *args, **kwargs):
+        return Response(data={"detail": "some data"}, status=status.HTTP_200_OK)
+
+
+class MobileUserRegisterView(GenericAPIView):
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = MobileUserRegisterSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        response = serializer.register()
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class MobileUserLoginView(GenericAPIView):
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = MobileUserLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.data
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class MobilePasswordChangeView(GenericAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = MobilePasswordChangeSerializer
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'old_password': openapi.Schema(type=openapi.TYPE_STRING),
+            'new_password': openapi.Schema(type=openapi.TYPE_STRING)
+        }
+    ))
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        token_serializer = TokenObtainPairSerializer()
+        token = token_serializer.get_token(user=request.user)
+        return Response({
+            'message': "OK",
+            'access_token': str(token.access_token),
+            'refresh_token': str(token)
+        }, status=status.HTTP_200_OK)
+
+
+class MobilePasswordResetView(GenericAPIView):
+    serializer_class = MobilePasswordResetSetializer
+    permission_classes = []
+    authentication_classes = []
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'email': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.reset()
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class MobileEmailConformationView(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = MobileEmailConformationSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'id': str(request.user.id)})
+        serializer.is_valid(raise_exception=True)
+        serializer.sent_code()
+        return Response(data={"detail": "Conformation code was sent to email"}, status=status.HTTP_200_OK)
+
+
+class MobilePhoneConformationView(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = MobilePhoneConformationSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'id': str(request.user.id)})
+        serializer.is_valid(raise_exception=True)
+        serializer.sent_code()
+        return Response(data={"detail": "Conformation code was sent to phone"}, status=status.HTTP_200_OK)
 
 class MobileAccountMeetingSearchView(ListAPIView):
     serializer_class = MobileAccountMeetingSearchSerializer
