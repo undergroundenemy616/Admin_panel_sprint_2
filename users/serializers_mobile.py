@@ -132,11 +132,10 @@ class MobileUserRegisterSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=False)
     password = serializers.CharField(required=False)
     code = serializers.CharField(required=False)
-    description = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
-    middle_name = serializers.CharField(required=False)
-    gender = serializers.CharField(required=False)
+    middle_name = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.CharField(required=False, allow_blank=True)
     birth_date = serializers.DateField(required=False)
 
     def validate(self, attrs):
@@ -170,6 +169,7 @@ class MobileUserRegisterSerializer(serializers.Serializer):
             user_logged_in.send(sender=user.__class__, user=user)
             response["refresh_token"] = str(token)
             response["access_token"] = str(token.access_token)
+            response["activated"] = user.is_active
             del self.context['request'].session['confirm']
             return response
 
@@ -254,26 +254,41 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
 class MobilePasswordResetSetializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(required=False)
+    new_password = serializers.CharField(max_length=512, required=False)
 
     def validate(self, attrs):
         if not User.objects.filter(email=attrs.get('email')).exists():
             raise ResponseException("Wrong email")
+        if self.context['request'].session.get('confirm'):
+            attrs['user'] = User.objects.get(email=attrs.get('email'))
+        if not DEBUG and attrs.get('new_password'):
+            validate_password(attrs['new_password'], user=attrs['user'])
         return attrs
 
     @atomic()
     def reset(self):
+
         if self.validated_data.get('code'):
             if cache.get(self.validated_data.get('email')) == self.validated_data.get('code'):
-                password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
-                send_email.delay(email=self.validated_data.get('email'), subject="Сброс пароля",
-                                 message="Новый пароль: " + password)
-                user = get_object_or_404(User, email=self.validated_data.get('email'))
-                user.set_password(password)
-                user.save()
+                self.context['request'].session['confirm'] = True
                 cache.delete(self.validated_data.get('email'))
-                return {'message': 'password reset'}
+                return {'message': 'email confirm'}
             else:
                 raise ResponseException("Wrong or expired code")
+
+        if self.context['request'].session.get('confirm') and self.validated_data.get('new_password'):
+            self.validated_data['user'].set_password(self.validated_data.get('new_password'))
+            self.validated_data['user'].save()
+            response = dict()
+            user_logged_in.send(sender=self.validated_data['user'].__class__, user=self.validated_data['user'])
+            token_serializer = TokenObtainPairSerializer()
+            token = token_serializer.get_token(user=self.validated_data['user'])
+            response["refresh_token"] = str(token)
+            response["access_token"] = str(token.access_token)
+            response["activated"] = self.validated_data['user'].is_active
+            del self.context['request'].session['confirm']
+            cache.delete(self.validated_data.get('email'))
+            return response
 
         sent_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты для сброса пароля",
                                ttl=KEY_EXPIRATION_EMAIL)

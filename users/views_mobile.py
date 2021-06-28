@@ -223,7 +223,7 @@ class MobilePasswordResetView(GenericAPIView):
         }
     ))
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         response = serializer.reset()
         return Response(data=response, status=status.HTTP_200_OK)
@@ -269,3 +269,11 @@ class MobileAccountMeetingSearchView(ListAPIView):
         serializer = MobileAccountMeetingSearchSerializer(instance=queryset, data=request.query_params, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class MobileSelfView(GenericAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = None
+
+    def get(self, request, *args, **kwargs):
+        return Response(MobileAccountSerializer(instance=get_object_or_404(Account, user=request.user)).data,
+                        status=status.HTTP_200_OK)
