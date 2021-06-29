@@ -205,7 +205,6 @@ class MobileUserLoginSerializer(serializers.Serializer):
             raise ResponseException("User doesn't exists")
 
         if attrs.get('password'):
-            response = dict()
             if not user:
                 raise ResponseException("Incorrect email or password", status_code=400)
             user = user[0]
@@ -222,10 +221,11 @@ class MobileUserLoginSerializer(serializers.Serializer):
             user_logged_in.send(sender=user.__class__, user=user)
             token_serializer = TokenObtainPairSerializer()
             token = token_serializer.get_token(user=user)
-            response["refresh_token"] = str(token)
-            response["access_token"] = str(token.access_token)
-            response["activated"] = user.is_active
-            return response
+            attrs = dict()
+            attrs["refresh_token"] = str(token)
+            attrs["access_token"] = str(token.access_token)
+            attrs["activated"] = user.is_active
+            return attrs
         attrs['user_has_password'] = bool(user[0].password)
         return attrs
 
