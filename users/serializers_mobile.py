@@ -82,22 +82,12 @@ class MobileLoginOrRegisterSerializer(serializers.Serializer):
 
 
 class MobileAccountSerializer(serializers.ModelSerializer):
-    firstname = serializers.CharField(source='first_name', allow_blank=True, allow_null=True)
-    lastname = serializers.CharField(source='last_name', allow_blank=True, allow_null=True)
-    middlename = serializers.CharField(source='middle_name', allow_blank=True, allow_null=True)
-    birthday = serializers.DateField(source='birth_date', allow_null=True)
-    photo = MobileBaseFileSerializer(required=False, allow_null=True)
+    phone_number = serializers.CharField(source='user.phone_number')
+    email = serializers.EmailField(source='user.email')
 
     class Meta:
         model = Account
-        exclude = ['first_name', 'last_name', 'middle_name', 'birth_date']
-
-    def to_representation(self, instance):
-        response = super(MobileAccountSerializer, self).to_representation(instance)
-        response['phone_number'] = instance.user.phone_number if instance.user.phone_number else instance.phone_number
-        response['email'] = instance.user.email if instance.user.email else instance.email
-        response['has_cp_access'] = True if instance.user.email else False
-        return response
+        fields = ['id', 'email', 'gender', 'last_name', 'first_name', 'phone_number', 'user', 'birth_date']
 
 
 class MobileAccountUpdateSerializer(serializers.ModelSerializer):
@@ -358,3 +348,44 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
             response['is_available'] = True
 
         return response
+
+
+class MobileSelfUpdateSerializer(serializers.ModelSerializer):
+    email_code = serializers.IntegerField(required=False)
+    phone_code = serializers.IntegerField(required=False)
+    gender = serializers.CharField(required=False, source='account.gender')
+    last_name = serializers.CharField(required=False, source='account.last_name')
+    first_name = serializers.CharField(required=False, source='account.first_name')
+
+    class Meta:
+        model = User
+        fields = ['email', 'email_code', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code']
+
+    def validate(self, attrs):
+        if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
+                email=attrs['email']):
+            raise ResponseException("User with this email already exists")
+        if self.instance and self.instance.password:
+            raise ResponseException("User already have password")
+        if not DEBUG and attrs.get('password'):
+            validate_password(attrs['password'], user=self.context['request'].user)
+        if self.instance and attrs.get('email') and self.instance.email != attrs.get('email') and not attrs.get('email_code'):
+            raise ResponseException("Need email conformation code for change email")
+        if self.instance and attrs.get('phone_number') and self.instance.phone_number != attrs.get('phone_number') and not attrs.get('phone_code'):
+            raise ResponseException("Need phone conformation code for change phone")
+        if attrs.get('email') and cache.get(attrs.get('email')) != attrs.get('email_code'):
+            raise ResponseException("Wrong or expired email code")
+        if attrs.get('phone_number') and cache.get(attrs.get('phone_number')) != attrs.get('phone_code'):
+            raise ResponseException("Wrong or expired phone code")
+        return attrs
+
+    def update(self, instance, validated_data):
+        account_params = validated_data.pop('account')
+        if account_params:
+            for param in account_params:
+                setattr(instance.account, param, account_params[param])
+                instance.account.save()
+        instance = super(MobileSelfUpdateSerializer, self).update(instance=instance, validated_data=validated_data)
+        instance.set_password(validated_data['password'])
+        instance.save()
+        return instance

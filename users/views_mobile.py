@@ -1,10 +1,9 @@
 from django.contrib.auth import user_logged_in
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, status
 from rest_framework.filters import SearchFilter
-from rest_framework.generics import GenericAPIView, get_object_or_404, ListAPIView
-from rest_framework import mixins, status, viewsets
+from rest_framework.generics import ListAPIView
+from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
@@ -18,11 +17,10 @@ from core.permissions import IsAdmin, IsAuthenticated
 from users.models import Account, User
 from users.registration import confirm_code, send_code
 from users.serializers import SwaggerAccountParametr
-from users.serializers_mobile import (MobileAccountSerializer, MobileAccountUpdateSerializer,
-                                      MobileEntranceCollectorSerializer, MobileLoginOrRegisterSerializer,
-                                      MobilePasswordChangeSerializer, MobilePasswordResetSetializer,
+from users.serializers_mobile import (MobilePasswordChangeSerializer, MobilePasswordResetSetializer,
                                       MobileUserLoginSerializer, MobileUserRegisterSerializer,
-                                      MobileEmailConformationSerializer, MobilePhoneConformationSerializer)
+                                      MobileEmailConformationSerializer, MobilePhoneConformationSerializer,
+                                      MobileSelfUpdateSerializer)
 from users.serializers_mobile import (MobileAccountSerializer,
                                       MobileAccountUpdateSerializer,
                                       MobileEntranceCollectorSerializer,
@@ -277,3 +275,11 @@ class MobileSelfView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         return Response(MobileAccountSerializer(instance=get_object_or_404(Account, user=request.user)).data,
                         status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        serializer = MobileSelfUpdateSerializer(data=request.data, context={'request': request}, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(MobileAccountSerializer(instance=get_object_or_404(Account, user=request.user)).data,
+                        status=status.HTTP_200_OK)
+
