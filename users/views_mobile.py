@@ -253,11 +253,11 @@ class MobileAccountMeetingSearchView(ListAPIView):
     queryset = Account.objects.all().select_related('user')
     pagination_class = LimitStartPagination
     filter_backends = [SearchFilter]
-    search_fields = ['first_name', 'last_name', 'user__phone_number']
+    search_fields = ['first_name', 'last_name', 'user__phone_number', 'user__email']
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset()).exclude(user_id=request.user.id)
 
         page = self.paginate_queryset(queryset)
         if page is not None:

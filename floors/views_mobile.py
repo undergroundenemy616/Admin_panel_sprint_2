@@ -248,5 +248,9 @@ class MobileFloorMarkers(GenericAPIView):
                 for room_marker in markers['room_markers_bookable']:
                     if room_marker.get('table_id') and room_marker.get('table_id') in bookings:
                         room_marker['is_available'] = False
+                    else:
+                        for table in markers['table_markers']:
+                            if not table['is_available'] and table['room_id'] == room_marker['room_id']:
+                                room_marker['suitable_tables_count'] -= 1
 
         return Response(markers, status=status.HTTP_200_OK)

@@ -332,10 +332,11 @@ class MobilePhoneConformationSerializer(serializers.Serializer):
 
 class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(source='user.phone_number', required=False)
+    email = serializers.CharField(source='user.email', required=False)
 
     class Meta:
         model = Account
-        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number']
+        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number', 'email']
 
     def to_representation(self, instance):
         response = super(MobileAccountMeetingSearchSerializer, self).to_representation(instance)
