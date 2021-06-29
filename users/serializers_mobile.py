@@ -10,14 +10,12 @@ from django.db.models import Q
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as ValErr
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import get_object_or_404
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from booking_api_django_new.settings import DEBUG, KEY_EXPIRATION_EMAIL
+from booking_api_django_new.settings import DEBUG, KEY_EXPIRATION_EMAIL, KEY_EXPIRATION
 from core.handlers import ResponseException
 from bookings.models import Booking
 from files.models import File
-from files.serializers_mobile import MobileBaseFileSerializer
 from users.models import Account, AppEntrances, User
 from users.serializers import AccountSerializer
 from users.tasks import send_email, send_sms
@@ -27,13 +25,16 @@ def sent_conformation_code(recipient: str, subject="", ttl=60, key=None, phone=F
     conformation_code = "".join([random.choice("0123456789") for _ in range(4)])
     if not key:
         key = recipient
+    if KEY_EXPIRATION_EMAIL - cache.ttl(key) < KEY_EXPIRATION:
+        detail = {"detail": 'Message already sent!',
+                  "time": KEY_EXPIRATION-(KEY_EXPIRATION_EMAIL - cache.ttl(key))}
+        raise ValidationError(detail=detail, code=400)
     cache.set(key, conformation_code, ttl)
     if not phone:
         send_email.delay(email=recipient, subject=subject,
                          message="Код подтверждения: " + conformation_code)
     else:
         send_sms.delay(phone_number=recipient, message="Код подтверждения: " + conformation_code)
-
 
 
 class MobileEntranceCollectorSerializer(serializers.ModelSerializer):
@@ -211,7 +212,12 @@ class MobileUserLoginSerializer(serializers.Serializer):
             if not user.password:
                 raise ResponseException("Incorrect email or password", status_code=400)
             is_correct = user.check_password(attrs.get('password'))
+            if not self.context['request'].session.get('login_count'):
+                self.context['request'].session['login_count'] = 0
+            if self.context['request'].session['login_count'] >= 5:
+                raise ResponseException("Too many attempts")
             if not is_correct:
+                self.context['request'].session['login_count'] += 1
                 raise ResponseException('Incorrect email or password', status_code=400)
             user_logged_in.send(sender=user.__class__, user=user)
             token_serializer = TokenObtainPairSerializer()
@@ -229,7 +235,12 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=512)
 
     def validate(self, attrs):
+        if not self.context['request'].session.get('pass_change_count'):
+            self.context['request'].session['pass_change_count'] = 0
+        if self.context['request'].session['pass_change_count'] >= 5:
+            raise ResponseException("Too many attempts")
         if not self.context['request'].user.check_password(attrs['old_password']):
+            self.context['request'].session['pass_change_count'] += 1
             raise ValidationError(detail="wrong password", code=400)
         if not DEBUG:
             validate_password(attrs['new_password'], user=self.context['request'].user)
@@ -289,6 +300,11 @@ class MobilePasswordResetSetializer(serializers.Serializer):
 class MobileEmailConformationSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
+    def validate(self, attrs):
+        if User.objects.filter(email=attrs['email']).exists():
+            raise ResponseException("User with this email already exists")
+        return attrs
+
     def sent_code(self):
         key = self.validated_data.get('email') + '_' + self.context['id']
         sent_conformation_code(recipient=self.validated_data.get('email'),
@@ -304,12 +320,15 @@ class MobilePhoneConformationSerializer(serializers.Serializer):
             attrs['phone_number'] = User.normalize_phone(attrs.get('phone_number'))
         except ValueError as e:
             raise ResponseException(e)
+        if User.objects.filter(phone_number=attrs['phone_number']).exists():
+            raise ResponseException("User with this phone already exists")
         return attrs
 
     def sent_code(self):
         key = self.validated_data.get('phone_number') + '_' + self.context['id']
         sent_conformation_code(recipient=self.validated_data.get('phone_number'),
                                ttl=KEY_EXPIRATION_EMAIL, key=key, phone=True)
+
 
 class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(source='user.phone_number', required=False)
@@ -365,7 +384,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
         if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
                 email=attrs['email']):
             raise ResponseException("User with this email already exists")
-        if self.instance and self.instance.password:
+        if self.instance and self.instance.password and attrs.get('password'):
             raise ResponseException("User already have password")
         if not DEBUG and attrs.get('password'):
             validate_password(attrs['password'], user=self.context['request'].user)
@@ -373,19 +392,20 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
             raise ResponseException("Need email conformation code for change email")
         if self.instance and attrs.get('phone_number') and self.instance.phone_number != attrs.get('phone_number') and not attrs.get('phone_code'):
             raise ResponseException("Need phone conformation code for change phone")
-        if attrs.get('email') and cache.get(attrs.get('email')) != attrs.get('email_code'):
+        if attrs.get('email') and int(cache.get(attrs.get('email')+'_'+str(self.context['request'].user.id))) != int(attrs.get('email_code')):
             raise ResponseException("Wrong or expired email code")
         if attrs.get('phone_number') and cache.get(attrs.get('phone_number')) != attrs.get('phone_code'):
             raise ResponseException("Wrong or expired phone code")
         return attrs
 
     def update(self, instance, validated_data):
-        account_params = validated_data.pop('account')
+        account_params = validated_data.pop('account') if validated_data.get('account') else None
         if account_params:
             for param in account_params:
                 setattr(instance.account, param, account_params[param])
                 instance.account.save()
         instance = super(MobileSelfUpdateSerializer, self).update(instance=instance, validated_data=validated_data)
-        instance.set_password(validated_data['password'])
-        instance.save()
+        if validated_data.get('password'):
+            instance.set_password(validated_data['password'])
+            instance.save()
         return instance

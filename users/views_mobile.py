@@ -179,7 +179,7 @@ class MobileUserLoginView(GenericAPIView):
     serializer_class = MobileUserLoginSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         response = serializer.data
         return Response(data=response, status=status.HTTP_200_OK)
