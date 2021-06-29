@@ -385,18 +385,29 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
         if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
                 email=attrs['email']):
             raise ResponseException("User with this email already exists")
+
         if self.instance and self.instance.password and attrs.get('password'):
             raise ResponseException("User already have password")
+
         if not DEBUG and attrs.get('password'):
             validate_password(attrs['password'], user=self.context['request'].user)
-        if self.instance and attrs.get('email') and self.instance.email != attrs.get('email') and not attrs.get('email_code'):
+
+        if self.instance and attrs.get('email') and \
+                self.instance.email != attrs.get('email') and not attrs.get('email_code'):
             raise ResponseException("Need email conformation code for change email")
-        if self.instance and attrs.get('phone_number') and self.instance.phone_number != attrs.get('phone_number') and not attrs.get('phone_code'):
+
+        if self.instance and attrs.get('phone_number') and \
+                self.instance.phone_number != attrs.get('phone_number') and not attrs.get('phone_code'):
             raise ResponseException("Need phone conformation code for change phone")
-        if attrs.get('email') and int(cache.get(attrs.get('email')+'_'+str(self.context['request'].user.id))) != int(attrs.get('email_code')):
+
+        if attrs.get('email') and attrs['email'] != self.instance.email \
+                and str(cache.get(attrs.get('email')+'_'+str(self.context['request'].user.id))) != str(attrs.get('email_code')):
             raise ResponseException("Wrong or expired email code")
-        if attrs.get('phone_number') and cache.get(attrs.get('phone_number')) != attrs.get('phone_code'):
+
+        if attrs.get('phone_number') and attrs['phone_number'] != self.instance.phone_number and \
+                str(cache.get(attrs.get('phone_number'))+'_'+str(self.context['request'].user.id)) != str(attrs.get('phone_code')):
             raise ResponseException("Wrong or expired phone code")
+
         return attrs
 
     def update(self, instance, validated_data):
@@ -410,3 +421,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
             instance.set_password(validated_data['password'])
             instance.save()
         return instance
+
+    def to_representation(self, instance):
+        return MobileAccountSerializer(instance=instance.account).data
+

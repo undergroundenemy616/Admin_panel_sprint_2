@@ -270,16 +270,15 @@ class MobileAccountMeetingSearchView(ListAPIView):
 
 class MobileSelfView(GenericAPIView):
     permission_classes = (IsAuthenticated, )
-    serializer_class = None
+    serializer_class = MobileSelfUpdateSerializer
 
     def get(self, request, *args, **kwargs):
-        return Response(MobileAccountSerializer(instance=get_object_or_404(Account, user=request.user)).data,
-                        status=status.HTTP_200_OK)
+        return Response(self.serializer_class(instance=request.user).data, status=status.HTTP_200_OK)
 
     def put(self, request, *args, **kwargs):
-        serializer = MobileSelfUpdateSerializer(data=request.data, context={'request': request}, instance=request.user)
+        serializer = self.serializer_class(data=request.data, context={'request': request}, instance=request.user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(MobileAccountSerializer(instance=get_object_or_404(Account, user=request.user)).data,
-                        status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
