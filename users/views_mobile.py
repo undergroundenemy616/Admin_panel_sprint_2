@@ -19,8 +19,7 @@ from users.registration import confirm_code, send_code
 from users.serializers import SwaggerAccountParametr
 from users.serializers_mobile import (MobilePasswordChangeSerializer, MobilePasswordResetSetializer,
                                       MobileUserLoginSerializer, MobileUserRegisterSerializer,
-                                      MobileEmailConformationSerializer, MobilePhoneConformationSerializer,
-                                      MobileSelfUpdateSerializer)
+                                      MobileSelfUpdateSerializer, MobileConformationSerializer)
 from users.serializers_mobile import (MobileAccountSerializer,
                                       MobileAccountUpdateSerializer,
                                       MobileEntranceCollectorSerializer,
@@ -227,26 +226,19 @@ class MobilePasswordResetView(GenericAPIView):
         return Response(data=response, status=status.HTTP_200_OK)
 
 
-class MobileEmailConformationView(GenericAPIView):
+class MobileConformationView(GenericAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = MobileEmailConformationSerializer
+    serializer_class = MobileConformationSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'id': str(request.user.id)})
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        serializer.sent_code()
-        return Response(data={"detail": "Conformation code was sent to email"}, status=status.HTTP_200_OK)
+        if request.data.get('code'):
+            response = serializer.confirm()
+        else:
+            response = serializer.sent_code()
+        return Response(data=response, status=status.HTTP_200_OK)
 
-
-class MobilePhoneConformationView(GenericAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = MobilePhoneConformationSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'id': str(request.user.id)})
-        serializer.is_valid(raise_exception=True)
-        serializer.sent_code()
-        return Response(data={"detail": "Conformation code was sent to phone"}, status=status.HTTP_200_OK)
 
 class MobileAccountMeetingSearchView(ListAPIView):
     serializer_class = MobileAccountMeetingSearchSerializer

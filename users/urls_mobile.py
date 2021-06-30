@@ -4,10 +4,9 @@ from users.views_mobile import (MobileAccountView, MobileEntranceCollectorView,
                                 MobileLoginOrRegisterUserFromMobileView,
                                 MobileRefreshTokenView,
                                 MobileUserRegisterView, MobilePasswordChangeView,
-                                MobilePasswordResetView, MobileUserLoginView, MobileEmailConformationView,
-                                MobilePhoneConformationView,
+                                MobilePasswordResetView, MobileUserLoginView,
                                 MobileSingleAccountView,
-                                MobileAccountMeetingSearchView, MobileSelfView)
+                                MobileAccountMeetingSearchView, MobileSelfView, MobileConformationView)
 
 urlpatterns = [
     path('/auth', MobileLoginOrRegisterUserFromMobileView.as_view()),
@@ -19,8 +18,7 @@ urlpatterns = [
     path('/registration', MobileUserRegisterView.as_view()),
     path('/change_password', MobilePasswordChangeView.as_view()),
     path('/pass_reset', MobilePasswordResetView.as_view()),
-    path('/confirm_email', MobileEmailConformationView.as_view()),
-    path('/confirm_phone', MobilePhoneConformationView.as_view()),
+    path('/confirm', MobileConformationView.as_view()),
     path('/account_search', MobileAccountMeetingSearchView.as_view()),
     path('/me', MobileSelfView.as_view()),
 ]

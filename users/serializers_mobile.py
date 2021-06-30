@@ -37,6 +37,12 @@ def sent_conformation_code(recipient: str, subject="", ttl=60, key=None, phone=F
         send_sms.delay(phone_number=recipient, message="Код подтверждения: " + conformation_code)
 
 
+def confirm_code(key, code) -> bool:
+    if cache.get(key) == code:
+        return True
+    return False
+
+
 class MobileEntranceCollectorSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppEntrances
@@ -262,8 +268,8 @@ class MobilePasswordResetSetializer(serializers.Serializer):
             raise ResponseException("Wrong email")
         if self.context['request'].session.get('confirm'):
             attrs['user'] = User.objects.get(email=attrs.get('email'))
-        if not DEBUG and attrs.get('new_password'):
-            validate_password(attrs['new_password'], user=attrs['user'])
+            if not DEBUG and attrs.get('new_password'):
+                validate_password(attrs['new_password'], user=attrs['user'])
         return attrs
 
     @atomic()
@@ -297,37 +303,50 @@ class MobilePasswordResetSetializer(serializers.Serializer):
         return {'message': 'email with conformation code sent'}
 
 
-class MobileEmailConformationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+class MobileConformationSerializer(serializers.Serializer):
+    user_identification = serializers.CharField(allow_blank=False)
+    code = serializers.CharField(max_length=4, required=False)
+    email = serializers.BooleanField(required=False)
 
     def validate(self, attrs):
-        if User.objects.filter(email=attrs['email']).exists():
-            raise ResponseException("User with this email already exists")
-        return attrs
-
-    def sent_code(self):
-        key = self.validated_data.get('email') + '_' + self.context['id']
-        sent_conformation_code(recipient=self.validated_data.get('email'),
-                               subject="Подтверждене почты", ttl=KEY_EXPIRATION_EMAIL,
-                               key=key)
-
-
-class MobilePhoneConformationSerializer(serializers.Serializer):
-    phone_number = serializers.CharField()
-
-    def validate(self, attrs):
+        email = False
         try:
-            attrs['phone_number'] = User.normalize_phone(attrs.get('phone_number'))
-        except ValueError as e:
-            raise ResponseException(e)
-        if User.objects.filter(phone_number=attrs['phone_number']).exists():
-            raise ResponseException("User with this phone already exists")
+            validate_email(attrs.get('user_identification'))
+            email = True
+        except ValErr:
+            try:
+                attrs['user_identification'] = User.normalize_phone(attrs.get('user_identification'))
+            except ValueError:
+                raise ResponseException("Wrong format of email or phone", status_code=400)
+        attrs['email'] = email
+        if email:
+            if User.objects.filter(email=attrs['user_identification']).exists():
+                raise ResponseException("User with this email already exists")
+        else:
+            try:
+                attrs['user_identification'] = User.normalize_phone(attrs.get('user_identification'))
+            except ValueError as e:
+                raise ResponseException(e)
+            if User.objects.filter(phone_number=attrs['user_identification']).exists():
+                raise ResponseException("User with this phone already exists")
         return attrs
 
     def sent_code(self):
-        key = self.validated_data.get('phone_number') + '_' + self.context['id']
-        sent_conformation_code(recipient=self.validated_data.get('phone_number'),
-                               ttl=KEY_EXPIRATION_EMAIL, key=key, phone=True)
+        key = self.validated_data.get('user_identification') + '_' + str(self.context['request'].user.id)
+        sent_to = 'почты.' if self.validated_data.get('email') else 'телефона.'
+        sent_conformation_code(recipient=self.validated_data.get('user_identification'),
+                               subject="Подтверждение "+sent_to, ttl=KEY_EXPIRATION_EMAIL,
+                               key=key, phone=not self.validated_data.get('email'))
+        return {"detail": "Conformation code was sent"}
+
+    def confirm(self):
+        if confirm_code(key=self.validated_data['user_identification'] + '_' + str(self.context['request'].user.id),
+                        code=self.validated_data.get('code')):
+            key = 'email' if self.validated_data.get('email') else 'phone'
+            self.context['request'].session[f'{key}_confirm'] = self.validated_data['user_identification']
+            return {"detail": "Confirmed"}
+        else:
+            raise ResponseException("Wrong or expired code")
 
 
 class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
@@ -371,7 +390,6 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
 
 
 class MobileSelfUpdateSerializer(serializers.ModelSerializer):
-    email_code = serializers.IntegerField(required=False)
     phone_code = serializers.IntegerField(required=False)
     gender = serializers.CharField(required=False, source='account.gender')
     last_name = serializers.CharField(required=False, source='account.last_name')
@@ -379,7 +397,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'email_code', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code']
+        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code']
 
     def validate(self, attrs):
         if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
@@ -392,24 +410,17 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
         if not DEBUG and attrs.get('password'):
             validate_password(attrs['password'], user=self.context['request'].user)
 
-        if self.instance and attrs.get('email') and \
-                self.instance.email != attrs.get('email') and not attrs.get('email_code'):
-            raise ResponseException("Need email conformation code for change email")
+        if self.instance and attrs.get('email') and self.instance.email != attrs.get('email') and \
+                not self.context['request'].session.get('email_confirm') == attrs.get('email'):
+            raise ResponseException("Need email conformation for change email")
 
-        if self.instance and attrs.get('phone_number') and \
-                self.instance.phone_number != attrs.get('phone_number') and not attrs.get('phone_code'):
+        if self.instance and attrs.get('phone_number') and self.instance.phone_number != attrs.get('phone_number') and \
+                not self.context['request'].session.get('phone_confirm') == attrs.get('phone_number'):
             raise ResponseException("Need phone conformation code for change phone")
-
-        if attrs.get('email') and attrs['email'] != self.instance.email \
-                and str(cache.get(attrs.get('email')+'_'+str(self.context['request'].user.id))) != str(attrs.get('email_code')):
-            raise ResponseException("Wrong or expired email code")
-
-        if attrs.get('phone_number') and attrs['phone_number'] != self.instance.phone_number and \
-                str(cache.get(attrs.get('phone_number'))+'_'+str(self.context['request'].user.id)) != str(attrs.get('phone_code')):
-            raise ResponseException("Wrong or expired phone code")
 
         return attrs
 
+    @atomic()
     def update(self, instance, validated_data):
         account_params = validated_data.pop('account') if validated_data.get('account') else None
         if account_params:
@@ -420,6 +431,10 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
         if validated_data.get('password'):
             instance.set_password(validated_data['password'])
             instance.save()
+        if self.context['request'].session.get('email_confirm'):
+            del self.context['request'].session['email_confirm']
+        if self.context['request'].session.get('phone_confirm'):
+            del self.context['request'].session['phone_confirm']
         return instance
 
     def to_representation(self, instance):
