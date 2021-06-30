@@ -14,6 +14,7 @@ from django.utils.timezone import now
 from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
                                              BOOKING_TIMEDELTA_CHECK,
                                              PUSH_HOST)
+from group_bookings.models import GroupBooking
 
 from groups.models import EMPLOYEE_ACCESS
 from push_tokens.send_interface import send_push_message
@@ -100,6 +101,8 @@ class Booking(models.Model):
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
     status = models.CharField(choices=STATUS, null=False, max_length=20, default='waiting')
+    group_booking = models.ForeignKey(GroupBooking, on_delete=models.DO_NOTHING,
+                                      null=True, default=None, related_name='bookings')
     objects = BookingManager()
 
     def save(self, *args, **kwargs):

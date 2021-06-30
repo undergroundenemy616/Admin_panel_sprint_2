@@ -106,7 +106,8 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Account
-        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number', 'email']
+        fields = ['id', 'first_name', 'last_name',
+                  'middle_name', 'phone_number', 'email', 'gender']
 
     def to_representation(self, instance):
         response = super(MobileAccountMeetingSearchSerializer, self).to_representation(instance)

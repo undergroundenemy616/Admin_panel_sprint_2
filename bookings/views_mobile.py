@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django.utils.timezone import now
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
@@ -11,9 +11,10 @@ from bookings.models import Booking
 from bookings.serializers import BookingPersonalSerializer
 from bookings.serializers_mobile import (
     MobileBookingActivateActionSerializer,
-    MobileBookingDeactivateActionSerializer, MobileBookingSerializer)
+    MobileBookingDeactivateActionSerializer, MobileBookingSerializer, MobileMeetingGroupBookingSerializer)
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAuthenticated
+from users.models import Account
 
 
 class MobileBookingsView(GenericAPIView,
@@ -117,3 +118,28 @@ class MobileActionCancelBookingsView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
+
+
+class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
+    queryset = Booking.objects.all()
+    permission_classes = (IsAuthenticated,)
+    pagination_class = LimitStartPagination
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            self.queryset = self.queryset.select_related('table', 'table__room', 'table__room__floor',
+                                                         'table__room__floor__office',
+                                                         'user')
+        return self.queryset.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return MobileMeetingGroupBookingSerializer
+        return MobileBookingSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = MobileMeetingGroupBookingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create(validated_data=request.data, context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)
