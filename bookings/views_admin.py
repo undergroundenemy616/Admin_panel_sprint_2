@@ -12,10 +12,13 @@ from bookings.serializers_admin import (AdminBookingCreateFastSerializer,
                                         AdminStatisticsSerializer, AdminBookingEmployeeStatisticsSerializer,
                                         AdminSwaggerBookingEmployee, AdminSwaggerBookingFuture,
                                         AdminBookingFutureStatisticsSerializer, AdminSwaggerRoomType,
-                                        AdminBookingRoomTypeSerializer)
+                                        AdminBookingRoomTypeSerializer, AdminMeetingGroupBookingSerializer)
+from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from files.serializers_admin import AdminFileSerializer
+from group_bookings.models import GroupBooking
+from group_bookings.serializers_admin import AdminGroupBookingSerializer
 from users.models import Account
 from users.serializers_admin import AdminUserSerializer
 
@@ -96,3 +99,41 @@ class AdminBookingRoomTypeStatisticsView(GenericAPIView):
         response = serializer.get_statistic()
 
         return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
+
+
+class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
+    queryset = GroupBooking.objects.all()
+    permission_classes = (IsAdmin,)
+    pagination_class = LimitStartPagination
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=True,
+                                                   bookings__table__room__type__bookable=True,
+                                                   bookings__table__room__type__is_deletable=False)).\
+                prefetch_related('bookings', 'bookings__table',
+                                 'bookings__table__room', 'bookings__table__room__room_marker',
+                                 'bookings__table__room__type', 'bookings__table__room__floor',
+                                 'bookings__table__room__floor__office', 'bookings__user').distinct()
+        return self.queryset.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return AdminMeetingGroupBookingSerializer
+        return AdminGroupBookingSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = AdminMeetingGroupBookingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create(validated_data=request.data, context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        account = Account.objects.get(user_id=request.user.id)
+        if account == instance.author or account.user.is_staff:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
