@@ -101,7 +101,7 @@ class Booking(models.Model):
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
     status = models.CharField(choices=STATUS, null=False, max_length=20, default='waiting')
-    group_booking = models.ForeignKey(GroupBooking, on_delete=models.DO_NOTHING,
+    group_booking = models.ForeignKey(GroupBooking, on_delete=models.CASCADE,
                                       null=True, default=None, related_name='bookings')
     objects = BookingManager()
 

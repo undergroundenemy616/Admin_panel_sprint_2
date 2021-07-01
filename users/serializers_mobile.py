@@ -127,15 +127,8 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
                                                   Q(date_from__lt=self.context['request'].query_params.get('date_to')))
 
         if account_bookings:
-            response['occupied_time'] = []
-            for booking in account_bookings:
-                response['occupied_time'].append({
-                    'date_from': booking.date_from,
-                    'date_to': booking.date_to
-                })
             response['is_available'] = False
         else:
-            response['occupied_time'] = []
             response['is_available'] = True
 
         return response

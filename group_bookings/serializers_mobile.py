@@ -2,18 +2,16 @@ from rest_framework import serializers
 
 from bookings.models import Booking
 from floors.models import Floor
-from floors.serializers_mobile import MobileRoomMarkersSerializer
 from group_bookings.models import GroupBooking
 from offices.models import Office
 from rooms.models import Room, RoomMarker
 from tables.models import Table
-from tables.serializers_mobile import MobileTableMarkerSerializer
 from users.models import Account
 
 
 class MobileGroupBookingAuthorSerializer(serializers.ModelSerializer):
-    phone_number = serializers.CharField(source='user.phone_number', required=False)
-    email = serializers.CharField(source='user.email', required=False)
+    phone_number = serializers.CharField(source='user.phone_number', required=False, read_only=True)
+    email = serializers.CharField(source='user.email', required=False, read_only=True)
 
     class Meta:
         model = Account
@@ -61,7 +59,7 @@ class MobileBookingInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['id', 'date_from', 'date_to', 'date_activate_until', 'table',
+        fields = ['date_from', 'date_to', 'date_activate_until', 'table',
                   'is_active', 'room', 'floor', 'office']
 
 
@@ -74,7 +72,7 @@ class MobileGroupBookingSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(MobileGroupBookingSerializer, self).to_representation(instance)
-        booking_info = MobileBookingInfoSerializer(instance=instance.bookings.first()).data
+        booking_info = MobileBookingInfoSerializer(instance=instance.bookings.all()[0]).data
         response.update(booking_info)
 
         return response
