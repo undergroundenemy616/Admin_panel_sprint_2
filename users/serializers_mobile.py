@@ -21,7 +21,7 @@ from users.serializers import AccountSerializer
 from users.tasks import send_email, send_sms
 
 
-def sent_conformation_code(recipient: str, subject="", ttl=60, key=None, phone=False) -> None:
+def send_conformation_code(recipient: str, subject="", ttl=60, key=None, phone=False) -> None:
     conformation_code = "".join([random.choice("0123456789") for _ in range(4)])
     if not key:
         key = recipient
@@ -152,8 +152,6 @@ class MobileUserRegisterSerializer(serializers.Serializer):
     @atomic()
     def register(self):
         if self.context['request'].session.get('confirm') and self.validated_data.get('password'):
-            # if not self.validated_data.get('password'):
-            #     raise ResponseException("Password is required field", status_code=400)
             user = User.objects.create(email=self.validated_data.pop('email'))
             user.set_password(self.validated_data.pop('password'))
             user.save()
@@ -178,7 +176,7 @@ class MobileUserRegisterSerializer(serializers.Serializer):
             else:
                 raise ResponseException("Wrong or expired code")
 
-        sent_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты",
+        send_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты",
                                ttl=KEY_EXPIRATION_EMAIL)
 
         return {'message': 'email with conformation code sent'}
@@ -297,7 +295,7 @@ class MobilePasswordResetSetializer(serializers.Serializer):
             cache.delete(self.validated_data.get('email'))
             return response
 
-        sent_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты для сброса пароля",
+        send_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты для сброса пароля",
                                ttl=KEY_EXPIRATION_EMAIL)
 
         return {'message': 'email with conformation code sent'}
@@ -331,10 +329,10 @@ class MobileConformationSerializer(serializers.Serializer):
                 raise ResponseException("User with this phone already exists")
         return attrs
 
-    def sent_code(self):
+    def send_code(self):
         key = self.validated_data.get('user_identification') + '_' + str(self.context['request'].user.id)
         sent_to = 'почты.' if self.validated_data.get('email') else 'телефона.'
-        sent_conformation_code(recipient=self.validated_data.get('user_identification'),
+        send_conformation_code(recipient=self.validated_data.get('user_identification'),
                                subject="Подтверждение "+sent_to, ttl=KEY_EXPIRATION_EMAIL,
                                key=key, phone=not self.validated_data.get('email'))
         return {"detail": "Conformation code was sent"}

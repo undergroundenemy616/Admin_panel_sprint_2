@@ -1,7 +1,7 @@
 from celery import shared_task
 from rest_framework.generics import get_object_or_404
 
-from mail import send_html_email_message_booking_for_sleep
+from mail import send_html_email
 from users.broadcasts import SMSBroadcast
 from users.models import User
 
@@ -22,7 +22,7 @@ def send_sms_code(user_id, is_created, code):
 
 @shared_task
 def send_email(email, subject, message):
-    send_html_email_message_booking_for_sleep(
+    send_html_email(
         to=email,
         subject=subject,
         message=message

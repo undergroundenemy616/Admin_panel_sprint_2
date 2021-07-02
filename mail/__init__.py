@@ -14,7 +14,7 @@ def send_html_email_message(to: str, subject: str, template_args: dict):
     )
 
 
-def send_html_email_message_booking_for_sleep(to: str, subject: str, message: str):
+def send_html_email(to: str, subject: str, message: str):
     send_mail(
         recipient_list=[to],
         from_email=EMAIL_HOST_USER,

@@ -34,7 +34,7 @@ class MobileRequestDemoSerializer(serializers.Serializer):
             raise ResponseException(e)
         return attrs
 
-    def sent_email(self):
+    def send_email(self):
         if self.context['request'].session.get('count_emails') \
                 and self.context['request'].session['count_emails'] < 5:
             self.context['request'].session['count_emails'] += 1

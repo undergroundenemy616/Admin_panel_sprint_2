@@ -50,5 +50,5 @@ class MobileRequestDemoView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.sent_email()
+        serializer.send_email()
         return Response(data={"message": "Email sent"}, status=status.HTTP_200_OK)

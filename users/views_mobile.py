@@ -151,15 +151,6 @@ class MobileFirstCheckView(GenericAPIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class MobileMyAccountViewSet(GenericAPIView):
-    queryset = Account.objects.all()
-    permission_classes = [IsAuthenticated]
-    serializer_class = None
-
-    def post(self, request, *args, **kwargs):
-        return Response(data={"detail": "some data"}, status=status.HTTP_200_OK)
-
-
 class MobileUserRegisterView(GenericAPIView):
     permission_classes = []
     authentication_classes = []
@@ -236,7 +227,7 @@ class MobileConformationView(GenericAPIView):
         if request.data.get('code'):
             response = serializer.confirm()
         else:
-            response = serializer.sent_code()
+            response = serializer.send_code()
         return Response(data=response, status=status.HTTP_200_OK)
 
 
