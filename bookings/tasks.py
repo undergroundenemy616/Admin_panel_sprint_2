@@ -8,6 +8,7 @@ import requests
 from booking_api_django_new.settings import PUSH_HOST
 from django.core.exceptions import ObjectDoesNotExist
 from celery.app.control import Control
+import logging
 from booking_api_django_new.celery import app as celery_app
 from django.core.mail import mail_admins
 
@@ -33,6 +34,8 @@ def all_job_execution(uuid):
 @shared_task
 def check_booking_activate(uuid):
     control = Control(app=celery_app)
+    logger = logging.getLogger(__name__)
+    logger.info(msg="Execute check_booking_activate "+str(uuid))
     try:
         instance = bookings.Booking.objects.get(id=uuid)
     except ObjectDoesNotExist:
@@ -53,6 +56,8 @@ def check_booking_activate(uuid):
 
 @shared_task
 def make_booking_over(uuid):
+    logger = logging.getLogger(__name__)
+    logger.info(msg="Execute make_booking_over "+str(uuid))
     try:
         instance = bookings.Booking.objects.get(id=uuid)
     except ObjectDoesNotExist:
@@ -67,6 +72,8 @@ def make_booking_over(uuid):
 
 @shared_task
 def check_booking_status():
+    logger = logging.getLogger(__name__)
+    logger.info(msg="Execute check_booking_status")
     now_date = now()
     subject = 'About booking on ' + os.environ.get('ADMIN_HOST')
     bad_status = ['active', 'waiting']
@@ -85,6 +92,8 @@ def check_booking_status():
 
 @shared_task
 def notify_about_oncoming_booking(uuid):
+    logger = logging.getLogger(__name__)
+    logger.info(msg="Execute notify_about_oncoming_booking "+str(uuid))
     """Send PUSH-notification about oncoming booking to every user devices"""
     push_group = os.environ.get("PUSH_GROUP")
     control = Control(app=celery_app)
@@ -122,6 +131,8 @@ def notify_about_oncoming_booking(uuid):
 
 @shared_task
 def notify_about_booking_activation(uuid):
+    logger = logging.getLogger(__name__)
+    logger.info(msg="Execute notify_about_booking_activation "+str(uuid))
     """Send PUSH-notification about opening activation"""
     push_group = os.environ.get("PUSH_GROUP")
     control = Control(app=celery_app)
@@ -158,6 +169,8 @@ def notify_about_booking_activation(uuid):
 
 @shared_task()
 def transfer_task_to_redis():
+    logger = logging.getLogger(__name__)
+    logger.info(msg="Execute transfer_task_to_redis")
     now_time = now() + timedelta(minutes=15)
     job_to_add = bookings.JobStore.objects.filter(time_execute__lte=now_time, executed=False)
     for job in job_to_add:
