@@ -3,7 +3,8 @@ from django.urls import path
 from bookings.views_mobile import (MobileActionActivateBookingsView,
                                    MobileActionCancelBookingsView,
                                    MobileBookingListPersonalView,
-                                   MobileBookingsView, MobileCancelBooking, MobileGroupMeetingBookingViewSet)
+                                   MobileBookingsView, MobileCancelBooking, MobileGroupMeetingBookingViewSet,
+                                   MobileGroupWorkplaceBookingView)
 from core.mapping import url_list
 from rooms.views_mobile import SuitableRoomsMobileView
 
@@ -15,5 +16,6 @@ urlpatterns = [
     path('/cancel/<uuid:pk>', MobileCancelBooking.as_view()),
     path('/activate', MobileActionActivateBookingsView.as_view()),
     path('/meeting', MobileGroupMeetingBookingViewSet.as_view(url_list)),
-    path('/meeting/<uuid:pk>', MobileGroupMeetingBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}))
+    path('/meeting/<uuid:pk>', MobileGroupMeetingBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'})),
+    path('/workspace', MobileGroupWorkplaceBookingView.as_view())
 ]

@@ -2,6 +2,7 @@ import orjson
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.generics import get_object_or_404, GenericAPIView
+from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 
 from bookings.filters_admin import AdminBookingFilter
@@ -12,7 +13,8 @@ from bookings.serializers_admin import (AdminBookingCreateFastSerializer,
                                         AdminStatisticsSerializer, AdminBookingEmployeeStatisticsSerializer,
                                         AdminSwaggerBookingEmployee, AdminSwaggerBookingFuture,
                                         AdminBookingFutureStatisticsSerializer, AdminSwaggerRoomType,
-                                        AdminBookingRoomTypeSerializer, AdminMeetingGroupBookingSerializer)
+                                        AdminBookingRoomTypeSerializer, AdminMeetingGroupBookingSerializer,
+                                        AdminWorkplaceGroupBookingSerializer)
 from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
@@ -137,3 +139,18 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
+
+
+class MobileGroupWorkplaceBookingView(CreateModelMixin,
+                                      GenericAPIView):
+    serializer_class = AdminWorkplaceGroupBookingSerializer
+    queryset = Booking.objects.all().select_related('table')
+    permission_classes = (IsAdmin,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create(context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+

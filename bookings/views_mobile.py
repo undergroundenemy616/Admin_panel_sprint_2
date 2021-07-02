@@ -1,5 +1,4 @@
 from django.db.models import Q
-from django.utils.timezone import now
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
@@ -11,7 +10,8 @@ from bookings.models import Booking
 from bookings.serializers import BookingPersonalSerializer
 from bookings.serializers_mobile import (
     MobileBookingActivateActionSerializer,
-    MobileBookingDeactivateActionSerializer, MobileBookingSerializer, MobileMeetingGroupBookingSerializer)
+    MobileBookingDeactivateActionSerializer, MobileBookingSerializer, MobileMeetingGroupBookingSerializer,
+    MobileWorkplaceGroupBookingSerializer)
 from core.handlers import ResponseException
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAuthenticated
@@ -147,7 +147,7 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = MobileMeetingGroupBookingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        response = serializer.group_create(validated_data=request.data, context=self.request.parser_context)
+        response = serializer.group_create(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)
         return Response(response, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -160,3 +160,16 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
 
+
+class MobileGroupWorkplaceBookingView(CreateModelMixin,
+                                      GenericAPIView):
+    serializer_class = MobileWorkplaceGroupBookingSerializer
+    queryset = Booking.objects.all().select_related('table')
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create(context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)

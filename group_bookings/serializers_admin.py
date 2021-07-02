@@ -76,3 +76,30 @@ class AdminGroupBookingSerializer(serializers.ModelSerializer):
         response.update(booking_info)
 
         return response
+
+
+class AdminGroupWorkspaceBookingInfoSerializer(AdminBookingInfoSerializer):
+    user = AdminGroupBookingAuthorSerializer(read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'table', 'room', 'floor', 'user']
+
+
+class AdminGroupWorkspaceSerializer(serializers.ModelSerializer):
+    author = AdminGroupBookingAuthorSerializer(read_only=True)
+
+    class Meta:
+        model = GroupBooking
+        fields = ['id', 'author']
+
+    def to_representation(self, instance):
+        response = super(AdminGroupWorkspaceSerializer, self).to_representation(instance)
+        response['bookings_info'] = AdminGroupWorkspaceBookingInfoSerializer(instance=instance.bookings.all(),
+                                                                              many=True).data
+        response['date_from'] = instance.bookings.all()[0].date_from
+        response['date_to'] = instance.bookings.all()[0].date_from
+        response['office'] = AdminGroupBookingOfficeSerializer(instance=instance.bookings.all()[0].table.room.floor.office).data
+
+        return response
+

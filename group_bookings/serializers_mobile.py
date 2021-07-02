@@ -76,3 +76,29 @@ class MobileGroupBookingSerializer(serializers.ModelSerializer):
         response.update(booking_info)
 
         return response
+
+
+class MobileGroupWorkspaceBookingInfoSerializer(MobileBookingInfoSerializer):
+    user = MobileGroupBookingAuthorSerializer(read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'table', 'room', 'floor', 'user']
+
+
+class MobileGroupWorkspaceSerializer(serializers.ModelSerializer):
+    author = MobileGroupBookingAuthorSerializer(read_only=True)
+
+    class Meta:
+        model = GroupBooking
+        fields = ['id', 'author']
+
+    def to_representation(self, instance):
+        response = super(MobileGroupWorkspaceSerializer, self).to_representation(instance)
+        response['bookings_info'] = MobileGroupWorkspaceBookingInfoSerializer(instance=instance.bookings.all(),
+                                                                              many=True).data
+        response['date_from'] = instance.bookings.all()[0].date_from
+        response['date_to'] = instance.bookings.all()[0].date_from
+        response['office'] = MobileGroupBookingOfficeSerializer(instance=instance.bookings.all()[0].table.room.floor.office).data
+
+        return response
