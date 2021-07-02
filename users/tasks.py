@@ -1,3 +1,5 @@
+import logging
+
 from celery import shared_task
 from rest_framework.generics import get_object_or_404
 
@@ -35,4 +37,6 @@ def send_sms(phone_number, message):
     broadcast.send(message=message)
 
     if not broadcast.is_sent:
+        logger = logging.getLogger(__name__)
+        logger.error(msg="Problem with sending message to: " + str(phone_number))
         raise ValueError("Problem with sending message")
