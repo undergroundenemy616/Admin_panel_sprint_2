@@ -190,13 +190,7 @@ class MobilePasswordChangeView(GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        token_serializer = TokenObtainPairSerializer()
-        token = token_serializer.get_token(user=request.user)
-        return Response({
-            'message': "OK",
-            'access_token': str(token.access_token),
-            'refresh_token': str(token)
-        }, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class MobilePasswordResetView(GenericAPIView):

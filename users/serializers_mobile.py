@@ -215,8 +215,9 @@ class MobileUserLoginSerializer(serializers.Serializer):
             is_correct = user.check_password(attrs.get('password'))
             if not self.context['request'].session.get('login_count'):
                 self.context['request'].session['login_count'] = 0
-            if self.context['request'].session['login_count'] >= 5:
-                raise ResponseException("Too many attempts")
+            if self.context['request'].session.get('login_count') >= 5:
+                raise ValidationError(detail={"detail": "Too many attempts",
+                                              "time": self.context['request'].session._get_session_from_db().expire_date})
             if not is_correct:
                 self.context['request'].session['login_count'] += 1
                 raise ResponseException('Incorrect email or password', status_code=400)
@@ -239,8 +240,9 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
     def validate(self, attrs):
         if not self.context['request'].session.get('pass_change_count'):
             self.context['request'].session['pass_change_count'] = 0
-        if self.context['request'].session['pass_change_count'] >= 5:
-            raise ResponseException("Too many attempts")
+        if self.context['request'].session.get('pass_change_count') >= 5:
+            raise ValidationError(detail={"detail": "Too many attempts",
+                                          "time": self.context['request'].session._get_session_from_db().expire_date})
         if not self.context['request'].user.check_password(attrs['old_password']):
             self.context['request'].session['pass_change_count'] += 1
             raise ValidationError(detail="wrong password", code=400)
@@ -250,8 +252,18 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         user = self.context['request'].user
-        user.set_password(self.data['new_password'])
+        user.set_password(self.validated_data['new_password'])
         user.save()
+
+    def to_representation(self, instance):
+        response = dict()
+        token_serializer = TokenObtainPairSerializer()
+        token = token_serializer.get_token(user=self.context['request'].user)
+        response['message'] = "OK"
+        response['access_token'] = str(token.access_token)
+        response['refresh_token'] = str(token)
+        response['activated'] = self.context['request'].user.is_active
+        return response
 
 
 class MobilePasswordResetSetializer(serializers.Serializer):
