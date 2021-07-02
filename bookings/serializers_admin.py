@@ -879,7 +879,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         return file_storage_object
 
 
-class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
+class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
     users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
     guests = serializers.JSONField(required=False)
 
@@ -887,46 +887,32 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['id', 'date_to', 'date_from', 'users', 'table', 'guests']
 
-    @atomic()
-    def group_create(self, validated_data, context):
-        author = Account.objects.get(user_id=context['request'].user.id)
-        users = Account.objects.filter(id__in=validated_data['users'])
-        table = Table.objects.filter(id=validated_data['table'],
-                                     room__type__bookable=True,
-                                     room__type__unified=True,
-                                     room__type__is_deletable=False).select_related('room__type')
-        if table:
-            table = table.get(id=validated_data['table'])
-        else:
+    def validate(self, attrs):
+        if not attrs['table'].room.type.unified:
             raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
-        booking_of_table = Booking.objects.filter(Q(table=table)
-                                                  &
-                                                  Q(status__in=['active', 'waiting'])
-                                                  &
-                                                  (Q(date_from__lt=validated_data['date_to'],
-                                                     date_to__gte=validated_data['date_to'])
-                                                   |
-                                                   Q(date_from__lte=validated_data['date_from'],
-                                                     date_to__gt=validated_data['date_from'])
-                                                   |
-                                                   Q(date_from__gte=validated_data['date_from'],
-                                                     date_to__lte=validated_data['date_to']))
-                                                  & Q(date_from__lt=validated_data['date_to'])
-                                                  )
-        if booking_of_table:
+        if Booking.objects.is_overflowed(table=attrs['table'],
+                                         date_from=attrs['date_from'],
+                                         date_to=attrs['date_to']):
             raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+        return attrs
+
+    @atomic()
+    def group_create(self, context):
+        author = Account.objects.get(user_id=context['request'].user.id)
+
         group_booking = GroupBooking.objects.create(author=author)
-        if validated_data.get('guests'):
-            group_booking.guests = validated_data.get('guests')
+        if self.validated_data.get('guests'):
+            group_booking.guests = self.validated_data.get('guests')
             group_booking.save()
 
         bookings_to_create = []
-        date_activate_until = calculate_date_activate_until(validated_data['date_from'], validated_data['date_to'])
-        for user in users:
+        date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
+                                                            self.validated_data['date_to'])
+        for user in self.validated_data['users']:
             bookings_to_create.append(Booking(user=user,
-                                              table=table,
-                                              date_to=validated_data['date_to'],
-                                              date_from=validated_data['date_from'],
+                                              table=self.validated_data['table'],
+                                              date_to=self.validated_data['date_to'],
+                                              date_from=self.validated_data['date_from'],
                                               date_activate_until=date_activate_until,
                                               group_booking=group_booking
                                               ))
