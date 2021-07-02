@@ -879,7 +879,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         return file_storage_object
 
 
-class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
+class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
     users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
     guests = serializers.JSONField(required=False)
 
