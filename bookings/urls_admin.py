@@ -13,6 +13,6 @@ urlpatterns = [
     path('/<uuid:pk>', views_admin.AdminBookingViewSet.as_view(url_detail)),
     path('/meeting', AdminGroupMeetingBookingViewSet.as_view(url_list)),
     path('/meeting/<uuid:pk>', AdminGroupMeetingBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'})),
-    path('/workspace', AdminGroupWorkplaceBookingViewSet.as_view(url_list)),
-    path('/workspace/<uuid:pk>', AdminGroupWorkplaceBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}))
+    path('/workplace', AdminGroupWorkplaceBookingViewSet.as_view(url_list)),
+    path('/workplace/<uuid:pk>', AdminGroupWorkplaceBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}))
 ]
