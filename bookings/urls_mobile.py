@@ -17,6 +17,6 @@ urlpatterns = [
     path('/activate', MobileActionActivateBookingsView.as_view()),
     path('/meeting', MobileGroupMeetingBookingViewSet.as_view(url_list)),
     path('/meeting/<uuid:pk>', MobileGroupMeetingBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'})),
-    path('/workspace', MobileGroupWorkplaceBookingViewSet.as_view(url_list)),
-    path('/workspace/<uuid:pk>', MobileGroupWorkplaceBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}))
+    path('/workplace', MobileGroupWorkplaceBookingViewSet.as_view(url_list)),
+    path('/workplace/<uuid:pk>', MobileGroupWorkplaceBookingViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}))
 ]
