@@ -209,8 +209,6 @@ class MobileUserLoginSerializer(serializers.Serializer):
             raise ResponseException("User doesn't exists")
 
         if attrs.get('password'):
-            if not user:
-                raise ResponseException("Incorrect email or password", status_code=400)
             user = user[0]
             if not user.password:
                 raise ResponseException("Incorrect email or password", status_code=400)
@@ -235,8 +233,8 @@ class MobileUserLoginSerializer(serializers.Serializer):
 
 
 class MobilePasswordChangeSerializer(serializers.Serializer):
-    old_password = serializers.CharField(max_length=512)
-    new_password = serializers.CharField(max_length=512)
+    old_password = serializers.CharField(max_length=64)
+    new_password = serializers.CharField(max_length=64)
 
     def validate(self, attrs):
         if not self.context['request'].session.get('pass_change_count'):
@@ -392,10 +390,11 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
     gender = serializers.CharField(required=False, source='account.gender')
     last_name = serializers.CharField(required=False, source='account.last_name')
     first_name = serializers.CharField(required=False, source='account.first_name')
+    middle_name = serializers.CharField(required=False, source='account.middle_name')
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code']
+        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code', 'middle_name']
 
     def validate(self, attrs):
         if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
