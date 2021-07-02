@@ -127,13 +127,13 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = AdminMeetingGroupBookingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        response = serializer.group_create(validated_data=request.data, context=self.request.parser_context)
+        response = serializer.group_create_meeting(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)
         return Response(response, status=status.HTTP_201_CREATED, headers=headers)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        account = Account.objects.get(user_id=request.user.id)
+        account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -165,13 +165,13 @@ class AdminGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = AdminWorkplaceGroupBookingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        response = serializer.group_create(context=self.request.parser_context)
+        response = serializer.group_create_workplace(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)
         return Response(response, status=status.HTTP_201_CREATED, headers=headers)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        account = Account.objects.get(user_id=request.user.id)
+        account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)

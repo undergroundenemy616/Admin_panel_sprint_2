@@ -257,13 +257,10 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
         return attrs
 
     @atomic()
-    def group_create(self, context):
-        author = Account.objects.get(user_id=context['request'].user.id)
+    def group_create_meeting(self, context):
+        author = context['request'].user.account
 
-        group_booking = GroupBooking.objects.create(author=author)
-        if self.validated_data.get('guests'):
-            group_booking.guests = self.validated_data.get('guests')
-            group_booking.save()
+        group_booking = GroupBooking.objects.create(author=author, guests=self.validated_data.get('guests'))
 
         bookings_to_create = []
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
@@ -311,8 +308,8 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
         return attrs
 
     @atomic()
-    def group_create(self, context):
-        author = Account.objects.get(user_id=context['request'].user.id)
+    def group_create_workspace(self, context):
+        author = context['request'].user.account
 
         group_booking = GroupBooking.objects.create(author=author)
 
