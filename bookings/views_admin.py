@@ -39,9 +39,10 @@ class AdminBookingViewSet(viewsets.ModelViewSet):
                                                                                                'table__room__floor',
                                                                                                'table__room__floor__office',
                                                                                                'user')
-            self.queryset = self.queryset.select_related('table', 'table__room', 'table__room__floor',
-                                                         'table__room__floor__office',
-                                                         'user')
+            else:
+                self.queryset = self.queryset.select_related('table', 'table__room', 'table__room__floor',
+                                                             'table__room__floor__office',
+                                                             'user')
         return self.queryset.all()
 
     def get_serializer_class(self):
