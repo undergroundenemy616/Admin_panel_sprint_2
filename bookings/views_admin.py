@@ -132,12 +132,10 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         return AdminGroupBookingSerializer
 
     def create(self, request, *args, **kwargs):
-        # serializer = AdminMeetingGroupBookingSerializer(data=request.data)
-        serializer = self.serializer_class(data=request.data)
+        serializer = AdminMeetingGroupBookingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         response = serializer.group_create_meeting(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)
-
         return Response(response, status=status.HTTP_201_CREATED, headers=headers)
 
     def destroy(self, request, *args, **kwargs):
