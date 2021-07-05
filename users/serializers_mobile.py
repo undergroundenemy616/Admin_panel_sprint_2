@@ -257,12 +257,7 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         response = dict()
-        token_serializer = TokenObtainPairSerializer()
-        token = token_serializer.get_token(user=self.context['request'].user)
-        response['message'] = "OK"
-        response['access_token'] = str(token.access_token)
-        response['refresh_token'] = str(token)
-        response['activated'] = self.context['request'].user.is_active
+        response['detail'] = "Password successfully changed"
         return response
 
 
@@ -399,10 +394,10 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
 
 class MobileSelfUpdateSerializer(serializers.ModelSerializer):
     phone_code = serializers.IntegerField(required=False)
-    gender = serializers.CharField(required=False, source='account.gender')
-    last_name = serializers.CharField(required=False, source='account.last_name')
-    first_name = serializers.CharField(required=False, source='account.first_name')
-    middle_name = serializers.CharField(required=False, source='account.middle_name')
+    gender = serializers.CharField(required=False, source='account.gender', allow_blank=True)
+    last_name = serializers.CharField(required=False, source='account.last_name', allow_blank=False)
+    first_name = serializers.CharField(required=False, source='account.first_name', allow_blank=False)
+    middle_name = serializers.CharField(required=False, source='account.middle_name', allow_blank=True)
 
     class Meta:
         model = User
@@ -433,6 +428,8 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         account_params = validated_data.pop('account') if validated_data.get('account') else None
         if account_params:
+            if account_params.get('gender') == "":
+                account_params['gender'] = None
             for param in account_params:
                 setattr(instance.account, param, account_params[param])
                 instance.account.save()
