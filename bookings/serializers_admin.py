@@ -26,6 +26,7 @@ from files.models import File
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer
 from room_types.models import RoomType
+from rooms.models import Room
 from tables.models import Table, TableMarker
 from users.models import Account
 
@@ -882,15 +883,16 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
 class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
     users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
     guests = serializers.JSONField(required=False)
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
 
     class Meta:
         model = Booking
-        fields = ['id', 'date_to', 'date_from', 'users', 'table', 'guests']
+        fields = ['id', 'date_to', 'date_from', 'users', 'room', 'guests']
 
     def validate(self, attrs):
-        if not attrs['table'].room.type.unified:
+        if not attrs['room'].type.unified:
             raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
-        if Booking.objects.is_overflowed(table=attrs['table'],
+        if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
                                          date_from=attrs['date_from'],
                                          date_to=attrs['date_to']):
             raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
@@ -907,7 +909,7 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                                                             self.validated_data['date_to'])
         for user in self.validated_data['users']:
             bookings_to_create.append(Booking(user=user,
-                                              table=self.validated_data['table'],
+                                              table=self.validated_data['room'].tables.all()[0],
                                               date_to=self.validated_data['date_to'],
                                               date_from=self.validated_data['date_from'],
                                               date_activate_until=date_activate_until,
