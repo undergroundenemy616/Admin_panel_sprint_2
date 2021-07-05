@@ -367,35 +367,18 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Account
-        fields = ['id', 'first_name', 'last_name', 'middle_name', 'phone_number', 'email']
+        fields = ['id', 'first_name', 'last_name',
+                  'middle_name', 'phone_number', 'email', 'gender']
 
     def to_representation(self, instance):
         response = super(MobileAccountMeetingSearchSerializer, self).to_representation(instance)
-        account_bookings = Booking.objects.filter(Q(user_id=response['id'])
-                                                  &
-                                                  Q(status__in=['waiting', 'active'])
-                                                  &
-                                                  (Q(date_from__lt=self.context['request'].query_params.get('date_to'),
-                                                     date_to__gte=self.context['request'].query_params.get('date_to'))
-                                                   |
-                                                   Q(date_from__lte=self.context['request'].query_params.get('date_from'),
-                                                     date_to__gt=self.context['request'].query_params.get('date_from'))
-                                                   |
-                                                   Q(date_from__gte=self.context['request'].query_params.get('date_from'),
-                                                     date_to__lte=self.context['request'].query_params.get('date_to')))
-                                                  &
-                                                  Q(date_from__lt=self.context['request'].query_params.get('date_to')))
 
-        if account_bookings:
-            response['occupied_time'] = []
-            for booking in account_bookings:
-                response['occupied_time'].append({
-                    'date_from': booking.date_from,
-                    'date_to': booking.date_to
-                })
+        if Booking.objects.is_user_overflowed(account=instance,
+                                              date_from=self.context['request'].query_params.get('date_from'),
+                                              date_to=self.context['request'].query_params.get('date_to'),
+                                              room_type=True):
             response['is_available'] = False
         else:
-            response['occupied_time'] = []
             response['is_available'] = True
 
         return response

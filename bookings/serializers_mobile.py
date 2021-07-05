@@ -1,19 +1,38 @@
 from datetime import datetime, timedelta, timezone
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.transaction import atomic
 from django.utils.timezone import now
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
 
-from bookings.models import Booking, Table
+from bookings.models import Booking, Table, MINUTES_TO_ACTIVATE
 from bookings.serializers import (BaseBookingSerializer,
                                   TestBaseBookingSerializer)
 from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
 from core.pagination import DefaultPagination
-from rooms.models import RoomMarker
+from group_bookings.models import GroupBooking
+from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer
+from rooms.models import RoomMarker, Room
 from tables.models import TableMarker
 from tables.serializers_mobile import MobileTableSerializer
 from users.models import Account
+
+
+def calculate_date_activate_until(date_from, date_to):
+    date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+    date_from = date_from.replace(tzinfo=timezone.utc)
+    date_to = date_to.replace(tzinfo=timezone.utc)
+    if date_now <= date_from:
+        if date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):
+            return date_from + timedelta(minutes=MINUTES_TO_ACTIVATE)
+        else:
+            return date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
+    elif date_to >= date_now + timedelta(minutes=MINUTES_TO_ACTIVATE):
+        return date_now + timedelta(minutes=MINUTES_TO_ACTIVATE)
+    else:
+        return date_to
 
 
 class MobileBookingSerializer(serializers.ModelSerializer):
@@ -26,7 +45,7 @@ class MobileBookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'table', 'theme', 'user']
+        fields = ['date_from', 'date_to', 'table', 'theme', 'user', 'group_booking_id']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
@@ -218,3 +237,95 @@ class MobileBookingSerializerForTableSlots(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(MobileBookingSerializerForTableSlots, self).to_representation(instance)
         return response
+
+
+class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
+    guests = serializers.JSONField(required=False)
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'date_to', 'date_from', 'users', 'room', 'guests']
+
+    def validate(self, attrs):
+        if not attrs['room'].type.unified:
+            raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
+        if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
+                                         date_from=attrs['date_from'],
+                                         date_to=attrs['date_to']):
+            raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+        return attrs
+
+    @atomic()
+    def group_create_meeting(self, context):
+        author = context['request'].user.account
+
+        group_booking = GroupBooking.objects.create(author=author, guests=self.validated_data.get('guests'))
+
+        bookings_to_create = []
+        date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
+                                                            self.validated_data['date_to'])
+        for user in self.validated_data['users']:
+            bookings_to_create.append(Booking(user=user,
+                                              table=self.validated_data['room'].tables.all()[0],
+                                              date_to=self.validated_data['date_to'],
+                                              date_from=self.validated_data['date_from'],
+                                              date_activate_until=date_activate_until,
+                                              group_booking=group_booking
+                                              ))
+
+        self.Meta.model.objects.bulk_create(bookings_to_create)
+
+        return MobileGroupBookingSerializer(instance=group_booking).data
+
+
+class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
+    tables = serializers.PrimaryKeyRelatedField(many=True, queryset=Table.objects.all())
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'date_to', 'date_from', 'users', 'tables']
+
+    def validate(self, attrs):
+        for table in attrs['tables']:
+            if table.room.type.unified:
+                raise ResponseException("Selected table is not a workplace", status_code=status.HTTP_400_BAD_REQUEST)
+
+        occupied_tables = []
+        for table in attrs['tables']:
+            if Booking.objects.is_overflowed(table=table, date_from=attrs['date_from'], date_to=attrs['date_to']):
+                occupied_tables.append(table.id)
+        if occupied_tables:
+            raise ValidationError(detail={
+                'occupied_tables': list(set(occupied_tables))
+            }, code=status.HTTP_400_BAD_REQUEST)
+
+        if len(attrs['users']) != len(attrs['tables']):
+            raise ResponseException("Selected not equal number of users and tables",
+                                    status_code=status.HTTP_400_BAD_REQUEST)
+
+        return attrs
+
+    @atomic()
+    def group_create_workspace(self, context):
+        author = context['request'].user.account
+
+        group_booking = GroupBooking.objects.create(author=author)
+
+        bookings_to_create = []
+        date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
+                                                            self.validated_data['date_to'])
+        for i in range(len(self.validated_data['users'])):
+            bookings_to_create.append(Booking(user=self.validated_data['users'][i],
+                                              table=self.validated_data['tables'][i],
+                                              date_to=self.validated_data['date_to'],
+                                              date_from=self.validated_data['date_from'],
+                                              date_activate_until=date_activate_until,
+                                              group_booking=group_booking
+                                              ))
+
+        self.Meta.model.objects.bulk_create(bookings_to_create)
+
+        return MobileGroupWorkspaceSerializer(instance=group_booking).data

@@ -1,7 +1,6 @@
 from django.db.models import Q
-from django.utils.timezone import now
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
@@ -11,9 +10,14 @@ from bookings.models import Booking
 from bookings.serializers import BookingPersonalSerializer
 from bookings.serializers_mobile import (
     MobileBookingActivateActionSerializer,
-    MobileBookingDeactivateActionSerializer, MobileBookingSerializer)
+    MobileBookingDeactivateActionSerializer, MobileBookingSerializer, MobileMeetingGroupBookingSerializer,
+    MobileWorkplaceGroupBookingSerializer)
+from core.handlers import ResponseException
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAuthenticated
+from group_bookings.models import GroupBooking
+from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer
+from users.models import Account
 
 
 class MobileBookingsView(GenericAPIView,
@@ -117,3 +121,81 @@ class MobileActionCancelBookingsView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
+
+
+class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
+    queryset = GroupBooking.objects.all()
+    permission_classes = (IsAuthenticated,)
+    pagination_class = LimitStartPagination
+    serializer_class = MobileGroupBookingSerializer
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=True,
+                                                   bookings__table__room__type__bookable=True,
+                                                   bookings__table__room__type__is_deletable=False)).\
+                prefetch_related('bookings', 'bookings__table',
+                                 'bookings__table__room', 'bookings__table__room__room_marker',
+                                 'bookings__table__room__type', 'bookings__table__room__floor',
+                                 'bookings__table__room__floor__office', 'bookings__user').distinct()
+        return self.queryset.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return MobileMeetingGroupBookingSerializer
+        return self.serializer_class
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create_meeting(context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        account = request.user.account
+        if account == instance.author or account.user.is_staff:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
+
+
+class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
+    queryset = GroupBooking.objects.all()
+    permission_classes = (IsAuthenticated,)
+    pagination_class = LimitStartPagination
+    serializer_class = MobileGroupWorkspaceSerializer
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=False,
+                                                   bookings__table__room__type__bookable=True,
+                                                   bookings__table__room__type__is_deletable=False)).\
+                prefetch_related('bookings', 'bookings__table',
+                                 'bookings__table__room', 'bookings__table__room__room_marker',
+                                 'bookings__table__room__type', 'bookings__table__room__floor',
+                                 'bookings__table__room__floor__office', 'bookings__user').distinct()
+        return self.queryset.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return MobileWorkplaceGroupBookingSerializer
+        return self.serializer_class
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create_workspace(context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        account = request.user.account
+        if account == instance.author or account.user.is_staff:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
