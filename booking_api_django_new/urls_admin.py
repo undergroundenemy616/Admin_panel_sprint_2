@@ -24,6 +24,7 @@ urlpatterns = [
     path('/office_panel/<uuid:pk>', users_admin_view.AdminOfficePanelViewSet.as_view(url_detail)),
     path('/floor', include('floors.urls_admin')),
     path('/group', include('groups.urls_admin')),
+    path('/group_booking', include('group_bookings.urls_mobile')),
     path('/office_zone', office_admin_view.AdminOfficeZoneViewSet.as_view(url_list)),
     path('/office_zone/<uuid:pk>', office_admin_view.AdminOfficeZoneViewSet.as_view(url_detail)),
     path('/floor_map', floor_admin_view.AdminFloorMapViewSet.as_view(url_list)),

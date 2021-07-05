@@ -131,6 +131,7 @@ SIMPLE_JWT = {
 INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'groups.apps.GroupsConfig',
+    'group_bookings',
     'files',
     'floors',
     'licenses',

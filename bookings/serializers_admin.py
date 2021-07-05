@@ -14,14 +14,19 @@ from django.db.models import Q
 from django.db.transaction import atomic
 import pdfkit
 from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
 from workalendar.europe import Russia
 
 from booking_api_django_new.settings import FILES_HOST
 from bookings.models import Booking
+from bookings.serializers_mobile import calculate_date_activate_until
 from core.handlers import ResponseException
 from files.serializers_admin import check_token
 from files.models import File
+from group_bookings.models import GroupBooking
+from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer
 from room_types.models import RoomType
+from rooms.models import Room
 from tables.models import Table, TableMarker
 from users.models import Account
 
@@ -873,3 +878,95 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
             pass
 
         return file_storage_object
+
+
+class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
+    guests = serializers.JSONField(required=False)
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'date_to', 'date_from', 'users', 'room', 'guests']
+
+    def validate(self, attrs):
+        if not attrs['room'].type.unified:
+            raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
+        if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
+                                         date_from=attrs['date_from'],
+                                         date_to=attrs['date_to']):
+            raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+        return attrs
+
+    @atomic()
+    def group_create_meeting(self, context):
+        author = context['request'].user.account
+
+        group_booking = GroupBooking.objects.create(author=author, guests=self.validated_data.get('guests'))
+
+        bookings_to_create = []
+        date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
+                                                            self.validated_data['date_to'])
+        for user in self.validated_data['users']:
+            bookings_to_create.append(Booking(user=user,
+                                              table=self.validated_data['room'].tables.all()[0],
+                                              date_to=self.validated_data['date_to'],
+                                              date_from=self.validated_data['date_from'],
+                                              date_activate_until=date_activate_until,
+                                              group_booking=group_booking
+                                              ))
+
+        self.Meta.model.objects.bulk_create(bookings_to_create)
+
+        return AdminGroupBookingSerializer(instance=group_booking).data
+
+
+class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
+    tables = serializers.PrimaryKeyRelatedField(many=True, queryset=Table.objects.all())
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'date_to', 'date_from', 'users', 'tables']
+
+    def validate(self, attrs):
+        for table in attrs['tables']:
+            if table.room.type.unified:
+                raise ResponseException("Selected table is not a workplace", status_code=status.HTTP_400_BAD_REQUEST)
+
+        occupied_tables = []
+        for table in attrs['tables']:
+            if Booking.objects.is_overflowed(table=table, date_from=attrs['date_from'], date_to=attrs['date_to']):
+                occupied_tables.append(table.id)
+        if occupied_tables:
+            raise ValidationError(detail={
+                'occupied_tables': list(set(occupied_tables))
+            }, code=status.HTTP_400_BAD_REQUEST)
+
+        if len(attrs['users']) != len(attrs['tables']):
+            raise ResponseException("Selected not equal number of users and tables",
+                                    status_code=status.HTTP_400_BAD_REQUEST)
+
+        return attrs
+
+    @atomic()
+    def group_create_workplace(self, context):
+        author = context['request'].user.account
+
+        group_booking = GroupBooking.objects.create(author=author)
+
+        bookings_to_create = []
+        date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
+                                                            self.validated_data['date_to'])
+        for i in range(len(self.validated_data['users'])):
+            bookings_to_create.append(Booking(user=self.validated_data['users'][i],
+                                              table=self.validated_data['tables'][i],
+                                              date_to=self.validated_data['date_to'],
+                                              date_from=self.validated_data['date_from'],
+                                              date_activate_until=date_activate_until,
+                                              group_booking=group_booking
+                                              ))
+
+        self.Meta.model.objects.bulk_create(bookings_to_create)
+
+        return AdminGroupWorkspaceSerializer(instance=group_booking).data
