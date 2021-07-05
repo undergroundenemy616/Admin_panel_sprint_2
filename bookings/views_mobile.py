@@ -127,6 +127,7 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     queryset = GroupBooking.objects.all()
     permission_classes = (IsAuthenticated,)
     pagination_class = LimitStartPagination
+    serializer_class = MobileGroupBookingSerializer
 
     def get_queryset(self):
         if self.request.method == "GET":
@@ -142,10 +143,10 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST":
             return MobileMeetingGroupBookingSerializer
-        return MobileGroupBookingSerializer
+        return self.serializer_class
 
     def create(self, request, *args, **kwargs):
-        serializer = MobileMeetingGroupBookingSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         response = serializer.group_create_meeting(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)
@@ -165,6 +166,7 @@ class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
     queryset = GroupBooking.objects.all()
     permission_classes = (IsAuthenticated,)
     pagination_class = LimitStartPagination
+    serializer_class = MobileGroupWorkspaceSerializer
 
     def get_queryset(self):
         if self.request.method == "GET":
@@ -180,10 +182,10 @@ class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST":
             return MobileWorkplaceGroupBookingSerializer
-        return MobileGroupWorkspaceSerializer
+        return self.serializer_class
 
     def create(self, request, *args, **kwargs):
-        serializer = MobileWorkplaceGroupBookingSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         response = serializer.group_create_workspace(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)

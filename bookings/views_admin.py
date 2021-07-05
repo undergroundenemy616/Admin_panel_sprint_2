@@ -114,6 +114,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     queryset = GroupBooking.objects.all()
     permission_classes = (IsAdmin,)
     pagination_class = LimitStartPagination
+    serializer_class = AdminGroupBookingSerializer
 
     def get_queryset(self):
         if self.request.method == "GET":
@@ -129,10 +130,10 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST":
             return AdminMeetingGroupBookingSerializer
-        return AdminGroupBookingSerializer
+        return self.serializer_class
 
     def create(self, request, *args, **kwargs):
-        serializer = AdminMeetingGroupBookingSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         response = serializer.group_create_meeting(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)
@@ -152,6 +153,7 @@ class AdminGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
     queryset = GroupBooking.objects.all()
     permission_classes = (IsAdmin,)
     pagination_class = LimitStartPagination
+    serializer_class = AdminGroupWorkspaceSerializer
 
     def get_queryset(self):
         if self.request.method == "GET":
@@ -167,10 +169,10 @@ class AdminGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST":
             return AdminWorkplaceGroupBookingSerializer
-        return AdminGroupWorkspaceSerializer
+        return self.serializer_class
 
     def create(self, request, *args, **kwargs):
-        serializer = AdminWorkplaceGroupBookingSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         response = serializer.group_create_workplace(context=self.request.parser_context)
         headers = self.get_success_headers(serializer.data)
