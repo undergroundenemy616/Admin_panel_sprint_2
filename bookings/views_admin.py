@@ -33,6 +33,12 @@ class AdminBookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.method == "GET":
+            if str(self.request.query_params.get('group')).lower() == 'true':
+                self.queryset = self.queryset.filter(~Q(group_booking_id=None)).select_related('table',
+                                                                                               'table__room',
+                                                                                               'table__room__floor',
+                                                                                               'table__room__floor__office',
+                                                                                               'user')
             self.queryset = self.queryset.select_related('table', 'table__room', 'table__room__floor',
                                                          'table__room__floor__office',
                                                          'user')
