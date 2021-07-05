@@ -88,13 +88,22 @@ class MobileLoginOrRegisterSerializer(serializers.Serializer):
         pass
 
 
+class MobilePhotoForAccountSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = File
+        fields = ['id', 'path']
+
+
 class MobileAccountSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(source='user.phone_number')
     email = serializers.EmailField(source='user.email')
+    photo = MobilePhotoForAccountSerializer()
 
     class Meta:
         model = Account
-        fields = ['id', 'email', 'gender', 'last_name', 'first_name', 'phone_number', 'user', 'birth_date']
+        fields = ['id', 'email', 'gender', 'last_name', 'first_name', 'middle_name', 'phone_number', 'user',
+                  'birth_date', 'photo']
 
 
 class MobileAccountUpdateSerializer(serializers.ModelSerializer):
@@ -347,7 +356,7 @@ class MobileConformationSerializer(serializers.Serializer):
                         code=self.validated_data.get('code')):
             key = 'email' if self.validated_data.get('email') else 'phone'
             self.context['request'].session[f'{key}_confirm'] = self.validated_data['user_identification']
-            return {"detail": "Confirmed"}
+            return {"detail": "Confirmed", "identificator": key}
         else:
             raise ResponseException("Wrong or expired code")
 
@@ -398,10 +407,13 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(required=False, source='account.last_name', allow_blank=False)
     first_name = serializers.CharField(required=False, source='account.first_name', allow_blank=False)
     middle_name = serializers.CharField(required=False, source='account.middle_name', allow_blank=True)
+    photo = serializers.PrimaryKeyRelatedField(source='account.photo', queryset=File.objects.all(), required=False,
+                                               allow_null=True)
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code', 'middle_name']
+        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code', 'middle_name',
+                  'photo']
 
     def validate(self, attrs):
         if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
