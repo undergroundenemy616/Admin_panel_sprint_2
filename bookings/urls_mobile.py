@@ -12,5 +12,5 @@ urlpatterns = [
     path('/<uuid:pk>', MobileActionCancelBookingsView.as_view()),
     path('/suitable_places', SuitableRoomsMobileView.as_view()),
     path('/cancel/<uuid:pk>', MobileCancelBooking.as_view()),
-    path('/activate', MobileActionActivateBookingsView.as_view()),
+    path('/activate', MobileActionActivateBookingsView.as_view())
 ]

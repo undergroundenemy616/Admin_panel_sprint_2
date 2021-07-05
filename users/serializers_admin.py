@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from booking_api_django_new.settings import DEBUG
+from booking_api_django_new.settings import DEBUG, ADMIN_HOST
 from core.handlers import ResponseException
 from files.serializers_admin import AdminFileSerializer
 from floors.models import Floor
@@ -163,14 +163,21 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
         model = Account
         fields = '__all__'
 
+    def validate(self, attrs):
+        if User.objects.filter(Q(phone_number=attrs['phone_number']) | Q(email=attrs['email'])):
+            raise ValidationError(detail={"message": 'User with this credentials already exists'}, code=400)
+        try:
+            attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
+        except ValueError as e:
+            raise ResponseException(e)
+        return attrs
+
     @atomic()
     def create(self, validated_data):
 
-        if User.objects.filter(Q(phone_number=validated_data['phone_number']) | Q(email=validated_data['email'])):
-            raise ValidationError(detail={"message": 'User with this credentials already exists'}, code=400)
-
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
-        user = User.objects.create(is_active=True, is_staff=True, email=validated_data['email'])
+        user = User.objects.create(is_active=True, is_staff=True, email=validated_data.pop('email'),
+                                   phone_number=validated_data.pop('phone_number'))
         user.set_password(password)
         user.save()
         validated_data['user'] = user
@@ -182,15 +189,14 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
         instance.groups.add(group)
 
         email = validated_data.get('email')
-        host_domain = os.environ.get('ADMIN_HOST')
-        if not host_domain:
+        if not ADMIN_HOST:
             raise ValidationError(detail={"message": "ADMIN_HOST not specified"}, code=400)
 
         send_html_email_message(
             to=email,
             subject="Добро пожаловать в Simple-Office!",
             template_args={
-                'host': host_domain,
+                'host': ADMIN_HOST,
                 'username': email,
                 'password': password
             }
