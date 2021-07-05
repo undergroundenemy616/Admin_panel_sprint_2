@@ -277,6 +277,7 @@ class AdminLoginSerializer(serializers.Serializer):
 
         return user, None
 
+
 class AdminPromotionDemotionSerializer(serializers.Serializer):
     account = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
 
