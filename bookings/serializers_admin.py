@@ -10,6 +10,8 @@ import requests
 import xlsxwriter
 import orjson
 
+from django.core.exceptions import ValidationError as ValErr
+from django.core.validators import validate_email
 from django.db.models import Q
 from django.db.transaction import atomic
 import pdfkit
@@ -28,7 +30,8 @@ from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminG
 from room_types.models import RoomType
 from rooms.models import Room
 from tables.models import Table, TableMarker
-from users.models import Account
+from users.models import Account, User
+from users.tasks import send_email, send_sms
 
 
 def employee_statistics(stats):
@@ -896,6 +899,29 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                                          date_from=attrs['date_from'],
                                          date_to=attrs['date_to']):
             raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+        if attrs.get('guests'):
+            for guest in attrs.get('guests'):
+                contact_data = attrs.get('guests')[guest]
+                try:
+                    validate_email(contact_data)
+                    message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                              f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                              f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                              f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
+                              f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                    send_email.delay(email=contact_data, subject="Встреча", message=message)
+                except ValErr:
+                    try:
+                        contact_data = User.normalize_phone(contact_data)
+                        message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                                  f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                                  f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                                  f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
+                                  f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                        send_sms.delay(phone_number=contact_data, message=message)
+                    except ValueError:
+                        raise ResponseException("Wrong format of email or phone",
+                                                status_code=status.HTTP_400_BAD_REQUEST)
         return attrs
 
     @atomic()

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError as ValErr
+from django.core.validators import validate_email
 from django.db.transaction import atomic
 from django.utils.timezone import now
 from rest_framework import serializers, status
@@ -16,8 +17,9 @@ from group_bookings.models import GroupBooking
 from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer
 from rooms.models import RoomMarker, Room
 from tables.models import TableMarker
-from tables.serializers_mobile import MobileTableSerializer
-from users.models import Account
+from tables.serializers_mobile import MobileTableSerializer, MobileBookingRoomSerializer
+from users.models import Account, User
+from users.tasks import send_email, send_sms
 
 
 def calculate_date_activate_until(date_from, date_to):
@@ -134,11 +136,7 @@ class MobileBookingSerializer(serializers.ModelSerializer):
             response = TestBaseBookingSerializer(instance).data
             response['active'] = response.pop('is_active')
             response['table'] = MobileTableSerializer(instance=instance.table).data
-            response['room'] = {
-                "id": instance.table.room.id,
-                "title": instance.table.room.title,
-                "type": instance.table.room.type.title
-            }
+            response['room'] = MobileBookingRoomSerializer(instance=instance.table.room).data
             response['floor'] = {
                 "id": instance.table.room.floor.id,
                 "title": instance.table.room.floor.title
@@ -255,6 +253,29 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                                          date_from=attrs['date_from'],
                                          date_to=attrs['date_to']):
             raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+        if attrs.get('guests'):
+            for guest in attrs.get('guests'):
+                contact_data = attrs.get('guests')[guest]
+                try:
+                    validate_email(contact_data)
+                    message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                              f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                              f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                              f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
+                              f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                    send_email.delay(email=contact_data, subject="Встреча", message=message)
+                except ValErr:
+                    try:
+                        contact_data = User.normalize_phone(contact_data)
+                        message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                                  f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                                  f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                                  f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
+                                  f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                        send_sms.delay(phone_number=contact_data, message=message)
+                    except ValueError:
+                        raise ResponseException("Wrong format of email or phone",
+                                                status_code=status.HTTP_400_BAD_REQUEST)
         return attrs
 
     @atomic()
