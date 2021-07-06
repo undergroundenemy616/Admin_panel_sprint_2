@@ -5,7 +5,7 @@ from floors.models import Floor
 from group_bookings.models import GroupBooking
 from offices.models import Office
 from rooms.models import Room, RoomMarker
-from tables.models import Table
+from tables.models import Table, TableMarker
 from users.models import Account
 
 
@@ -37,7 +37,7 @@ class MobileGroupBookingRoomMarkerSerializer(serializers.ModelSerializer):
 
 
 class MobileGroupBookingRoomSerializer(serializers.ModelSerializer):
-    marker = MobileGroupBookingRoomMarkerSerializer(read_only=True, source='room_marker')
+    marker = MobileGroupBookingRoomMarkerSerializer(required=False, read_only=True, source='room_marker')
     type = serializers.CharField(read_only=True, source='type.title')
 
     class Meta:
@@ -45,10 +45,18 @@ class MobileGroupBookingRoomSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'type', 'marker']
 
 
+class MobileGroupBookingTableMarkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TableMarker
+        fields = ['id', 'x', 'y']
+
+
 class MobileGroupTableMeetingInfoSerializer(serializers.ModelSerializer):
+    marker = MobileGroupBookingTableMarkerSerializer(required=False, read_only=True, source='table_marker')
+
     class Meta:
         model = Table
-        fields = ['id', 'title']
+        fields = ['id', 'title', 'marker']
 
 
 class MobileBookingInfoSerializer(serializers.ModelSerializer):
