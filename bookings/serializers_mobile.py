@@ -330,7 +330,7 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
         return attrs
 
     @atomic()
-    def group_create_workspace(self, context):
+    def group_create_workplace(self, context):
         author = context['request'].user.account
 
         group_booking = GroupBooking.objects.create(author=author)
