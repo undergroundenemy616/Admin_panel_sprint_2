@@ -907,7 +907,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                     message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                               f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                               f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                              f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')}"
+                              f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
+                              f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
                     send_email.delay(email=contact_data, subject="Встреча", message=message)
                 except ValErr:
                     try:
@@ -915,7 +916,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                                  f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')}"
+                                  f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
+                                  f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
                         send_sms.delay(phone_number=contact_data, message=message)
                     except ValueError:
                         raise ResponseException("Wrong format of email or phone",
