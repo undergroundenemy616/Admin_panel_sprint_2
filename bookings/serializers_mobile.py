@@ -47,7 +47,7 @@ class MobileBookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'table', 'theme', 'user', 'group_booking_id']
+        fields = ['date_from', 'date_to', 'table', 'theme', 'user', 'group_booking']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
@@ -146,6 +146,10 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                 "title": instance.table.room.floor.office.title,
                 "description": instance.table.room.floor.office.description
             }
+            if instance.group_booking and instance.group_booking.author == instance.user:
+                response['is_owner'] = True
+            else:
+                response['is_owner'] = False
 
             remove_keys = ('date_activate_until', 'is_over', 'user', 'theme')
 
