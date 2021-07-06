@@ -15,4 +15,5 @@ urlpatterns = [
     path('/user', include('users.urls_mobile')),
     path('/room', include('rooms.urls_mobile')),
     path('accounts_first/<uuid:pk>', AccountFirstPutView.as_view()),
+    path('/teams', include('teams.urls_mobile')),
 ]

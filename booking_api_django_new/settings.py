@@ -142,6 +142,7 @@ INSTALLED_APPS = [
     'reports',
     'bookings',
     'push_tokens',
+    'teams',
     'rest_framework',
     'drf_yasg',
     'mail',
