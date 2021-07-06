@@ -258,22 +258,18 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 contact_data = attrs.get('guests')[guest]
                 try:
                     validate_email(contact_data)
-                    message = "Здравствуйте, {}. Вы были приглашены на встречу, " \
-                              "которая пройдёт в {}, этаж {}, кабинет {}. " \
-                              "Дата и время проведения {}".format(guest, attrs['room'].floor.office.title,
-                                                                  attrs['room'].floor.title, attrs['room'].title,
-                                                                  datetime.strftime(attrs['date_from'],
-                                                                                    '%Y-%m-%d %H:%M'))
+                    message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                              f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                              f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                              f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')}"
                     send_email.delay(email=contact_data, subject="Встреча", message=message)
                 except ValErr:
                     try:
                         contact_data = User.normalize_phone(contact_data)
-                        message = "Здравствуйте, {}. Вы были приглашены на встречу, " \
-                                  "которая пройдёт в {}, этаж {}, кабинет {}. " \
-                                  "Дата и время проведения {}".format(guest, attrs['room'].floor.office.title,
-                                                                      attrs['room'].floor.title, attrs['room'].title,
-                                                                      datetime.strftime(attrs['date_from'],
-                                                                                        '%Y-%m-%d %H:%M'))
+                        message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                                  f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                                  f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                                  f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')}"
                         send_sms.delay(phone_number=contact_data, message=message)
                     except ValueError:
                         raise ResponseException("Wrong format of email or phone",
