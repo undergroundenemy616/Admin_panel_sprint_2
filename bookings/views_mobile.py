@@ -45,9 +45,10 @@ class MobileBookingsView(GenericAPIView,
 
 class MobileBookingListPersonalView(GenericAPIView, ListModelMixin):
     serializer_class = BookingPersonalSerializer
-    queryset = Booking.objects.all().select_related('table', 'user').prefetch_related(
-        'table__room__floor__office', 'table__room__type', 'table__room__zone', 'table__tags',
-        'table__images', 'table__table_marker').order_by('-date_from', 'id')
+    queryset = Booking.objects.all().select_related('table', 'user', 'table__room__floor__office',
+                                                    'table__room__type', 'table__room__zone',
+                                                    'table__table_marker').\
+        prefetch_related('table__tags', 'table__images').order_by('-date_from', 'id')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
     search_fields = ['table__title',
