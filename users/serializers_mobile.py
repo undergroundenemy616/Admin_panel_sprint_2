@@ -373,13 +373,16 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(MobileAccountMeetingSearchSerializer, self).to_representation(instance)
 
-        if Booking.objects.is_user_overflowed(account=instance,
-                                              date_from=self.context['request'].query_params.get('date_from'),
-                                              date_to=self.context['request'].query_params.get('date_to'),
-                                              room_type=True):
-            response['is_available'] = False
-        else:
-            response['is_available'] = True
+        if self.context['request'].query_params.get('date_from') and self.context['request'].query_params.get('date_to') \
+                and self.context['request'].query_params.get('unified'):
+            if Booking.objects.is_user_overflowed(account=instance,
+                                                  date_from=self.context['request'].query_params.get('date_from'),
+                                                  date_to=self.context['request'].query_params.get('date_to'),
+                                                  room_type=self.context['request'].query_params.get(
+                                                      'unified') == 'true'):
+                response['is_available'] = False
+            else:
+                response['is_available'] = True
 
         return response
 
