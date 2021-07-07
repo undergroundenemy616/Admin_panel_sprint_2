@@ -942,7 +942,9 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                                               group_booking=group_booking
                                               ))
 
-        self.Meta.model.objects.bulk_create(bookings_to_create)
+        created_bookings = self.Meta.model.objects.bulk_create(bookings_to_create)
+        for booking in created_bookings:
+            booking.save()
 
         return AdminGroupBookingSerializer(instance=group_booking).data
 
@@ -993,6 +995,8 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                                               group_booking=group_booking
                                               ))
 
-        self.Meta.model.objects.bulk_create(bookings_to_create)
+        created_bookings = self.Meta.model.objects.bulk_create(bookings_to_create)
+        for booking in created_bookings:
+            booking.save()
 
         return AdminGroupWorkspaceSerializer(instance=group_booking).data
