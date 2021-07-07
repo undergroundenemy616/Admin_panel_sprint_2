@@ -11,6 +11,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from booking_api_django_new.settings import DEBUG, ADMIN_HOST
+from bookings.models import Booking
 from core.handlers import ResponseException
 from files.serializers_admin import AdminFileSerializer
 from floors.models import Floor
@@ -97,6 +98,15 @@ class AdminUserSerializer(serializers.ModelSerializer):
         if not response['email']:
             response['email'] = instance.user.email
         response['has_cp_access'] = True if instance.user.email else False
+        if self.context['request'].query_params.get('date_from') and self.context['request'].query_params.get('date_to')\
+                and self.context['request'].query_params.get('unified'):
+            if Booking.objects.is_user_overflowed(account=instance,
+                                                  date_from=self.context['request'].query_params.get('date_from'),
+                                                  date_to=self.context['request'].query_params.get('date_to'),
+                                                  room_type=self.context['request'].query_params.get('unified')=='true'):
+                response['is_available'] = False
+            else:
+                response['is_available'] = True
         return response
 
 
