@@ -17,7 +17,6 @@ from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAuthenticated
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer
-from users.models import Account
 
 
 class MobileBookingsView(GenericAPIView,
@@ -26,8 +25,8 @@ class MobileBookingsView(GenericAPIView,
     serializer_class = MobileBookingSerializer
     queryset = Booking.objects.all().select_related('table', 'table__room', 'table__table_marker',
                                                     'table__room__floor', 'table__room__floor__office',
-                                                    'table__room__zone', 'table__room__type'
-                                                    ).prefetch_related('user', 'table__tags', 'table__tags__icon',
+                                                    'table__room__zone', 'table__room__type', 'user'
+                                                    ).prefetch_related('table__tags', 'table__tags__icon',
                                                                        'table__images')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
