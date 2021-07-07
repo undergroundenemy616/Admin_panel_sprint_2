@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from django.core.exceptions import ObjectDoesNotExist, ValidationError as ValErr
+from django.core.exceptions import ValidationError as ValErr
 from django.core.validators import validate_email
 from django.db.transaction import atomic
 from django.utils.timezone import now
@@ -8,17 +8,16 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from bookings.models import Booking, Table, MINUTES_TO_ACTIVATE
-from bookings.serializers import (BaseBookingSerializer,
-                                  TestBaseBookingSerializer)
+from bookings.serializers import BaseBookingSerializer
 from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
 from core.pagination import DefaultPagination
 from group_bookings.models import GroupBooking
-from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer, \
-    MobileGroupBookingFloorSerializer
+from group_bookings.serializers_mobile import (MobileGroupBookingSerializer,
+                                               MobileGroupWorkspaceSerializer,
+                                               MobileGroupBookingFloorSerializer)
 from offices.models import Office
 from rooms.models import RoomMarker, Room
-from tables.models import TableMarker
 from tables.serializers_mobile import MobileTableSerializer, MobileBookingRoomSerializer
 from users.models import Account, User
 from users.tasks import send_email, send_sms
