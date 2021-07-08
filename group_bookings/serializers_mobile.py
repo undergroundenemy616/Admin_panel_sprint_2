@@ -106,7 +106,7 @@ class MobileGroupWorkspaceSerializer(serializers.ModelSerializer):
         response['bookings_info'] = MobileGroupWorkspaceBookingInfoSerializer(instance=instance.bookings.all(),
                                                                               many=True).data
         response['date_from'] = instance.bookings.all()[0].date_from
-        response['date_to'] = instance.bookings.all()[0].date_from
+        response['date_to'] = instance.bookings.all()[0].date_to
         response['office'] = MobileGroupBookingOfficeSerializer(instance=instance.bookings.all()[0].table.room.floor.office).data
 
         return response

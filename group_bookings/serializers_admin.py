@@ -96,10 +96,11 @@ class AdminGroupWorkspaceSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(AdminGroupWorkspaceSerializer, self).to_representation(instance)
         response['bookings_info'] = AdminGroupWorkspaceBookingInfoSerializer(instance=instance.bookings.all(),
-                                                                              many=True).data
+                                                                             many=True).data
         response['date_from'] = instance.bookings.all()[0].date_from
-        response['date_to'] = instance.bookings.all()[0].date_from
-        response['office'] = AdminGroupBookingOfficeSerializer(instance=instance.bookings.all()[0].table.room.floor.office).data
+        response['date_to'] = instance.bookings.all()[0].date_to
+        response['office'] = AdminGroupBookingOfficeSerializer(
+            instance=instance.bookings.all()[0].table.room.floor.office).data
 
         return response
 
