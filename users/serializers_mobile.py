@@ -6,7 +6,6 @@ from django.contrib.auth import user_logged_in
 from django.core.validators import validate_email
 from django.core.cache import cache
 from django.db.transaction import atomic
-from django.db.models import Q
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as ValErr
 from rest_framework.exceptions import ValidationError
