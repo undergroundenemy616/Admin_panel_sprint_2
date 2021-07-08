@@ -11,12 +11,8 @@ class MobileAccountForTeamsSerializer(serializers.Serializer):
     firstname = serializers.CharField(source='first_name', allow_blank=True, allow_null=True)
     lastname = serializers.CharField(source='last_name', allow_blank=True, allow_null=True)
     middlename = serializers.CharField(source='middle_name', allow_blank=True, allow_null=True)
-
-    def to_representation(self, instance):
-        response = super(MobileAccountForTeamsSerializer, self).to_representation(instance)
-        response['phone_number'] = instance.user.phone_number
-        response['email'] = instance.user.email
-        return response
+    phone_number = serializers.CharField(source='user.phone_number', allow_blank=True, allow_null=True)
+    email = serializers.CharField(source='user.email', allow_blank=True, allow_null=True)
 
 
 class MobileTeamBaseSerializer(serializers.Serializer):
@@ -24,10 +20,10 @@ class MobileTeamBaseSerializer(serializers.Serializer):
     title = serializers.CharField()
     users = MobileAccountForTeamsSerializer(many=True)
     number = serializers.IntegerField()
+    creator = serializers.UUIDField(source='creator.id')
 
     def to_representation(self, instance):
         response = super(MobileTeamBaseSerializer, self).to_representation(instance)
-        response['creator'] = instance.creator.id
         response['users'].append(MobileAccountForTeamsSerializer(instance.creator).data)
         return response
 
