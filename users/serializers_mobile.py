@@ -401,6 +401,11 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
                   'photo']
 
     def validate(self, attrs):
+        if attrs.get('phone_number'):
+            try:
+                attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
+            except ValueError as e:
+                raise ResponseException(e)
         if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
                 email=attrs['email']):
             raise ResponseException("User with this email already exists")
@@ -417,7 +422,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
         if self.instance and attrs.get('phone_number') and self.instance.phone_number != attrs.get('phone_number') and \
                 not self.context['request'].session.get('phone_confirm') == attrs.get('phone_number'):
-            raise ResponseException("Need phone conformation code for change phone")
+            raise ResponseException("Need phone conformation for change phone")
 
         return attrs
 
