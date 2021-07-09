@@ -51,7 +51,7 @@ class MobileBookingSerializer(serializers.ModelSerializer):
     room = MobileBookingRoomSerializer(required=False, source='table.room', read_only=True)
     floor = MobileGroupBookingFloorSerializer(required=False, source='table.room.floor', read_only=True)
     office = MobileBookingOfficeSerializer(required=False, source='table.room.floor.office', read_only=True)
-    theme = serializers.CharField(max_length=200, default="Без темы", read_only=True)
+    theme = serializers.CharField(max_length=200, default="Без темы")
     user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
     active = serializers.BooleanField(source='is_active', required=False, read_only=True)
     pagination_class = DefaultPagination
@@ -81,9 +81,9 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                 response = super(MobileBookingSerializer, self).to_representation(instance)
                 response['table'] = MobileTableSerializer(instance=instance.table).data
                 if instance.table.room.type.unified:
-                    room_marker = RoomMarker.objects.get(room_id=instance.table.room.id)
+                    room_marker = RoomMarker.objects.get(room_id=instance.table.room_id)
                     response['room'] = {
-                        "id": instance.table.room.id,
+                        "id": instance.table.room_id,
                         "title": instance.table.room.title,
                         "type": instance.table.room.type.title,
                         "marker": {
