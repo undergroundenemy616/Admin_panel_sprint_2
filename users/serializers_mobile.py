@@ -30,12 +30,10 @@ def send_conformation_code(recipient: str, subject="", ttl=60, key=None, phone=F
         raise ValidationError(detail=detail, code=400)
     cache.set(key, conformation_code, ttl)
     if not phone:
-        print('------', conformation_code)
-        # send_email.delay(email=recipient, subject=subject,
-        #                  message="Код подтверждения: " + conformation_code)
+        send_email.delay(email=recipient, subject=subject,
+                         message="Код подтверждения: " + conformation_code)
     else:
-        print('------', conformation_code)
-        # send_sms.delay(phone_number=recipient, message="Код подтверждения: " + conformation_code)
+        send_sms.delay(phone_number=recipient, message="Код подтверждения: " + conformation_code)
 
 
 def confirm_code(key, code) -> bool:
@@ -424,7 +422,6 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
         if self.instance and attrs.get('phone_number') and self.instance.phone_number != attrs.get('phone_number') and \
                 not self.context['request'].session.get('phone_confirm') == attrs.get('phone_number'):
-            print('----------', self.context['request'].session.get('phone_confirm'), attrs.get('phone_number'))
             raise ResponseException("Need phone conformation for change phone")
 
         return attrs
