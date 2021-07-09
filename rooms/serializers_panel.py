@@ -2,7 +2,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from floors.models import Floor, FloorMap
-from floors.serializers import floor_map_serializer, TestFloorSerializerWithMap
+from floors.serializers import floor_map_serializer
 from offices.models import Office
 from rooms.serializers import TestRoomSerializer
 from tables.models import Table
@@ -21,8 +21,9 @@ class PanelFloorSerializerWithMap(serializers.Serializer):
     def to_representation(self, instance):
         response = super(PanelFloorSerializerWithMap, self).to_representation(instance)
         response['rooms'] = TestRoomSerializer(
-            instance=instance.rooms.filter(type__unified=True, type__bookable=True).prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
-                                                     'type__icon', 'images').select_related(
+            instance=instance.rooms.filter(type__unified=True, type__bookable=True).prefetch_related(
+                'tables', 'tables__tags', 'tables__images',
+                'tables__table_marker', 'type__icon', 'images').select_related(
                 'room_marker', 'type', 'floor', 'zone'), many=True).data
         tables = Table.objects.filter(room__floor=instance)
         try:

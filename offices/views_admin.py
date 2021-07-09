@@ -1,6 +1,5 @@
 from django.db.models import Count, Prefetch, Q
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, viewsets
 
 from core.handlers import ResponseException
 from core.pagination import LimitStartPagination

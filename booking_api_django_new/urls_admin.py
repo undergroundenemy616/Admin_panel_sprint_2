@@ -1,11 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from core.mapping import url_detail, url_list, url_list_with_delete
+from core.mapping import url_detail, url_list
 from offices import views_admin as office_admin_view
 from users import views_admin as users_admin_view
 from floors import views_admin as floor_admin_view
-from tables import views_admin as table_admin_view
 
 office_zone_router = DefaultRouter(trailing_slash=False)
 office_zone_router.register('', office_admin_view.AdminOfficeZoneViewSet)

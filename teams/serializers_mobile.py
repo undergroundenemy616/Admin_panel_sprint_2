@@ -37,7 +37,8 @@ class MobileTeamLiteSerializer(serializers.Serializer):
 
 class MobileTeamCreateUpdateSerializer(serializers.ModelSerializer):
     title = serializers.CharField(max_length=200, required=True)
-    users = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=Account.objects.all()), required=False, allow_null=False, max_length=150, min_length=2)
+    users = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=Account.objects.all()),
+                                  required=False, allow_null=False, max_length=150, min_length=2)
 
     class Meta:
         model = Team
