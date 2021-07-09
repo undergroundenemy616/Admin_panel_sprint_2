@@ -31,6 +31,7 @@ utc = pytz.UTC
 GLOBAL_DATE_FROM_WS = datetime.now().date()
 GLOBAL_DATETIME_FROM_WS = datetime.now().replace(tzinfo=utc)
 GLOBAL_DATETIME_TO_WS = datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
+GLOBAL_TABLES_CHANNEL_NAMES = dict()
 
 
 class BookingManager(models.Manager):
@@ -328,7 +329,8 @@ class Booking(models.Model):
         print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
         print('Send info outside model')
-        await channel_layer.group_send("dimming", result_in_json)
+        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result['table_id']}"]
+        await channel_layer.send(str(channel), result_in_json)
 
     @staticmethod
     async def websocket_notification_by_datetime(result=None):
@@ -341,7 +343,8 @@ class Booking(models.Model):
         }
         channel_layer = get_channel_layer()
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        await channel_layer.group_send("dimming", result_in_json)
+        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result['table_id']}"]
+        await channel_layer.send(str(channel), result_in_json)
 
     def create_response_for_datetime_websocket(self, instance=None):
         local_tz = pytz.timezone('Europe/Moscow')
@@ -350,6 +353,7 @@ class Booking(models.Model):
             result.append({
                 'status': 'occupied',
                 'id': str(self.id),
+                'table_id': str(self.table.id),
                 'title': str(self.table.room.title),
                 'date_from': str(self.date_from.astimezone(local_tz))[:16],
                 'date_to': str(self.date_to.astimezone(local_tz))[:16],
@@ -368,6 +372,7 @@ class Booking(models.Model):
                 result.append({
                     'id': str(self.table.room.id),
                     'title': str(self.table.room.title),
+                    'table_id': str(self.table.id),
                     'tables': [
                         {'id': str(self.table.id),
                          'title': str(self.table.title),
@@ -385,6 +390,7 @@ class Booking(models.Model):
                 result.append({
                     'id': str(self.table.room.id),
                     'title': str(self.table.room.title),
+                    'table_id': str(self.table.id),
                     'tables': [
                         {'id': str(self.table.id),
                          'title': str(self.table.title),
@@ -412,12 +418,14 @@ class Booking(models.Model):
                 continue
             result.append({
                 'id': str(booking.id),
+                'table_id': str(booking.table.id),
                 'date_from': str(booking.date_from.astimezone(local_tz))[0:16],
                 'date_to': str(booking.date_to.astimezone(local_tz))[0:16]
             })
         if not instance:
             result.append({
                 'id': str(self.id),
+                'table_id': str(self.table.id),
                 'date_from': str(self.date_from.astimezone(local_tz))[0:16],
                 'date_to': str(self.date_to.astimezone(local_tz))[0:16]
             })

@@ -27,10 +27,10 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
 
         # Join group TODO: Make only auth connection
-        await self.channel_layer.group_add(
-            "dimming",
-            self.channel_name
-        )
+        # await self.channel_layer.group_add(
+        #     "dimming",
+        #     self.channel_name
+        # )
         await self.accept()
         print("connected")
 
@@ -39,6 +39,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         if content.get('event', None) == 'echo':
             res = content
         else:
+            bookings.models.GLOBAL_TABLES_CHANNEL_NAMES[f'{content.get("table")}'] = self.channel_name
             if content.get('event', None) == 'daily_booking':
                 content = await self.check_db_for_day_booking(date=content.get('date', str(datetime.date.today())),
                                                               table=content.get('table', None))
@@ -51,6 +52,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                              }
                 }
             elif content.get('event', None) == 'hours_booking':
+                bookings.models.GLOBAL_TABLES_CHANNEL_NAMES[f'{content.get("table")}'] = self.channel_name
                 content = await self.check_db_for_datetime_booking(date_from_str=content.get('date_from', str(datetime.date.today())),
                                                                    date_to_str=content.get('date_to', None),
                                                                    table=content.get('table', None))
@@ -62,7 +64,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                         'data': content
                     }
                 }
-        await self.channel_layer.group_send('dimming', res)
+        await self.channel_layer.send(f'{self.channel_name}', res)
 
     @classmethod
     async def decode_json(cls, text_data):
