@@ -291,9 +291,13 @@ class AdminStatisticsSerializer(serializers.Serializer):
                     (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                     (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
                     office_id = '{valid_office_id}'""")
-            tables_from_booking = bookings.filter(Q(table__room__floor__office_id=valid_office_id) &
-                                                       Q(table__room__type__is_deletable=False) &
-                                                       Q(table__room__type__bookable=True)).only('table_id')
+            tables_from_booking = bookings.filter(Q(table__room__floor__office_id=valid_office_id)
+                                                  &
+                                                  Q(table__room__type__is_deletable=False)
+                                                  &
+                                                  Q(table__room__type__bookable=True)
+                                                  &
+                                                  Q(table__room__type__unified=False)).only('table_id')
         else:
             all_tables = Table.objects.filter(Q(room__type__is_deletable=False) &
                                               Q(room__type__bookable=True) &
@@ -315,8 +319,11 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                 WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
                                 (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                                 (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
-            tables_from_booking = bookings.filter(Q(table__room__type__is_deletable=False) &
-                                                       Q(table__room__type__bookable=True)).only('table_id')
+            tables_from_booking = bookings.filter(Q(table__room__type__is_deletable=False)
+                                                  &
+                                                  Q(table__room__type__bookable=True)
+                                                  &
+                                                  Q(table__room__type__unified=False)).only('table_id')
         all_accounts = Account.objects.all()
 
         working_days = 0
