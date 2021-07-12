@@ -28,6 +28,7 @@ orjson==3.5.1
 packaging==20.4
 pandas==1.2.3
 pdfkit==0.6.1
+phonenumbers==8.12.27
 Pillow==8.1.2
 psycopg2==2.8.5
 PyJWT==1.7.1

@@ -27,6 +27,7 @@ from files.serializers_admin import check_token
 from files.models import File
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer
+from offices.models import Office
 from room_types.models import RoomType
 from rooms.models import Room
 from tables.models import Table, TableMarker
@@ -900,6 +901,14 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
         fields = ['id', 'date_to', 'date_from', 'users', 'room', 'guests']
 
     def validate(self, attrs):
+        office = Office.objects.get(id=attrs['room'].floor.office_id)
+        open_time, close_time = office.working_hours.split('-')
+        open_time = datetime.strptime(open_time, '%H:%M')
+        close_time = datetime.strptime(close_time, '%H:%M')
+        if not open_time.time() <= attrs['date_from'].time() <= close_time.time() and not \
+                open_time.time() <= attrs['date_to'].time() <= close_time.time():
+            raise ResponseException('The selected time does not fall into the office work schedule',
+                                    status_code=status.HTTP_400_BAD_REQUEST)
         if not attrs['room'].type.unified:
             raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
         if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
@@ -965,6 +974,14 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
         fields = ['id', 'date_to', 'date_from', 'users', 'tables']
 
     def validate(self, attrs):
+        office = Office.objects.get(id=attrs['tables'][0].room.floor.office_id)
+        open_time, close_time = office.working_hours.split('-')
+        open_time = datetime.strptime(open_time, '%H:%M')
+        close_time = datetime.strptime(close_time, '%H:%M')
+        if not open_time.time() <= attrs['date_from'].time() <= close_time.time() and not \
+                open_time.time() <= attrs['date_to'].time() <= close_time.time():
+            raise ResponseException('The selected time does not fall into the office work schedule',
+                                    status_code=status.HTTP_400_BAD_REQUEST)
         for table in attrs['tables']:
             if table.room.type.unified:
                 raise ResponseException("Selected table is not a workplace", status_code=status.HTTP_400_BAD_REQUEST)

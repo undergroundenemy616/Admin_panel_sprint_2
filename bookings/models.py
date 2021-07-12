@@ -1,5 +1,8 @@
 import os
 import uuid
+
+from rest_framework import status
+
 from booking_api_django_new.celery import app as celery_app
 from celery.app.control import Control
 import bookings.tasks as tasks
@@ -14,9 +17,11 @@ from django.utils.timezone import now
 from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
                                              BOOKING_TIMEDELTA_CHECK,
                                              PUSH_HOST)
+from core.handlers import ResponseException
 from group_bookings.models import GroupBooking
 
 from groups.models import EMPLOYEE_ACCESS
+from offices.models import Office
 from push_tokens.send_interface import send_push_message
 from tables.models import Table
 from users.models import Account, User
@@ -106,6 +111,14 @@ class Booking(models.Model):
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
+        office = Office.objects.get(id=self.table.room.floor.office_id)
+        open_time, close_time = office.working_hours.split('-')
+        open_time = datetime.strptime(open_time, '%H:%M')
+        close_time = datetime.strptime(close_time, '%H:%M')
+        if not open_time.time() <= self.date_from.time() <= close_time.time() and not \
+                open_time.time() <= self.date_to.time() <= close_time.time():
+            raise ResponseException('The selected time does not fall into the office work schedule',
+                                    status_code=status.HTTP_400_BAD_REQUEST)
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.date_activate_until = self.calculate_date_activate_until()
         if not JobStore.objects.filter(job_id__contains=str(self.id)):
