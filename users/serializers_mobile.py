@@ -451,23 +451,23 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
 
 class MobileContactCheckSerializer(serializers.Serializer):
-    info = serializers.JSONField(required=True)
+    contact = serializers.CharField(required=True)
 
     def to_representation(self, instance):
         response = super(MobileContactCheckSerializer, self).to_representation(instance)
-        for person in response['info']:
+        try:
+            validate_email(response['contact'])
+            response['info'] = "is_valid"
+        except ValErr:
             try:
-                validate_email(response['info'][person])
-                response['info'] = "is_valid"
-            except ValErr:
-                try:
-                    phone_number = phonenumbers.parse(response['info'][person])
-                    if phonenumbers.is_valid_number(phone_number):
-                        response['info'] = "is_valid"
-                    else:
-                        response['info'] = "not_valid"
-                except AttributeError:
+                phone_number = phonenumbers.parse(response['contact'])
+                if phonenumbers.is_valid_number(phone_number):
+                    response['info'] = "is_valid"
+                else:
                     response['info'] = "not_valid"
-                except phonenumbers.phonenumberutil.NumberParseException:
-                    response['info'] = "not_valid"
+            except AttributeError:
+                response['info'] = "not_valid"
+            except phonenumbers.phonenumberutil.NumberParseException:
+                response['info'] = "not_valid"
+        del response['contact']
         return response
