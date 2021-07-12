@@ -1,5 +1,6 @@
 import random
 
+import phonenumbers
 from django.contrib.auth.password_validation import validate_password
 import ipinfo
 from django.contrib.auth import user_logged_in
@@ -448,3 +449,25 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return MobileAccountSerializer(instance=instance.account).data
 
+
+class MobileContactCheckSerializer(serializers.Serializer):
+    info = serializers.JSONField(required=True)
+
+    def to_representation(self, instance):
+        response = super(MobileContactCheckSerializer, self).to_representation(instance)
+        for person in response['info']:
+            try:
+                validate_email(response['info'][person])
+                response['info'] = "is_valid"
+            except ValErr:
+                try:
+                    phone_number = phonenumbers.parse(response['info'][person])
+                    if phonenumbers.is_valid_number(phone_number):
+                        response['info'] = "is_valid"
+                    else:
+                        response['info'] = "not_valid"
+                except AttributeError:
+                    response['info'] = "not_valid"
+                except phonenumbers.phonenumberutil.NumberParseException:
+                    response['info'] = "not_valid"
+        return response
