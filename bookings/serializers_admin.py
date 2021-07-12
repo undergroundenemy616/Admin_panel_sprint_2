@@ -315,8 +315,11 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                 WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
                                 (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                                 (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
-            tables_from_booking = bookings.filter(Q(table__room__type__is_deletable=False) &
-                                                       Q(table__room__type__bookable=True)).only('table_id')
+            tables_from_booking = bookings.filter(Q(table__room__type__is_deletable=False)
+                                                  &
+                                                  Q(table__room__type__bookable=True)
+                                                  &
+                                                  Q(table__room__type__unified=False)).only('table_id')
         all_accounts = Account.objects.all()
 
         working_days = 0
