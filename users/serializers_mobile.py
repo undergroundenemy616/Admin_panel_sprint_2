@@ -465,7 +465,6 @@ class MobileContactCheckSerializer(serializers.Serializer):
                 except:
                     if response['contact'][0] == '8':
                         response['contact'] = response['contact'].replace('8', '+7', 1)
-                        print(response['contact'])
                     else:
                         response['contact'] = '+' + response['contact']
                     phone_number = phonenumbers.parse(response['contact'])
