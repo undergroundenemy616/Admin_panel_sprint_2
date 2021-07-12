@@ -460,7 +460,15 @@ class MobileContactCheckSerializer(serializers.Serializer):
             response['info'] = "is_valid"
         except ValErr:
             try:
-                phone_number = phonenumbers.parse(response['contact'])
+                try:
+                    phone_number = phonenumbers.parse(response['contact'])
+                except:
+                    if response['contact'][0] == '8':
+                        response['contact'] = response['contact'].replace('8', '+7', 1)
+                        print(response['contact'])
+                    else:
+                        response['contact'] = '+' + response['contact']
+                    phone_number = phonenumbers.parse(response['contact'])
                 if phonenumbers.is_valid_number(phone_number):
                     response['info'] = "is_valid"
                 else:

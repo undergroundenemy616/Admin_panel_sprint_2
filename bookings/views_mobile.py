@@ -20,8 +20,7 @@ from group_bookings.serializers_mobile import MobileGroupBookingSerializer, Mobi
 
 
 class MobileBookingsView(GenericAPIView,
-                         CreateModelMixin,
-                         ListModelMixin):
+                         CreateModelMixin):
     serializer_class = MobileBookingSerializer
     queryset = Booking.objects.all().select_related('table', 'table__room', 'table__table_marker',
                                                     'table__room__floor', 'table__room__floor__office',
@@ -37,9 +36,6 @@ class MobileBookingsView(GenericAPIView,
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
 
 
 class MobileBookingListPersonalView(GenericAPIView, ListModelMixin):
