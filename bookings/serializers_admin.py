@@ -394,10 +394,6 @@ class AdminStatisticsSerializer(serializers.Serializer):
             percentage_of_registered_tables = 0
 
         try:
-            print(len(list_of_booked_tables))
-            for ta in list_of_booked_tables:
-                print(ta)
-            print(total_tables)
             percent_of_tables_booked_at_least_once = len(list_of_booked_tables) / total_tables * 100
         except ZeroDivisionError:
             percent_of_tables_booked_at_least_once = 0
