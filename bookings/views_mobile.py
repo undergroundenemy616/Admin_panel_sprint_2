@@ -27,7 +27,7 @@ class MobileBookingsView(GenericAPIView,
                                                     'table__room__floor', 'table__room__floor__office',
                                                     'table__room__zone', 'table__room__type', 'user'
                                                     ).prefetch_related('table__tags', 'table__tags__icon',
-                                                                       'table__images')
+                                                                       'table__images').order_by('-date_from')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 

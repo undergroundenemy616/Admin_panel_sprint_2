@@ -26,7 +26,7 @@ from users.serializers_admin import AdminUserSerializer
 
 
 class AdminBookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.all().order_by('-date_from')
     permission_classes = (IsAdmin, )
     pagination_class = LimitStartPagination
     filterset_class = AdminBookingFilter
