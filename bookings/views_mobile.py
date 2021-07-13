@@ -3,7 +3,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import CreateModelMixin, ListModelMixin
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 
 from bookings.models import Booking
@@ -21,7 +21,7 @@ from group_bookings.serializers_mobile import MobileGroupBookingSerializer, Mobi
 
 class MobileBookingsView(GenericAPIView,
                          CreateModelMixin,
-                         ListModelMixin):
+                         DestroyModelMixin):
     serializer_class = MobileBookingSerializer
     queryset = Booking.objects.all().select_related('table', 'table__room', 'table__table_marker',
                                                     'table__room__floor', 'table__room__floor__office',
@@ -38,15 +38,13 @@ class MobileBookingsView(GenericAPIView,
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
-
 
 class MobileBookingListPersonalView(GenericAPIView, ListModelMixin):
     serializer_class = BookingPersonalSerializer
     queryset = Booking.objects.all().select_related('table', 'user', 'table__room__floor__office',
                                                     'table__room__type', 'table__room__zone',
-                                                    'table__table_marker').\
+                                                    'table__table_marker', 'group_booking',
+                                                    'group_booking__author', 'table__room__floor').\
         prefetch_related('table__tags', 'table__images').order_by('-date_from', 'id')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]

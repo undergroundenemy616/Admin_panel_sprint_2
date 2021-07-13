@@ -15,7 +15,7 @@ from core.pagination import DefaultPagination
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_mobile import (MobileGroupBookingSerializer,
                                                MobileGroupWorkspaceSerializer,
-                                               MobileGroupBookingFloorSerializer)
+                                               MobileGroupBookingFloorSerializer, MobileGroupBookingAuthorSerializer)
 from offices.models import Office
 from rooms.models import RoomMarker, Room
 from tables.serializers_mobile import MobileTableSerializer, MobileBookingRoomSerializer
@@ -54,13 +54,15 @@ class MobileBookingSerializer(serializers.ModelSerializer):
     theme = serializers.CharField(max_length=200, default="Без темы")
     user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
     active = serializers.BooleanField(source='is_active', required=False, read_only=True)
+    group_booking_author = MobileGroupBookingAuthorSerializer(source='group_booking.author', required=False, read_only=True)
     pagination_class = DefaultPagination
 
     class Meta:
         model = Booking
         fields = ['id', 'date_from', 'date_to',
                   'table', 'theme', 'user',
-                  'group_booking', 'status', 'active',
+                  'group_booking', 'group_booking_author',
+                  'status', 'active',
                   'room', 'floor', 'office']
 
     def validate(self, attrs):
@@ -73,8 +75,18 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                 response['table'] = MobileTableSerializer(instance=instance.table).data
                 if instance.group_booking and instance.group_booking.author == instance.user:
                     response['is_owner'] = True
+                    if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                        response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                      len(instance.group_booking.guests)
+                    else:
+                        response['number_of_users'] = instance.group_booking.bookings.count()
                 elif instance.group_booking and instance.group_booking.author != instance.user:
                     response['is_owner'] = False
+                    if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                        response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                      len(instance.group_booking.guests)
+                    else:
+                        response['number_of_users'] = instance.group_booking.bookings.count()
 
                 return response
             elif self.context.method == 'POST':
@@ -99,8 +111,18 @@ class MobileBookingSerializer(serializers.ModelSerializer):
             response['table'] = MobileTableSerializer(instance=instance.table).data
             if instance.group_booking and instance.group_booking.author == instance.user:
                 response['is_owner'] = True
+                if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                    response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                  len(instance.group_booking.guests)
+                else:
+                    response['number_of_users'] = instance.group_booking.bookings.count()
             elif instance.group_booking and instance.group_booking.author != instance.user:
                 response['is_owner'] = False
+                if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                    response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                  len(instance.group_booking.guests)
+                else:
+                    response['number_of_users'] = instance.group_booking.bookings.count()
 
             return response
 
