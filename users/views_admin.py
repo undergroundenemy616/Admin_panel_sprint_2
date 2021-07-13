@@ -5,6 +5,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -20,7 +21,8 @@ from users.serializers_admin import (AdminCreateOperatorSerializer,
                                      AdminPasswordResetSerializer,
                                      AdminServiceEmailViewValidatorSerializer,
                                      AdminUserSerializer, AdminLoginSerializer,
-                                     AdminPromotionDemotionSerializer, AdminUserCreateUpdateSerializer)
+                                     AdminPromotionDemotionSerializer, AdminUserCreateUpdateSerializer,
+                                     AdminContactCheckSerializer)
 
 
 class AdminOfficePanelViewSet(viewsets.ModelViewSet):
@@ -197,3 +199,14 @@ class AdminSelfView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         return Response(AdminUserSerializer(instance=get_object_or_404(Account, user=request.user)).data,
                         status=status.HTTP_200_OK)
+
+
+class AdminContactCheckView(GenericAPIView,
+                            CreateModelMixin):
+    serializer_class = AdminContactCheckSerializer
+    permission_classes = (IsAdmin, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)

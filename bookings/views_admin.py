@@ -118,13 +118,26 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.method == "GET":
-            self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=True,
-                                                   bookings__table__room__type__bookable=True,
-                                                   bookings__table__room__type__is_deletable=False)).\
-                prefetch_related('bookings', 'bookings__table',
-                                 'bookings__table__room', 'bookings__table__room__room_marker',
-                                 'bookings__table__room__type', 'bookings__table__room__floor',
-                                 'bookings__table__room__floor__office', 'bookings__user').distinct()
+            if self.request.query_params.get('user'):
+                self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=True,
+                                                       bookings__table__room__type__bookable=True,
+                                                       bookings__table__room__type__is_deletable=False)
+                                                     &
+                                                     (Q(author_id=self.request.query_params.get('user'))
+                                                      |
+                                                      Q(bookings__user_id=self.request.query_params.get('user')))).\
+                    prefetch_related('bookings', 'bookings__table',
+                                     'bookings__table__room', 'bookings__table__room__room_marker',
+                                     'bookings__table__room__type', 'bookings__table__room__floor',
+                                     'bookings__table__room__floor__office', 'bookings__user').distinct()
+            else:
+                self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=True,
+                                                       bookings__table__room__type__bookable=True,
+                                                       bookings__table__room__type__is_deletable=False)).\
+                    prefetch_related('bookings', 'bookings__table',
+                                     'bookings__table__room', 'bookings__table__room__room_marker',
+                                     'bookings__table__room__type', 'bookings__table__room__floor',
+                                     'bookings__table__room__floor__office', 'bookings__user').distinct()
         return self.queryset.all()
 
     def get_serializer_class(self):
@@ -147,6 +160,12 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
+
+    def list(self, request, *args, **kwargs):
+        response = super(AdminGroupMeetingBookingViewSet, self).list(request, *args, **kwargs).data
+        if self.request.query_params.get('user'):
+            response['user'] = AdminUserSerializer(instance=get_object_or_404(Account, pk=self.request.query_params.get('user'))).data
+        return Response(response)
 
 
 class AdminGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):

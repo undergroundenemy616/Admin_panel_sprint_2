@@ -2,11 +2,14 @@ import os
 import random
 import time
 
+import phonenumbers
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import validate_email
 from django.db import IntegrityError
 from django.db.models import Q
 from django.db.transaction import atomic
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError as ValErr
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -332,3 +335,38 @@ class AdminPromotionDemotionSerializer(serializers.Serializer):
         if not attrs['account'].email:
             raise ValidationError(detail='User has no email specified', code=400)
         return attrs
+
+
+class AdminContactCheckSerializer(serializers.Serializer):
+    guests = serializers.JSONField(required=True)
+
+    def to_representation(self, instance):
+        response = super(AdminContactCheckSerializer, self).to_representation(instance)
+        for guest in response.get('guests'):
+            print(guest)
+            print(response['guests'][guest])
+            try:
+                validate_email(response['guests'][guest])
+                response['guests'][guest] = "is_valid"
+            except ValErr:
+                try:
+                    try:
+                        phone_number = phonenumbers.parse(response['guests'][guest])
+                    except:
+                        try:
+                            if response['guests'][guest][0] == '8':
+                                response['guests'][guest] = response['guests'][guest].replace('8', '+7', 1)
+                            else:
+                                response['guests'][guest] = '+' + response['guests'][guest]
+                        except IndexError:
+                            response['guests'][guest] = "not_valid"
+                        phone_number = phonenumbers.parse(response['guests'][guest])
+                    if phonenumbers.is_valid_number(phone_number):
+                        response['guests'][guest] = "is_valid"
+                    else:
+                        response['guests'][guest] = "not_valid"
+                except AttributeError:
+                    response['guests'][guest] = "not_valid"
+                except phonenumbers.phonenumberutil.NumberParseException:
+                    response['guests'][guest] = "not_valid"
+        return response

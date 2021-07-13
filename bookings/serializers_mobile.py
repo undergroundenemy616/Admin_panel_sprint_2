@@ -18,7 +18,8 @@ from group_bookings.serializers_mobile import (MobileGroupBookingSerializer,
                                                MobileGroupBookingFloorSerializer, MobileGroupBookingAuthorSerializer)
 from offices.models import Office
 from rooms.models import RoomMarker, Room
-from tables.serializers_mobile import MobileTableSerializer, MobileBookingRoomSerializer
+from tables.models import TableMarker
+from tables.serializers_mobile import MobileBookingRoomSerializer
 from users.models import Account, User
 from users.tasks import send_email, send_sms
 
@@ -42,6 +43,20 @@ class MobileBookingOfficeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Office
         fields = ['id', 'title', 'description']
+
+
+class MobileCreateBookingTableMarkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TableMarker
+        fields = ['id', 'x', 'y']
+
+
+class MobileBookingTableSerializer(serializers.ModelSerializer):
+    marker = MobileCreateBookingTableMarkerSerializer(read_only=True, required=False, source='table_marker')
+
+    class Meta:
+        model = Table
+        fields = ['id', 'title', 'marker']
 
 
 class MobileBookingSerializer(serializers.ModelSerializer):
@@ -72,7 +87,7 @@ class MobileBookingSerializer(serializers.ModelSerializer):
         try:
             if self.context.method == 'GET':
                 response = super(MobileBookingSerializer, self).to_representation(instance)
-                response['table'] = MobileTableSerializer(instance=instance.table).data
+                response['table'] = MobileBookingTableSerializer(instance=instance.table).data
                 if instance.group_booking and instance.group_booking.author == instance.user:
                     response['is_owner'] = True
                     if instance.group_booking.bookings.all()[0].table.room.type.unified:
@@ -91,7 +106,7 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                 return response
             elif self.context.method == 'POST':
                 response = super(MobileBookingSerializer, self).to_representation(instance)
-                response['table'] = MobileTableSerializer(instance=instance.table).data
+                response['table'] = MobileBookingTableSerializer(instance=instance.table).data
                 if instance.table.room.type.unified:
                     room_marker = RoomMarker.objects.get(room_id=instance.table.room_id)
                     response['room'] = {
@@ -108,7 +123,7 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                 return response
         except AttributeError:
             response = super(MobileBookingSerializer, self).to_representation(instance)
-            response['table'] = MobileTableSerializer(instance=instance.table).data
+            response['table'] = MobileBookingTableSerializer(instance=instance.table).data
             if instance.group_booking and instance.group_booking.author == instance.user:
                 response['is_owner'] = True
                 if instance.group_booking.bookings.all()[0].table.room.type.unified:
@@ -210,7 +225,7 @@ class MobileBookingSerializerForTableSlots(serializers.ModelSerializer):
 
 class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
     users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
-    guests = serializers.JSONField(required=False)
+    guests = serializers.JSONField(required=False, default={})
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
 
     class Meta:
