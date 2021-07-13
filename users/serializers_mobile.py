@@ -174,6 +174,7 @@ class MobileUserRegisterSerializer(serializers.Serializer):
             response["refresh_token"] = str(token)
             response["access_token"] = str(token.access_token)
             response["activated"] = user.is_active
+            response['account'] = user.account.id
             del self.context['request'].session['confirm']
             return response
 
@@ -198,6 +199,7 @@ class MobileUserLoginSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(read_only=True)
     access_token = serializers.CharField(read_only=True)
     activated = serializers.BooleanField(read_only=True)
+    account = serializers.UUIDField(read_only=True)
 
     def validate(self, attrs):
         email = False
@@ -237,6 +239,7 @@ class MobileUserLoginSerializer(serializers.Serializer):
             attrs["refresh_token"] = str(token)
             attrs["access_token"] = str(token.access_token)
             attrs["activated"] = user.is_active
+            attrs['account'] = user.account.id
             return attrs
         attrs['user_has_password'] = bool(user[0].password)
         return attrs
@@ -305,6 +308,7 @@ class MobilePasswordResetSetializer(serializers.Serializer):
             response["refresh_token"] = str(token)
             response["access_token"] = str(token.access_token)
             response["activated"] = self.validated_data['user'].is_active
+            response['account'] = self.validated_data['user'].account.id
             del self.context['request'].session['confirm']
             cache.delete(self.validated_data.get('email'))
             return response
