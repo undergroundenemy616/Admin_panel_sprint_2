@@ -128,6 +128,9 @@ class Booking(models.Model):
             JobStore.objects.create(job_id='make_booking_over_'+str(self.id),
                                     time_execute=self.date_to,
                                     parameters={'uuid': str(self.id)})
+            JobStore.objects.create(job_id='notify_about_book_ending_'+str(self.id),
+                                    time_execute=self.date_to - timedelta(minutes=15),
+                                    parameters={'uuid': str(self.id)})
             if date_now + timedelta(minutes=BOOKING_TIMEDELTA_CHECK) > self.date_from:
                 JobStore.objects.create(job_id='notify_about_booking_activation_'+str(self.id),
                                         time_execute=date_now + timedelta(minutes=1),
@@ -186,14 +189,17 @@ class Booking(models.Model):
         control = Control(app=celery_app)
         if kwargs.get('kwargs'):
             if kwargs['kwargs'].get('source') == 'check_activate':
-                control.revoke(task_id='make_booking_over_' + str(self.id))
-                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id))
-                control.revoke(task_id='notify_about_activation_booking_' + str(self.id))
+                control.revoke(task_id='make_booking_over_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_activation_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
             else:
-                control.revoke(task_id='check_booking_activate_' + str(self.id))
-                control.revoke(task_id='make_booking_over_' + str(self.id))
-                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id))
-                control.revoke(task_id='notify_about_activation_booking_' + str(self.id))
+                control.revoke(task_id='check_booking_activate_' + str(self.id), terminate=True)
+                control.revoke(task_id='make_booking_over_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_activation_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
+        tasks.all_job_delete(str(self.id))
 
         super(Booking, instance).save()
 

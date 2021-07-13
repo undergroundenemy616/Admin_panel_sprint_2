@@ -19,7 +19,7 @@ def all_job_delete(uuid):
 
 
 def job_execution(job_name, uuid):
-    job = bookings.JobStore.objects.filter(job_id=job_name+'_'+str(uuid))
+    job = bookings.JobStore.objects.filter(job_id=job_name+str(uuid))
     if job:
         job[0].executed = True
         job[0].save()
@@ -51,7 +51,7 @@ def check_booking_activate(uuid):
         control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
         all_job_execution(uuid)
 
-    job_execution('check_booking_activate', uuid)
+    job_execution('check_booking_activate_', uuid)
 
 
 @shared_task
@@ -104,6 +104,7 @@ def notify_about_oncoming_booking(uuid):
         control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
         control.revoke(task_id='check_booking_activate_' + str(uuid), terminate=True)
         control.revoke(task_id='notify_about_activation_booking_' + str(uuid), terminate=True)
+        control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
         all_job_delete(uuid)
         return
 
@@ -126,8 +127,10 @@ def notify_about_oncoming_booking(uuid):
             headers={'content-type': 'application/json'}
         )
         if response.status_code != 200:
-            print(f"Unable to send push message for {str(instance.user.id)}: {response.json().get('message')}")
-    job_execution('notify_about_oncoming_booking', uuid)
+            logger.info(msg="Problem with push sending: " + str(uuid))
+    else:
+        logger.info(msg="Problem with push group or booking is over: " + str(uuid))
+    job_execution('notify_about_oncoming_booking_', uuid)
 
 @shared_task
 def notify_about_booking_activation(uuid):
@@ -142,6 +145,7 @@ def notify_about_booking_activation(uuid):
     except ObjectDoesNotExist:
         control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
         control.revoke(task_id='check_booking_activate_' + str(uuid), terminate=True)
+        control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
         all_job_delete(uuid)
         return
 
@@ -164,8 +168,51 @@ def notify_about_booking_activation(uuid):
             headers={'content-type': 'application/json'}
         )
         if response.status_code != 200:
-            print(f"Unable to send push message for {str(instance.user.id)}: {response.json().get('message')}")
-    job_execution('notify_about_booking_activation', uuid)
+            logger.info(msg="Problem with push sending: " + str(uuid))
+    else:
+        logger.info(msg="Problem with push group or booking is over: " + str(uuid))
+    job_execution('notify_about_booking_activation_', uuid)
+
+
+@shared_task()
+def notify_about_book_ending(uuid):
+    logger = logging.getLogger(__name__)
+    logger.info(msg="Execute notify_about_book_ending " + str(uuid))
+
+    push_group = os.environ.get("PUSH_GROUP")
+    control = Control(app=celery_app)
+    try:
+        instance = bookings.Booking.objects.get(id=uuid)
+    except ObjectDoesNotExist:
+        control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
+        all_job_delete(uuid)
+        return
+
+    if push_group and not instance.is_over \
+            and instance.user:
+        expo_data = {
+            "account": str(instance.user.id),
+            "app": push_group,
+            "expo": {
+                "title": "Бронирование подходит к концу!",
+                "body": "Ваша бронирование заканчивается через 15 минут.",
+                "data": {
+                    "go_booking": True
+                }
+            }
+        }
+        response = requests.post(
+            PUSH_HOST + "/send_push",
+            json=expo_data,
+            headers={'content-type': 'application/json'}
+        )
+        if response.status_code != 200:
+            logger.info(msg="Problem with push sending: " + str(uuid))
+    else:
+        logger.info(msg="Problem with push group or booking is over:" + str(uuid))
+
+    job_execution('notify_about_book_ending_', uuid)
+
 
 @shared_task()
 def transfer_task_to_redis():
