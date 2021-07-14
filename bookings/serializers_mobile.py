@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 import pytz
 from django.core.exceptions import ValidationError as ValErr
 from django.core.validators import validate_email
-from django.db.models import Q
 from django.db.transaction import atomic
 from django.utils.timezone import now
 from rest_framework import serializers, status
