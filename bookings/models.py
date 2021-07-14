@@ -328,6 +328,7 @@ class Booking(models.Model):
         channel_layer = get_channel_layer()
         print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
+        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
         print('Send info outside model')
         channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result['table_id']}"]
         await channel_layer.send(str(channel), result_in_json)
