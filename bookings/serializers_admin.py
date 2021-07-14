@@ -915,12 +915,15 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 open_time.time() <= attrs['date_to'].time() <= close_time.time():
             raise ResponseException('The selected time does not fall into the office work schedule',
                                     status_code=status.HTTP_400_BAD_REQUEST)
+
         if not attrs['room'].type.unified:
             raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
+
         if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
                                          date_from=attrs['date_from'],
                                          date_to=attrs['date_to']):
             raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+
         if attrs.get('guests'):
             for guest in attrs.get('guests'):
                 contact_data = attrs.get('guests')[guest]
