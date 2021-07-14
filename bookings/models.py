@@ -331,6 +331,7 @@ class Booking(models.Model):
         print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
         print('Send info outside model')
         channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result['table_id']}"]
+        print('channel is: ', channel)
         await channel_layer.send(str(channel), result_in_json)
 
     @staticmethod
