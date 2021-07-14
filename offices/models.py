@@ -10,7 +10,7 @@ from licenses.models import License
 
 
 def timezone_validator(timezone):
-    if timezone not in pytz.all_timezones:
+    if timezone not in pytz.all_timezones_set:
         raise ValidationError(
             f'{timezone} is not correct time zone',
             params={'timezone': timezone},
