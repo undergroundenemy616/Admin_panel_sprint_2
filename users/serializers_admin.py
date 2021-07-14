@@ -343,8 +343,6 @@ class AdminContactCheckSerializer(serializers.Serializer):
     def to_representation(self, instance):
         response = super(AdminContactCheckSerializer, self).to_representation(instance)
         for guest in response.get('guests'):
-            print(guest)
-            print(response['guests'][guest])
             try:
                 validate_email(response['guests'][guest])
                 response['guests'][guest] = "is_valid"
