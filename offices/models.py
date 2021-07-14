@@ -17,6 +17,7 @@ class Office(models.Model):
     images = models.ManyToManyField(File, related_name='offices')
     license = models.OneToOneField(License, related_name='office', on_delete=models.PROTECT, null=True)
     created_at = models.DateTimeField(null=True, auto_now_add=True, editable=False)
+    timezone = models.CharField(max_length=128, default='Europe/Moscow')
 
     def __str__(self):
         return self.title
