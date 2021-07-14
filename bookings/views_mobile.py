@@ -1,4 +1,7 @@
+from http import HTTPStatus
+
 from django.db.models import Q
+from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
@@ -81,7 +84,7 @@ class MobileCancelBooking(GenericAPIView):
         instance = get_object_or_404(Booking, pk=pk)
         if instance.status == 'waiting':
             instance.delete()
-            return Response(data={"result": "Booking is deleted"}, status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         elif instance.status == 'active':
             flag = {'status': 'over'}
             instance.set_booking_over(kwargs=flag)
@@ -155,7 +158,7 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
 
@@ -194,6 +197,6 @@ class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)

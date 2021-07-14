@@ -892,13 +892,14 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
 
 
 class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
     users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
     guests = serializers.JSONField(required=False)
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
 
     class Meta:
         model = Booking
-        fields = ['id', 'date_to', 'date_from', 'users', 'room', 'guests']
+        fields = ['id', 'author', 'date_to', 'date_from', 'users', 'room', 'guests']
 
     def validate(self, attrs):
         office = Office.objects.get(id=attrs['room'].floor.office_id)
@@ -942,9 +943,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
     @atomic()
     def group_create_meeting(self, context):
-        author = context['request'].user.account
-
-        group_booking = GroupBooking.objects.create(author=author, guests=self.validated_data.get('guests'))
+        group_booking = GroupBooking.objects.create(author=self.validated_data['author'],
+                                                    guests=self.validated_data.get('guests'))
 
         bookings_to_create = []
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
@@ -966,12 +966,13 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
 
 class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
     users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
     tables = serializers.PrimaryKeyRelatedField(many=True, queryset=Table.objects.all())
 
     class Meta:
         model = Booking
-        fields = ['id', 'date_to', 'date_from', 'users', 'tables']
+        fields = ['id', 'author', 'date_to', 'date_from', 'users', 'tables']
 
     def validate(self, attrs):
         office = Office.objects.get(id=attrs['tables'][0].room.floor.office_id)
@@ -1003,9 +1004,7 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
 
     @atomic()
     def group_create_workplace(self, context):
-        author = context['request'].user.account
-
-        group_booking = GroupBooking.objects.create(author=author)
+        group_booking = GroupBooking.objects.create(author=self.validated_data['author'])
 
         bookings_to_create = []
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
