@@ -1,5 +1,6 @@
 import orjson
 from django.db.models import Q
+from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.generics import get_object_or_404, GenericAPIView
@@ -157,7 +158,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
 
@@ -202,7 +203,7 @@ class AdminGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
 
