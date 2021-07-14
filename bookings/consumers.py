@@ -36,6 +36,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive_json(self, content, **kwargs):
         print('try to find right method')
+        res = dict()
         if content.get('event', None) == 'echo':
             res = content
         else:
