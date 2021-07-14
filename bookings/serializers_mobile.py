@@ -264,7 +264,7 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                     message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                               f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                               f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                              f"Дата и время проведения {datetime.strftime(message_date_from, '%Y-%m-%d %H:%M')} - " \
+                              f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
                               f"{datetime.strftime(message_date_to, '%H:%M')}"
                     send_email.delay(email=contact_data, subject="Встреча", message=message)
                 except ValErr:
@@ -273,7 +273,7 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                                  f"Дата и время проведения {datetime.strftime(message_date_from, '%Y-%m-%d %H:%M')} - " \
+                                  f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
                                   f"{datetime.strftime(message_date_to, '%H:%M')}"
                         send_sms.delay(phone_number=contact_data, message=message)
                     except ValueError:
