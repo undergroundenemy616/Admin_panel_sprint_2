@@ -1,12 +1,12 @@
 import random
 
+import phonenumbers
 from django.contrib.auth.password_validation import validate_password
 import ipinfo
 from django.contrib.auth import user_logged_in
 from django.core.validators import validate_email
 from django.core.cache import cache
 from django.db.transaction import atomic
-from django.db.models import Q
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as ValErr
 from rest_framework.exceptions import ValidationError
@@ -135,7 +135,6 @@ class MobileAccountUpdateSerializer(serializers.ModelSerializer):
 
 class MobileUserRegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    phone_number = serializers.CharField(required=False)
     password = serializers.CharField(required=False)
     code = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
@@ -150,11 +149,6 @@ class MobileUserRegisterSerializer(serializers.Serializer):
         if attrs.get('password'):
             if not DEBUG:
                 validate_password(attrs.get('password'))
-        if attrs.get('phone_number'):
-            try:
-                attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
-            except ValueError as e:
-                raise ResponseException(e)
         return attrs
 
 
@@ -174,6 +168,7 @@ class MobileUserRegisterSerializer(serializers.Serializer):
             response["refresh_token"] = str(token)
             response["access_token"] = str(token.access_token)
             response["activated"] = user.is_active
+            response['account'] = user.account.id
             del self.context['request'].session['confirm']
             return response
 
@@ -198,6 +193,7 @@ class MobileUserLoginSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(read_only=True)
     access_token = serializers.CharField(read_only=True)
     activated = serializers.BooleanField(read_only=True)
+    account = serializers.UUIDField(read_only=True)
 
     def validate(self, attrs):
         email = False
@@ -237,6 +233,7 @@ class MobileUserLoginSerializer(serializers.Serializer):
             attrs["refresh_token"] = str(token)
             attrs["access_token"] = str(token.access_token)
             attrs["activated"] = user.is_active
+            attrs['account'] = user.account.id
             return attrs
         attrs['user_has_password'] = bool(user[0].password)
         return attrs
@@ -247,6 +244,10 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=64)
 
     def validate(self, attrs):
+
+        if attrs['old_password'] == attrs['new_password']:
+            raise ValidationError(detail="Old and new password can't match")
+
         if not self.context['request'].session.get('pass_change_count'):
             self.context['request'].session['pass_change_count'] = 0
         if self.context['request'].session.get('pass_change_count') >= 5:
@@ -305,6 +306,7 @@ class MobilePasswordResetSetializer(serializers.Serializer):
             response["refresh_token"] = str(token)
             response["access_token"] = str(token.access_token)
             response["activated"] = self.validated_data['user'].is_active
+            response['account'] = self.validated_data['user'].account.id
             del self.context['request'].session['confirm']
             cache.delete(self.validated_data.get('email'))
             return response
@@ -373,19 +375,21 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(MobileAccountMeetingSearchSerializer, self).to_representation(instance)
 
-        if Booking.objects.is_user_overflowed(account=instance,
-                                              date_from=self.context['request'].query_params.get('date_from'),
-                                              date_to=self.context['request'].query_params.get('date_to'),
-                                              room_type=True):
-            response['is_available'] = False
-        else:
-            response['is_available'] = True
+        if self.context['request'].query_params.get('date_from') and self.context['request'].query_params.get('date_to') \
+                and self.context['request'].query_params.get('unified'):
+            if Booking.objects.is_user_overflowed(account=instance,
+                                                  date_from=self.context['request'].query_params.get('date_from'),
+                                                  date_to=self.context['request'].query_params.get('date_to'),
+                                                  room_type=self.context['request'].query_params.get(
+                                                      'unified') == 'true'):
+                response['is_available'] = False
+            else:
+                response['is_available'] = True
 
         return response
 
 
 class MobileSelfUpdateSerializer(serializers.ModelSerializer):
-    phone_code = serializers.IntegerField(required=False)
     gender = serializers.CharField(required=False, source='account.gender', allow_blank=True)
     last_name = serializers.CharField(required=False, source='account.last_name', allow_blank=False)
     first_name = serializers.CharField(required=False, source='account.first_name', allow_blank=False)
@@ -395,10 +399,15 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code', 'middle_name',
+        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'middle_name',
                   'photo']
 
     def validate(self, attrs):
+        if attrs.get('phone_number'):
+            try:
+                attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
+            except ValueError as e:
+                raise ResponseException(e)
         if attrs.get('email') and self.instance.email != attrs['email'] and User.objects.filter(
                 email=attrs['email']):
             raise ResponseException("User with this email already exists")
@@ -415,7 +424,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
         if self.instance and attrs.get('phone_number') and self.instance.phone_number != attrs.get('phone_number') and \
                 not self.context['request'].session.get('phone_confirm') == attrs.get('phone_number'):
-            raise ResponseException("Need phone conformation code for change phone")
+            raise ResponseException("Need phone conformation for change phone")
 
         return attrs
 
@@ -441,3 +450,54 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return MobileAccountSerializer(instance=instance.account).data
 
+
+class MobileContactCheckSerializer(serializers.Serializer):
+    contact = serializers.CharField(required=True)
+
+    def to_representation(self, instance):
+        response = super(MobileContactCheckSerializer, self).to_representation(instance)
+        try:
+            validate_email(response['contact'])
+            response['info'] = "is_valid"
+        except ValErr:
+            try:
+                try:
+                    phone_number = phonenumbers.parse(response['contact'])
+                except:
+                    if response['contact'][0] == '8':
+                        response['contact'] = response['contact'].replace('8', '+7', 1)
+                    else:
+                        response['contact'] = '+' + response['contact']
+                    phone_number = phonenumbers.parse(response['contact'])
+                if phonenumbers.is_valid_number(phone_number):
+                    response['info'] = "is_valid"
+                else:
+                    response['info'] = "not_valid"
+            except AttributeError:
+                response['info'] = "not_valid"
+            except phonenumbers.phonenumberutil.NumberParseException:
+                response['info'] = "not_valid"
+        del response['contact']
+        return response
+
+
+class MobileCheckAvailableSerializer(serializers.Serializer):
+    date_to = serializers.DateTimeField()
+    date_from = serializers.DateTimeField()
+    users = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=Account.objects.all()), required=False)
+    room_type_unified = serializers.BooleanField()
+
+    def validate(self, attrs):
+        if not self.initial_data.get('room_type_unified'):
+            raise ValidationError(detail={"room_type_unified": "This field is required."}, code=400)
+        if not attrs.get('users'):
+            attrs['users'] = []
+        return attrs
+
+    def check(self):
+        response = dict()
+        for user in self.validated_data['users']:
+            response[user.id] = not Booking.objects.is_user_overflowed(user, self.validated_data['room_type_unified'],
+                                                                       self.validated_data['date_from'],
+                                                                       self.validated_data['date_to'])
+        return response

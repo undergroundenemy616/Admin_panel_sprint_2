@@ -1,12 +1,10 @@
-from django.shortcuts import render
 
 # Create your views here.
 from rest_framework import viewsets
 
 from core.permissions import IsAuthenticated
 from teams.models import Team
-from teams.serializers_mobile import MobileTeamBaseSerializer, MobileTeamCreateUpdateSerializer, \
-    MobileTeamLiteSerializer
+from teams.serializers_mobile import MobileTeamCreateUpdateSerializer, MobileTeamLiteSerializer
 
 
 class MobileTeamViewSet(viewsets.ModelViewSet):

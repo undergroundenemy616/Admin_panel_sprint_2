@@ -1,10 +1,20 @@
 import uuid
 
+import pytz
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from files.models import File
 from groups.models import Group
 from licenses.models import License
+
+
+def timezone_validator(timezone):
+    if timezone not in pytz.all_timezones_set:
+        raise ValidationError(
+            f'{timezone} is not correct time zone',
+            params={'timezone': timezone},
+        )
 
 
 class Office(models.Model):
@@ -17,6 +27,7 @@ class Office(models.Model):
     images = models.ManyToManyField(File, related_name='offices')
     license = models.OneToOneField(License, related_name='office', on_delete=models.PROTECT, null=True)
     created_at = models.DateTimeField(null=True, auto_now_add=True, editable=False)
+    timezone = models.CharField(max_length=128, default='Europe/Moscow', validators=[timezone_validator])
 
     def __str__(self):
         return self.title

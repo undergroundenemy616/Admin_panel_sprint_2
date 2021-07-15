@@ -1,11 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from core.mapping import url_detail, url_list, url_list_with_delete
+from core.mapping import url_detail, url_list
 from offices import views_admin as office_admin_view
 from users import views_admin as users_admin_view
 from floors import views_admin as floor_admin_view
-from tables import views_admin as table_admin_view
 
 office_zone_router = DefaultRouter(trailing_slash=False)
 office_zone_router.register('', office_admin_view.AdminOfficeZoneViewSet)
@@ -24,7 +23,7 @@ urlpatterns = [
     path('/office_panel/<uuid:pk>', users_admin_view.AdminOfficePanelViewSet.as_view(url_detail)),
     path('/floor', include('floors.urls_admin')),
     path('/group', include('groups.urls_admin')),
-    path('/group_booking', include('group_bookings.urls_mobile')),
+    path('/group_booking', include('group_bookings.urls_admin')),
     path('/office_zone', office_admin_view.AdminOfficeZoneViewSet.as_view(url_list)),
     path('/office_zone/<uuid:pk>', office_admin_view.AdminOfficeZoneViewSet.as_view(url_detail)),
     path('/floor_map', floor_admin_view.AdminFloorMapViewSet.as_view(url_list)),

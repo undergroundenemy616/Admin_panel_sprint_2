@@ -10,9 +10,9 @@ from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from rooms.filters_admin import AdminRoomFilter
 from rooms.models import Room, RoomMarker
-from rooms.serializers_admin import (AdminRoomListDeleteSerializer,
-                                     AdminRoomSerializer, AdminRoomWithTablesSerializer,
-                                     AdminRoomCreateUpdateSerializer, AdminRoomMarkerCreateSerializer, SwaggerRoomList)
+from rooms.serializers_admin import (AdminRoomListDeleteSerializer, AdminRoomSerializer,
+                                     AdminRoomWithTablesSerializer, AdminRoomCreateUpdateSerializer,
+                                     AdminRoomMarkerCreateSerializer, SwaggerRoomList)
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(query_serializer=SwaggerRoomList))

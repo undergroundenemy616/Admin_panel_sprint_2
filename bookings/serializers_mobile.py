@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from django.core.exceptions import ObjectDoesNotExist, ValidationError as ValErr
+import pytz
+from django.core.exceptions import ValidationError as ValErr
 from django.core.validators import validate_email
 from django.db.transaction import atomic
 from django.utils.timezone import now
@@ -8,16 +9,18 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from bookings.models import Booking, Table, MINUTES_TO_ACTIVATE
-from bookings.serializers import (BaseBookingSerializer,
-                                  TestBaseBookingSerializer)
+from bookings.serializers import BaseBookingSerializer
 from bookings.validators import BookingTimeValidator
 from core.handlers import ResponseException
 from core.pagination import DefaultPagination
 from group_bookings.models import GroupBooking
-from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer
+from group_bookings.serializers_mobile import (MobileGroupBookingSerializer,
+                                               MobileGroupWorkspaceSerializer,
+                                               MobileGroupBookingFloorSerializer, MobileGroupBookingAuthorSerializer)
+from offices.models import Office
 from rooms.models import RoomMarker, Room
 from tables.models import TableMarker
-from tables.serializers_mobile import MobileTableSerializer, MobileBookingRoomSerializer
+from tables.serializers_mobile import MobileBookingRoomSerializer
 from users.models import Account, User
 from users.tasks import send_email, send_sms
 
@@ -37,17 +40,46 @@ def calculate_date_activate_until(date_from, date_to):
         return date_to
 
 
+class MobileBookingOfficeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Office
+        fields = ['id', 'title', 'description']
+
+
+class MobileCreateBookingTableMarkerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TableMarker
+        fields = ['id', 'x', 'y']
+
+
+class MobileBookingTableSerializer(serializers.ModelSerializer):
+    marker = MobileCreateBookingTableMarkerSerializer(read_only=True, required=False, source='table_marker')
+
+    class Meta:
+        model = Table
+        fields = ['id', 'title', 'marker']
+
+
 class MobileBookingSerializer(serializers.ModelSerializer):
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
+    room = MobileBookingRoomSerializer(required=False, source='table.room', read_only=True)
+    floor = MobileGroupBookingFloorSerializer(required=False, source='table.room.floor', read_only=True)
+    office = MobileBookingOfficeSerializer(required=False, source='table.room.floor.office', read_only=True)
     theme = serializers.CharField(max_length=200, default="Без темы")
     user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
+    active = serializers.BooleanField(source='is_active', required=False, read_only=True)
+    group_booking_author = MobileGroupBookingAuthorSerializer(source='group_booking.author', required=False, read_only=True)
     pagination_class = DefaultPagination
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'table', 'theme', 'user', 'group_booking']
+        fields = ['id', 'date_from', 'date_to',
+                  'table', 'theme', 'user',
+                  'group_booking', 'group_booking_author',
+                  'status', 'active',
+                  'room', 'floor', 'office']
 
     def validate(self, attrs):
         return BookingTimeValidator(**attrs, exc_class=serializers.ValidationError).validate()
@@ -55,44 +87,31 @@ class MobileBookingSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         try:
             if self.context.method == 'GET':
-                response = TestBaseBookingSerializer(instance).data
-                response['active'] = response.pop('is_active')
-                response['table'] = MobileTableSerializer(instance=instance.table).data
-                response['room'] = {
-                    "id": instance.table.room.id,
-                    "title": instance.table.room.title,
-                    "type": instance.table.room.type.title
-                    }
-                response['floor'] = {
-                    "id": instance.table.room.floor.id,
-                    "title": instance.table.room.floor.title
-                }
-                response['office'] = {
-                    "id": instance.table.room.floor.office.id,
-                    "title": instance.table.room.floor.office.title,
-                    "description": instance.table.room.floor.office.description
-                }
-
-                remove_keys = ('date_activate_until', 'is_over', 'user', 'theme')
-
-                for key in remove_keys:
-                    if key in response:
-                        del response[key]
+                response = super(MobileBookingSerializer, self).to_representation(instance)
+                response['table'] = MobileBookingTableSerializer(instance=instance.table).data
+                if instance.group_booking and instance.group_booking.author == instance.user:
+                    response['is_owner'] = True
+                    if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                        response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                      len(instance.group_booking.guests)
+                    else:
+                        response['number_of_users'] = instance.group_booking.bookings.count()
+                elif instance.group_booking and instance.group_booking.author != instance.user:
+                    response['is_owner'] = False
+                    if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                        response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                      len(instance.group_booking.guests)
+                    else:
+                        response['number_of_users'] = instance.group_booking.bookings.count()
 
                 return response
             elif self.context.method == 'POST':
-                response = TestBaseBookingSerializer(instance).data
-                response['office'] = {
-                    "id": instance.table.room.floor.office.id,
-                    "title": instance.table.room.floor.office.title
-                }
-                response['floor'] = {
-                    "id": instance.table.room.floor.id,
-                    "title": instance.table.room.floor.title}
+                response = super(MobileBookingSerializer, self).to_representation(instance)
+                response['table'] = MobileBookingTableSerializer(instance=instance.table).data
                 if instance.table.room.type.unified:
-                    room_marker = RoomMarker.objects.get(room_id=instance.table.room.id)
+                    room_marker = RoomMarker.objects.get(room_id=instance.table.room_id)
                     response['room'] = {
-                        "id": instance.table.room.id,
+                        "id": instance.table.room_id,
                         "title": instance.table.room.title,
                         "type": instance.table.room.type.title,
                         "marker": {
@@ -101,61 +120,25 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                             "y": room_marker.y
                         }
                     }
-                else:
-                    response['room'] = {
-                        "id": instance.table.room.id,
-                        "title": instance.table.room.title,
-                        "type": instance.table.room.type.title,
-                    }
-                try:
-                    table_marker = TableMarker.objects.get(table_id=instance.table.id)
-                except ObjectDoesNotExist:
-                    table_marker = None
-                if table_marker:
-                    response['table'] = {
-                        "id": instance.table.id,
-                        "title": instance.table.title,
-                        "marker": {
-                            "id": str(table_marker.id),
-                            "x": table_marker.x,
-                            "y": table_marker.y
-                        }
-                    }
-                else:
-                    response['table'] = {
-                        "id": instance.table.id,
-                        "title": instance.table.title
-                    }
-                response['active'] = response.pop('is_active')
-                remove_keys = ('theme', 'is_over', 'user')
-                for key in remove_keys:
-                    if key in response:
-                        del response[key]
+
                 return response
         except AttributeError:
-            response = TestBaseBookingSerializer(instance).data
-            response['active'] = response.pop('is_active')
-            response['table'] = MobileTableSerializer(instance=instance.table).data
-            response['room'] = MobileBookingRoomSerializer(instance=instance.table.room).data
-            response['floor'] = {
-                "id": instance.table.room.floor.id,
-                "title": instance.table.room.floor.title
-            }
-            response['office'] = {
-                "id": instance.table.room.floor.office.id,
-                "title": instance.table.room.floor.office.title,
-                "description": instance.table.room.floor.office.description
-            }
+            response = super(MobileBookingSerializer, self).to_representation(instance)
+            response['table'] = MobileBookingTableSerializer(instance=instance.table).data
             if instance.group_booking and instance.group_booking.author == instance.user:
                 response['is_owner'] = True
-            else:
+                if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                    response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                  len(instance.group_booking.guests)
+                else:
+                    response['number_of_users'] = instance.group_booking.bookings.count()
+            elif instance.group_booking and instance.group_booking.author != instance.user:
                 response['is_owner'] = False
-
-            remove_keys = ('date_activate_until', 'is_over', 'user', 'theme')
-
-            for key in remove_keys:
-                if key in response:
-                    del response[key]
+                if instance.group_booking.bookings.all()[0].table.room.type.unified:
+                    response['number_of_users'] = instance.group_booking.bookings.count() + \
+                                                  len(instance.group_booking.guests)
+                else:
+                    response['number_of_users'] = instance.group_booking.bookings.count()
 
             return response
 
@@ -245,7 +228,7 @@ class MobileBookingSerializerForTableSlots(serializers.ModelSerializer):
 
 class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
     users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
-    guests = serializers.JSONField(required=False)
+    guests = serializers.JSONField(required=False, default={})
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
 
     class Meta:
@@ -253,12 +236,27 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
         fields = ['id', 'date_to', 'date_from', 'users', 'room', 'guests']
 
     def validate(self, attrs):
+        office = Office.objects.get(id=attrs['room'].floor.office_id)
+        time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
+        open_time, close_time = office.working_hours.split('-')
+        open_time = datetime.strptime(open_time, '%H:%M')
+        close_time = datetime.strptime(close_time, '%H:%M')
+        message_date_from = attrs['date_from'] + time_zone
+        message_date_to = attrs['date_to'] + time_zone
+
+        if not open_time.time() <= attrs['date_from'].time() <= close_time.time() and not \
+                open_time.time() <= attrs['date_to'].time() <= close_time.time():
+            raise ResponseException('The selected time does not fall into the office work schedule',
+                                    status_code=status.HTTP_400_BAD_REQUEST)
+
         if not attrs['room'].type.unified:
             raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
+
         if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
                                          date_from=attrs['date_from'],
                                          date_to=attrs['date_to']):
             raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+
         if attrs.get('guests'):
             for guest in attrs.get('guests'):
                 contact_data = attrs.get('guests')[guest]
@@ -267,8 +265,8 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                     message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                               f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                               f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                              f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
-                              f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                              f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                              f"{datetime.strftime(message_date_to, '%H:%M')}"
                     send_email.delay(email=contact_data, subject="Встреча", message=message)
                 except ValErr:
                     try:
@@ -276,8 +274,8 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                                  f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
-                                  f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                                  f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                  f"{datetime.strftime(message_date_to, '%H:%M')}"
                         send_sms.delay(phone_number=contact_data, message=message)
                     except ValueError:
                         raise ResponseException("Wrong format of email or phone",
@@ -302,7 +300,9 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                                               group_booking=group_booking
                                               ))
 
-        self.Meta.model.objects.bulk_create(bookings_to_create)
+        created_bookings = self.Meta.model.objects.bulk_create(bookings_to_create)
+        for booking in created_bookings:
+            booking.save()
 
         return MobileGroupBookingSerializer(instance=group_booking).data
 
@@ -316,6 +316,14 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
         fields = ['id', 'date_to', 'date_from', 'users', 'tables']
 
     def validate(self, attrs):
+        office = Office.objects.get(id=attrs['tables'][0].room.floor.office_id)
+        open_time, close_time = office.working_hours.split('-')
+        open_time = datetime.strptime(open_time, '%H:%M')
+        close_time = datetime.strptime(close_time, '%H:%M')
+        if not open_time.time() <= attrs['date_from'].time() <= close_time.time() and not \
+                open_time.time() <= attrs['date_to'].time() <= close_time.time():
+            raise ResponseException('The selected time does not fall into the office work schedule',
+                                    status_code=status.HTTP_400_BAD_REQUEST)
         for table in attrs['tables']:
             if table.room.type.unified:
                 raise ResponseException("Selected table is not a workplace", status_code=status.HTTP_400_BAD_REQUEST)
@@ -353,6 +361,8 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                                               group_booking=group_booking
                                               ))
 
-        self.Meta.model.objects.bulk_create(bookings_to_create)
+        created_bookings = self.Meta.model.objects.bulk_create(bookings_to_create)
+        for booking in created_bookings:
+            booking.save()
 
         return MobileGroupWorkspaceSerializer(instance=group_booking).data

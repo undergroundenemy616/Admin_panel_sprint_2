@@ -1,10 +1,12 @@
 from django.contrib.auth import user_logged_in
+from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
@@ -19,7 +21,8 @@ from users.registration import confirm_code, send_code
 from users.serializers import SwaggerAccountParametr
 from users.serializers_mobile import (MobilePasswordChangeSerializer, MobilePasswordResetSetializer,
                                       MobileUserLoginSerializer, MobileUserRegisterSerializer,
-                                      MobileSelfUpdateSerializer, MobileConformationSerializer)
+                                      MobileSelfUpdateSerializer, MobileConformationSerializer,
+                                      MobileContactCheckSerializer, MobileCheckAvailableSerializer)
 from users.serializers_mobile import (MobileAccountSerializer,
                                       MobileAccountUpdateSerializer,
                                       MobileEntranceCollectorSerializer,
@@ -236,6 +239,9 @@ class MobileAccountMeetingSearchView(ListAPIView):
     def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset()).exclude(user_id=request.user.id)
 
+        if request.query_params.getlist('exclude'):
+            queryset = queryset.filter(~Q(id__in=request.query_params.getlist('exclude')))
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -258,4 +264,24 @@ class MobileSelfView(GenericAPIView):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class MobileContactCheckView(GenericAPIView,
+                             CreateModelMixin):
+    serializer_class = MobileContactCheckSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class MobileCheckAvailableView(GenericAPIView):
+    serializer_class = MobileCheckAvailableSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.check(), status=status.HTTP_200_OK)
 

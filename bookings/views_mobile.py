@@ -1,9 +1,12 @@
+from http import HTTPStatus
+
 from django.db.models import Q
+from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import CreateModelMixin, ListModelMixin
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 
 from bookings.models import Booking
@@ -17,18 +20,17 @@ from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAuthenticated
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer
-from users.models import Account
 
 
 class MobileBookingsView(GenericAPIView,
                          CreateModelMixin,
-                         ListModelMixin):
+                         DestroyModelMixin):
     serializer_class = MobileBookingSerializer
     queryset = Booking.objects.all().select_related('table', 'table__room', 'table__table_marker',
                                                     'table__room__floor', 'table__room__floor__office',
-                                                    'table__room__zone', 'table__room__type'
-                                                    ).prefetch_related('user', 'table__tags', 'table__tags__icon',
-                                                                       'table__images')
+                                                    'table__room__zone', 'table__room__type', 'user'
+                                                    ).prefetch_related('table__tags', 'table__tags__icon',
+                                                                       'table__images').order_by('-date_from')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 
@@ -39,15 +41,13 @@ class MobileBookingsView(GenericAPIView,
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
-
 
 class MobileBookingListPersonalView(GenericAPIView, ListModelMixin):
     serializer_class = BookingPersonalSerializer
     queryset = Booking.objects.all().select_related('table', 'user', 'table__room__floor__office',
                                                     'table__room__type', 'table__room__zone',
-                                                    'table__table_marker').\
+                                                    'table__table_marker', 'group_booking',
+                                                    'group_booking__author', 'table__room__floor').\
         prefetch_related('table__tags', 'table__images').order_by('-date_from', 'id')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
@@ -84,7 +84,7 @@ class MobileCancelBooking(GenericAPIView):
         instance = get_object_or_404(Booking, pk=pk)
         if instance.status == 'waiting':
             instance.delete()
-            return Response(data={"result": "Booking is deleted"}, status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         elif instance.status == 'active':
             flag = {'status': 'over'}
             instance.set_booking_over(kwargs=flag)
@@ -158,7 +158,7 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
 
@@ -197,6 +197,6 @@ class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
