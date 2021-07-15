@@ -55,12 +55,13 @@ class AdminBookingInfoSerializer(serializers.ModelSerializer):
     office = AdminGroupBookingOfficeSerializer(source='table.room.floor.office', read_only=True)
     floor = AdminGroupBookingFloorSerializer(source='table.room.floor', read_only=True)
     room = AdminGroupBookingRoomSerializer(source='table.room', read_only=True)
+    unified = serializers.BooleanField(source='table.room.type.unified', read_only=True)
     table = AdminGroupTableMeetingInfoSerializer(read_only=True)
 
     class Meta:
         model = Booking
         fields = ['id', 'date_from', 'date_to', 'date_activate_until', 'table',
-                  'is_active', 'room', 'floor', 'office', 'user']
+                  'is_active', 'room', 'floor', 'office', 'user', 'unified']
 
 
 class AdminGroupBookingSerializer(serializers.ModelSerializer):
@@ -80,6 +81,7 @@ class AdminGroupBookingSerializer(serializers.ModelSerializer):
                     user['booking_id'] = booking.pop('id')
         for booking in booking_info:
             booking.pop('user')
+            response['unified'] = booking.pop('unified')
         response.update(booking_info[0])
 
         return response
