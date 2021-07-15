@@ -9,7 +9,6 @@ from time import strptime
 import pandas as pd
 import pytz
 import requests
-import ujson as ujson
 import xlsxwriter
 import orjson
 
