@@ -5,7 +5,7 @@
   "total_booking_time": "Общее время бронирования за месяц (в часах)",
   "average_booking_duration": "Средняя длительность бронирования (в часах)",
   "number_of_bookings":"Кол-во бронирований",
-  "number_of_finished_bookings": "Кол-во завершенных бронирований",
+  "number_of_completed_bookings": "Кол-во завершенных бронирований",
   "number_of_canceled_bookings": "Кол-во отмененных бронирований",
   "number_of_auto_canceled_bookings": "Кол-во бронирований отмененных автоматически",
   "office": "Офис",
