@@ -41,7 +41,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
             res = content
         else:
             bookings.models.GLOBAL_TABLES_CHANNEL_NAMES[f'{content.get("table")}'] = self.channel_name
-            if not bookings.models.GLOBAL_DATETIME_FROM_WS[f'{content.get("table")}']:
+            if not bookings.models.GLOBAL_DATETIME_FROM_WS.get(f'{content.get("table")}'):
                 utc = pytz.UTC
                 bookings.models.GLOBAL_DATE_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().date()
                 bookings.models.GLOBAL_DATETIME_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().replace(tzinfo=utc)
@@ -58,7 +58,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                              }
                 }
             elif content.get('event', None) == 'hours_booking':
-                if not bookings.models.GLOBAL_DATETIME_FROM_WS[f'{content.get("table")}']:
+                if not bookings.models.GLOBAL_DATETIME_FROM_WS.get(f'{content.get("table")}'):
                     utc = pytz.UTC
                     bookings.models.GLOBAL_DATE_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().date()
                     bookings.models.GLOBAL_DATETIME_FROM_WS[
