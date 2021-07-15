@@ -59,8 +59,8 @@ class AdminBookingInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['date_from', 'date_to', 'date_activate_until', 'table',
-                  'is_active', 'room', 'floor', 'office']
+        fields = ['id', 'date_from', 'date_to', 'date_activate_until', 'table',
+                  'is_active', 'room', 'floor', 'office', 'user']
 
 
 class AdminGroupBookingSerializer(serializers.ModelSerializer):
@@ -72,9 +72,15 @@ class AdminGroupBookingSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(AdminGroupBookingSerializer, self).to_representation(instance)
-        booking_info = AdminBookingInfoSerializer(instance=instance.bookings.all()[0]).data
+        booking_info = AdminBookingInfoSerializer(instance=instance.bookings.all(), many=True).data
         response['users'] = AdminGroupBookingAuthorSerializer(instance=Account.objects.filter(booking__in=instance.bookings.all()).select_related('user'), many=True).data
-        response.update(booking_info)
+        for booking in booking_info:
+            for user in response['users']:
+                if user['id'] == str(booking['user']):
+                    user['booking_id'] = booking.pop('id')
+        for booking in booking_info:
+            booking.pop('user')
+        response.update(booking_info[0])
 
         return response
 
