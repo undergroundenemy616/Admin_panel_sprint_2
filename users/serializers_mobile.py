@@ -250,6 +250,10 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=64)
 
     def validate(self, attrs):
+
+        if attrs['old_password'] == attrs['new_password']:
+            raise ValidationError(detail="Old and new password can't match")
+
         if not self.context['request'].session.get('pass_change_count'):
             self.context['request'].session['pass_change_count'] = 0
         if self.context['request'].session.get('pass_change_count') >= 5:
