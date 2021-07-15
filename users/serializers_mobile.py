@@ -135,7 +135,6 @@ class MobileAccountUpdateSerializer(serializers.ModelSerializer):
 
 class MobileUserRegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    phone_number = serializers.CharField(required=False)
     password = serializers.CharField(required=False)
     code = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
@@ -150,11 +149,6 @@ class MobileUserRegisterSerializer(serializers.Serializer):
         if attrs.get('password'):
             if not DEBUG:
                 validate_password(attrs.get('password'))
-        if attrs.get('phone_number'):
-            try:
-                attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
-            except ValueError as e:
-                raise ResponseException(e)
         return attrs
 
 
@@ -396,7 +390,6 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
 
 
 class MobileSelfUpdateSerializer(serializers.ModelSerializer):
-    phone_code = serializers.IntegerField(required=False)
     gender = serializers.CharField(required=False, source='account.gender', allow_blank=True)
     last_name = serializers.CharField(required=False, source='account.last_name', allow_blank=False)
     first_name = serializers.CharField(required=False, source='account.first_name', allow_blank=False)
@@ -406,7 +399,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code', 'middle_name',
+        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'middle_name',
                   'photo']
 
     def validate(self, attrs):
