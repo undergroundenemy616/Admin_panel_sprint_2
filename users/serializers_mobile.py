@@ -163,6 +163,8 @@ class MobileUserRegisterSerializer(serializers.Serializer):
         if self.context['request'].session.get('confirm') and self.validated_data.get('password'):
             user = User.objects.create(email=self.validated_data.pop('email'))
             user.set_password(self.validated_data.pop('password'))
+            if self.validated_data.get('phone_number'):
+                user.phone_number = self.validated_data.pop('phone_number')
             user.save()
             if self.validated_data.get('code'):
                 self.validated_data.pop('code')
@@ -396,7 +398,6 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
 
 
 class MobileSelfUpdateSerializer(serializers.ModelSerializer):
-    phone_code = serializers.IntegerField(required=False)
     gender = serializers.CharField(required=False, source='account.gender', allow_blank=True)
     last_name = serializers.CharField(required=False, source='account.last_name', allow_blank=False)
     first_name = serializers.CharField(required=False, source='account.first_name', allow_blank=False)
@@ -406,7 +407,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code', 'middle_name',
+        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'middle_name',
                   'photo']
 
     def validate(self, attrs):
