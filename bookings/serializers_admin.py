@@ -170,7 +170,7 @@ class AdminBookingSerializer(serializers.ModelSerializer):
             table=validated_data['table'],
             user=validated_data['user'],
             theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
-            kwargs=self.context.get('language', None)
+            kwargs=self.context['request'].headers.get('language', None)
         )
 
 
