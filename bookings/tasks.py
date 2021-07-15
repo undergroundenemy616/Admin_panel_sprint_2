@@ -91,7 +91,7 @@ def check_booking_status():
 
 
 @shared_task
-def notify_about_oncoming_booking(uuid):
+def notify_about_oncoming_booking(uuid, language='ru'):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute notify_about_oncoming_booking "+str(uuid))
     """Send PUSH-notification about oncoming booking to every user devices"""
@@ -109,17 +109,30 @@ def notify_about_oncoming_booking(uuid):
 
     if push_group and not instance.is_over \
             and instance.user:
-        expo_data = {
-            "account": str(instance.user.id),
-            "app": push_group,
-            "expo": {
-                "title": "Уведомление о предстоящем бронировании",
-                "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
-                "data": {
-                    "go_booking": True
+        if language == 'ru':
+            expo_data = {
+                "account": str(instance.user.id),
+                "app": push_group,
+                "expo": {
+                    "title": "Уведомление о предстоящем бронировании",
+                    "body": f"Ваше бронирование начнется меньше чем через час. Не забудьте отсканировать QR-код для подтверждения.",
+                    "data": {
+                        "go_booking": True
+                    }
                 }
             }
-        }
+        else:
+            expo_data = {
+                "account": str(instance.user.id),
+                "app": push_group,
+                "expo": {
+                    "title": "Notification about upcoming booking",
+                    "body": f"Your booking will start in less than an hour. Don't forget to scan QR for confirmation.",
+                    "data": {
+                        "go_booking": True
+                    }
+                }
+            }
         response = requests.post(
             PUSH_HOST + "/send_push",
             json=expo_data,
@@ -130,7 +143,7 @@ def notify_about_oncoming_booking(uuid):
     job_execution('notify_about_oncoming_booking', uuid)
 
 @shared_task
-def notify_about_booking_activation(uuid):
+def notify_about_booking_activation(uuid, language='ru'):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute notify_about_booking_activation "+str(uuid))
     """Send PUSH-notification about opening activation"""
@@ -147,17 +160,30 @@ def notify_about_booking_activation(uuid):
 
     if push_group and not instance.is_over \
             and instance.user:
-        expo_data = {
-            "account": str(instance.user.id),
-            "app": push_group,
-            "expo": {
-                "title": "Открыто подтверждение!",
-                "body": "Вы можете подтвердить бронирование QR-кодом в течение 30 минут.",
-                "data": {
-                    "go_booking": True
+        if language == 'ru':
+            expo_data = {
+                "account": str(instance.user.id),
+                "app": push_group,
+                "expo": {
+                    "title": "Открыто подтверждение!",
+                    "body": "Вы можете подтвердить бронирование QR-кодом в течение 30 минут.",
+                    "data": {
+                        "go_booking": True
+                    }
                 }
             }
-        }
+        else:
+            expo_data = {
+                "account": str(instance.user.id),
+                "app": push_group,
+                "expo": {
+                    "title": "Confirmation is open!",
+                    "body": "You can confirm your booking by QR in 30 minutes",
+                    "data": {
+                        "go_booking": True
+                    }
+                }
+            }
         response = requests.post(
             PUSH_HOST + "/send_push",
             json=expo_data,

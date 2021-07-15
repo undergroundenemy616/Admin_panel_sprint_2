@@ -175,13 +175,15 @@ class MobileBookingSerializer(serializers.ModelSerializer):
                 date_from=validated_data['date_from'],
                 table=validated_data['table'],
                 user=validated_data['user'],
-                theme=validated_data['theme']
+                theme=validated_data['theme'],
+                kwargs=self.context.headers.get('Language', None)
             )
         return self.Meta.model.objects.create(
             date_to=validated_data['date_to'],
             date_from=validated_data['date_from'],
             table=validated_data['table'],
-            user=validated_data['user']
+            user=validated_data['user'],
+            kwargs=self.context.headers.get('Language', None)
         )
 
 

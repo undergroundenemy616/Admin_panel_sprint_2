@@ -57,7 +57,8 @@ class BookingsView(GenericAPIView,
 
     def post(self, request, *args, **kwargs):
         request.data['user'] = request.user.account.id
-        serializer = self.serializer_class(data=request.data)
+        language = request.headers.get('Language', None)
+        serializer = self.serializer_class(data=request.data, context={'language': language})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
