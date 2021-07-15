@@ -482,3 +482,25 @@ class MobileContactCheckSerializer(serializers.Serializer):
                 response['info'] = "not_valid"
         del response['contact']
         return response
+
+
+class MobileCheckAvailableSerializer(serializers.Serializer):
+    date_to = serializers.DateTimeField()
+    date_from = serializers.DateTimeField()
+    users = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=Account.objects.all()), required=False)
+    room_type_unified = serializers.BooleanField()
+
+    def validate(self, attrs):
+        if not self.initial_data.get('room_type_unified'):
+            raise ValidationError(detail={"room_type_unified": "This field is required."}, code=400)
+        if not attrs.get('users'):
+            attrs['users'] = []
+        return attrs
+
+    def check(self):
+        response = dict()
+        for user in self.validated_data['users']:
+            response[user.id] = not Booking.objects.is_user_overflowed(user, self.validated_data['room_type_unified'],
+                                                                       self.validated_data['date_from'],
+                                                                       self.validated_data['date_to'])
+        return response

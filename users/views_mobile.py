@@ -22,7 +22,7 @@ from users.serializers import SwaggerAccountParametr
 from users.serializers_mobile import (MobilePasswordChangeSerializer, MobilePasswordResetSetializer,
                                       MobileUserLoginSerializer, MobileUserRegisterSerializer,
                                       MobileSelfUpdateSerializer, MobileConformationSerializer,
-                                      MobileContactCheckSerializer)
+                                      MobileContactCheckSerializer, MobileCheckAvailableSerializer)
 from users.serializers_mobile import (MobileAccountSerializer,
                                       MobileAccountUpdateSerializer,
                                       MobileEntranceCollectorSerializer,
@@ -275,4 +275,13 @@ class MobileContactCheckView(GenericAPIView,
         serializer.is_valid(raise_exception=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+
+class MobileCheckAvailableView(GenericAPIView):
+    serializer_class = MobileCheckAvailableSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.check(), status=status.HTTP_200_OK)
 
