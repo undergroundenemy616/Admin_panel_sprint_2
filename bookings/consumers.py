@@ -124,7 +124,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         if not date:
             date = []
         date_from_str = datetime.datetime.strptime(date, '%Y-%m-%d').date()
-        bookings.models.GLOBAL_DATE_FROM_WS = date_from_str
+        bookings.models.GLOBAL_DATE_FROM_WS[f'{table}'] = date_from_str
         existing_booking = Booking.objects.filter(table=table,
                                                   status__in=['waiting', 'active'],
                                                   date_from__year=str(date_from_str.year),
@@ -149,8 +149,8 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         local_tz = pytz.timezone('Europe/Moscow')
         date_from = datetime.datetime.strptime(date_from_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
         date_to = datetime.datetime.strptime(date_to_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
-        bookings.models.GLOBAL_DATETIME_FROM_WS = date_from
-        bookings.models.GLOBAL_DATETIME_TO_WS = date_to
+        bookings.models.GLOBAL_DATETIME_FROM_WS[f'{table}'] = date_from
+        bookings.models.GLOBAL_DATETIME_TO_WS[f'{table}'] = date_to
         overflows = Booking.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
