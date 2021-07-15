@@ -164,6 +164,7 @@ def notify_about_booking_activation(uuid, language='ru'):
 
     if push_group and not instance.is_over \
             and instance.user:
+        print('TASKS LANGUAGE', language)
         if language == 'ru':
             expo_data = {
                 "account": str(instance.user.id),
