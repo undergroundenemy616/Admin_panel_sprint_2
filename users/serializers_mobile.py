@@ -135,7 +135,6 @@ class MobileAccountUpdateSerializer(serializers.ModelSerializer):
 
 class MobileUserRegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    phone_number = serializers.CharField(required=False)
     password = serializers.CharField(required=False)
     code = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
@@ -150,11 +149,6 @@ class MobileUserRegisterSerializer(serializers.Serializer):
         if attrs.get('password'):
             if not DEBUG:
                 validate_password(attrs.get('password'))
-        if attrs.get('phone_number'):
-            try:
-                attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
-            except ValueError as e:
-                raise ResponseException(e)
         return attrs
 
 
@@ -163,8 +157,6 @@ class MobileUserRegisterSerializer(serializers.Serializer):
         if self.context['request'].session.get('confirm') and self.validated_data.get('password'):
             user = User.objects.create(email=self.validated_data.pop('email'))
             user.set_password(self.validated_data.pop('password'))
-            if self.validated_data.get('phone_number'):
-                user.phone_number = self.validated_data.pop('phone_number')
             user.save()
             if self.validated_data.get('code'):
                 self.validated_data.pop('code')
