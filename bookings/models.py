@@ -75,6 +75,8 @@ class BookingManager(models.Manager):
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
         language = kwargs.pop('kwargs', None)
+        print('-----LANGUAGE----', language)
+        print('-----KWARGS-------', kwargs)
         obj = self.model(**kwargs)
         consecutive_booking = obj.get_consecutive_booking()
         if consecutive_booking:
@@ -124,6 +126,7 @@ class Booking(models.Model):
         self.date_activate_until = self.calculate_date_activate_until()
         try:
             language = kwargs.pop('kwargs')
+            print('-----MODEL---LANGUAGE----', language)
         except Exception as e:
             language = 'ru'
         if not JobStore.objects.filter(job_id__contains=str(self.id)):
