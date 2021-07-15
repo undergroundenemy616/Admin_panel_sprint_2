@@ -267,6 +267,10 @@ class AdminPasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=512)
 
     def validate(self, attrs):
+
+        if attrs['old_password'] == attrs['new_password']:
+            raise ValidationError(detail="Old and new password can't match")
+
         if not self.context['request'].user.check_password(attrs['old_password']):
             raise ValidationError(detail="wrong password", code=400)
         if not DEBUG:
