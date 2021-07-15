@@ -49,8 +49,8 @@ class AdminBookingViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST":
             if self.request.data.get('type') and not self.request.data.get('table'):
-                return AdminBookingCreateFastSerializer
-        return AdminBookingSerializer
+                return AdminBookingCreateFastSerializer(context={'language': self.request.headers.get('Language', None)})
+        return AdminBookingSerializer(context={'language': self.request.headers.get('Language', None)})
 
     def list(self, request, *args, **kwargs):
         response = super(AdminBookingViewSet, self).list(request, *args, **kwargs).data

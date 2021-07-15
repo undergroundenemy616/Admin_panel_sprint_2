@@ -74,14 +74,15 @@ class BookingManager(models.Manager):
 
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
+        language = kwargs.pop('kwargs', None)
         obj = self.model(**kwargs)
         consecutive_booking = obj.get_consecutive_booking()
         if consecutive_booking:
             consecutive_booking.date_to = obj.date_to
-            consecutive_booking.save()
+            consecutive_booking.save(kwargs=language)
             return consecutive_booking
         else:
-            obj.save()
+            obj.save(kwargs=language)
             return obj
 
     def active_only(self):
@@ -121,6 +122,7 @@ class Booking(models.Model):
                                     status_code=status.HTTP_400_BAD_REQUEST)
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.date_activate_until = self.calculate_date_activate_until()
+        language = kwargs.pop('kwargs')
         if not JobStore.objects.filter(job_id__contains=str(self.id)):
             JobStore.objects.create(job_id='check_booking_activate_'+str(self.id),
                                     time_execute=self.date_activate_until,
@@ -134,7 +136,8 @@ class Booking(models.Model):
             if date_now + timedelta(minutes=BOOKING_TIMEDELTA_CHECK) > self.date_from:
                 JobStore.objects.create(job_id='notify_about_booking_activation_'+str(self.id),
                                         time_execute=date_now + timedelta(minutes=1),
-                                        parameters={'uuid': str(self.id)})
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
                 tasks.notify_about_booking_activation.apply_async(
                     args=[self.id],
                     eta=date_now + timedelta(minutes=1),
@@ -142,11 +145,13 @@ class Booking(models.Model):
             else:
                 JobStore.objects.create(job_id='notify_about_booking_activation_' + str(self.id),
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
-                                        parameters={'uuid': str(self.id)})
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
             if date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) < self.date_from:
                 JobStore.objects.create(job_id='notify_about_oncoming_booking_'+str(self.id),
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
-                                        parameters={'uuid': str(self.id)})
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
 
         super(self.__class__, self).save(*args, **kwargs)
 
