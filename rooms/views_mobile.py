@@ -38,7 +38,7 @@ class SuitableRoomsMobileView(GenericAPIView):
         try:
             room_type = RoomType.objects.get(title=room_type_title, office_id=office, bookable=True)
         except ObjectDoesNotExist:
-            return Response("Type not found", status=status.HTTP_404_NOT_FOUND)
+            return Response("Suitable places not found", status=status.HTTP_200_OK)
 
         rooms = Room.objects.is_allowed(user_id=request.user.id).filter(floor__office_id=office, type=room_type)
 
