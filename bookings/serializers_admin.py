@@ -6,6 +6,7 @@ from datetime import datetime, date, timedelta
 from pathlib import Path
 from time import strptime
 import pandas as pd
+import pytz
 import requests
 import xlsxwriter
 import orjson
@@ -903,19 +904,26 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         office = Office.objects.get(id=attrs['room'].floor.office_id)
+        time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
         open_time, close_time = office.working_hours.split('-')
         open_time = datetime.strptime(open_time, '%H:%M')
         close_time = datetime.strptime(close_time, '%H:%M')
+        message_date_from = attrs['date_from'] + time_zone
+        message_date_to = attrs['date_to'] + time_zone
+
         if not open_time.time() <= attrs['date_from'].time() <= close_time.time() and not \
                 open_time.time() <= attrs['date_to'].time() <= close_time.time():
             raise ResponseException('The selected time does not fall into the office work schedule',
                                     status_code=status.HTTP_400_BAD_REQUEST)
+
         if not attrs['room'].type.unified:
             raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
+
         if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
                                          date_from=attrs['date_from'],
                                          date_to=attrs['date_to']):
             raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+
         if attrs.get('guests'):
             for guest in attrs.get('guests'):
                 contact_data = attrs.get('guests')[guest]
@@ -924,8 +932,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                     message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                               f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                               f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                              f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
-                              f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                              f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                              f"{datetime.strftime(message_date_to, '%H:%M')}"
                     send_email.delay(email=contact_data, subject="Встреча", message=message)
                 except ValErr:
                     try:
@@ -933,8 +941,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                                  f"Дата и время проведения {datetime.strftime(attrs['date_from'], '%Y-%m-%d %H:%M')} - " \
-                                  f"{datetime.strftime(attrs['date_to'], '%H:%M')}"
+                                  f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                  f"{datetime.strftime(message_date_to, '%H:%M')}"
                         send_sms.delay(phone_number=contact_data, message=message)
                     except ValueError:
                         raise ResponseException("Wrong format of email or phone",
