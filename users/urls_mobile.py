@@ -7,7 +7,8 @@ from users.views_mobile import (MobileAccountView, MobileEntranceCollectorView,
                                 MobilePasswordResetView, MobileUserLoginView,
                                 MobileSingleAccountView,
                                 MobileAccountMeetingSearchView, MobileSelfView,
-                                MobileConformationView, MobileContactCheckView)
+                                MobileConformationView, MobileContactCheckView,
+                                MobileCheckAvailableView)
 
 urlpatterns = [
     path('/auth', MobileLoginOrRegisterUserFromMobileView.as_view()),
@@ -21,6 +22,7 @@ urlpatterns = [
     path('/pass_reset', MobilePasswordResetView.as_view()),
     path('/confirm', MobileConformationView.as_view()),
     path('/account_search', MobileAccountMeetingSearchView.as_view()),
+    path('/check_available', MobileCheckAvailableView.as_view()),
     path('/me', MobileSelfView.as_view()),
     path('/validate', MobileContactCheckView.as_view())
 ]

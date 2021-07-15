@@ -135,7 +135,6 @@ class MobileAccountUpdateSerializer(serializers.ModelSerializer):
 
 class MobileUserRegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    phone_number = serializers.CharField(required=False)
     password = serializers.CharField(required=False)
     code = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
@@ -150,11 +149,6 @@ class MobileUserRegisterSerializer(serializers.Serializer):
         if attrs.get('password'):
             if not DEBUG:
                 validate_password(attrs.get('password'))
-        if attrs.get('phone_number'):
-            try:
-                attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
-            except ValueError as e:
-                raise ResponseException(e)
         return attrs
 
 
@@ -250,6 +244,10 @@ class MobilePasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=64)
 
     def validate(self, attrs):
+
+        if attrs['old_password'] == attrs['new_password']:
+            raise ValidationError(detail="Old and new password can't match")
+
         if not self.context['request'].session.get('pass_change_count'):
             self.context['request'].session['pass_change_count'] = 0
         if self.context['request'].session.get('pass_change_count') >= 5:
@@ -392,7 +390,6 @@ class MobileAccountMeetingSearchSerializer(serializers.ModelSerializer):
 
 
 class MobileSelfUpdateSerializer(serializers.ModelSerializer):
-    phone_code = serializers.IntegerField(required=False)
     gender = serializers.CharField(required=False, source='account.gender', allow_blank=True)
     last_name = serializers.CharField(required=False, source='account.last_name', allow_blank=False)
     first_name = serializers.CharField(required=False, source='account.first_name', allow_blank=False)
@@ -402,7 +399,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'phone_code', 'middle_name',
+        fields = ['email', 'password', 'gender', 'last_name', 'first_name', 'phone_number', 'middle_name',
                   'photo']
 
     def validate(self, attrs):
@@ -481,4 +478,26 @@ class MobileContactCheckSerializer(serializers.Serializer):
             except phonenumbers.phonenumberutil.NumberParseException:
                 response['info'] = "not_valid"
         del response['contact']
+        return response
+
+
+class MobileCheckAvailableSerializer(serializers.Serializer):
+    date_to = serializers.DateTimeField()
+    date_from = serializers.DateTimeField()
+    users = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=Account.objects.all()), required=False)
+    room_type_unified = serializers.BooleanField()
+
+    def validate(self, attrs):
+        if not self.initial_data.get('room_type_unified'):
+            raise ValidationError(detail={"room_type_unified": "This field is required."}, code=400)
+        if not attrs.get('users'):
+            attrs['users'] = []
+        return attrs
+
+    def check(self):
+        response = dict()
+        for user in self.validated_data['users']:
+            response[user.id] = not Booking.objects.is_user_overflowed(user, self.validated_data['room_type_unified'],
+                                                                       self.validated_data['date_from'],
+                                                                       self.validated_data['date_to'])
         return response
