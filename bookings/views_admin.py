@@ -78,7 +78,7 @@ class AdminBookingEmployeeStatisticsView(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=AdminSwaggerBookingEmployee)
     def get(self, request, *args, **kwargs):
-        serializer = AdminBookingEmployeeStatisticsSerializer(data=request.query_params)
+        serializer = AdminBookingEmployeeStatisticsSerializer(data=request.query_params, context=request)
         serializer.is_valid(raise_exception=True)
         response = serializer.get_statistic()
 
@@ -91,7 +91,7 @@ class AdminBookingFutureStatisticsView(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=AdminSwaggerBookingFuture)
     def get(self, request, *args, **kwargs):
-        serializer = AdminBookingFutureStatisticsSerializer(data=request.query_params)
+        serializer = AdminBookingFutureStatisticsSerializer(data=request.query_params, context=request)
         serializer.is_valid(raise_exception=True)
         response = serializer.get_statistic()
 
@@ -104,7 +104,7 @@ class AdminBookingRoomTypeStatisticsView(GenericAPIView):
 
     @swagger_auto_schema(query_serializer=AdminSwaggerRoomType)
     def get(self, request, *args, **kwargs):
-        serializer = AdminBookingRoomTypeSerializer(data=request.query_params)
+        serializer = AdminBookingRoomTypeSerializer(data=request.query_params, context=request)
         serializer.is_valid(raise_exception=True)
         response = serializer.get_statistic()
 
