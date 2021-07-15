@@ -170,7 +170,7 @@ class AdminBookingSerializer(serializers.ModelSerializer):
             table=validated_data['table'],
             user=validated_data['user'],
             theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
-            kwargs=self.context['request'].headers.get('language', None)
+            kwargs=self.context['request'].headers.get('Language', None)
         )
 
 
@@ -194,7 +194,8 @@ class AdminBookingCreateFastSerializer(AdminBookingSerializer):
                     date_to=date_to,
                     date_from=date_from,
                     table=table,
-                    user=validated_data['user']
+                    user=validated_data['user'],
+                    kwargs=self.context['request'].headers.get('Language', None)
                 )
         raise serializers.ValidationError('No table found for fast booking')
 
