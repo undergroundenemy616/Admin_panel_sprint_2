@@ -158,7 +158,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return HttpResponse(status=204)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
 
@@ -203,7 +203,7 @@ class AdminGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
         account = request.user.account
         if account == instance.author or account.user.is_staff:
             self.perform_destroy(instance)
-            return HttpResponse(status=204)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
 

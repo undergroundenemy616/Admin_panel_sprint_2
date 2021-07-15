@@ -1,4 +1,5 @@
 from django.contrib.auth import user_logged_in
+from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.filters import SearchFilter
@@ -237,6 +238,9 @@ class MobileAccountMeetingSearchView(ListAPIView):
 
     def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset()).exclude(user_id=request.user.id)
+
+        if request.query_params.getlist('exclude'):
+            queryset = queryset.filter(~Q(id__in=request.query_params.getlist('exclude')))
 
         page = self.paginate_queryset(queryset)
         if page is not None:
