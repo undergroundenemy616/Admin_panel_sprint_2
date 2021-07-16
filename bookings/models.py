@@ -167,6 +167,8 @@ class Booking(models.Model):
         self.set_booking_over()
         if self.group_booking and self.group_booking.bookings.count() == 1:
             self.group_booking.delete()
+        if self.group_booking and self.user == self.group_booking.author and self.table.room.type.unified:
+            self.group_booking.delete()
         super(self.__class__, self).delete(using, keep_parents)
 
     def set_booking_active(self, *args, **kwargs):
