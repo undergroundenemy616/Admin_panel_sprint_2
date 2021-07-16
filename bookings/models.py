@@ -1,6 +1,7 @@
 import os
 import uuid
 
+import pytz
 from rest_framework import status
 
 from booking_api_django_new.celery import app as celery_app
@@ -116,8 +117,12 @@ class Booking(models.Model):
         open_time, close_time = office.working_hours.split('-')
         open_time = datetime.strptime(open_time, '%H:%M')
         close_time = datetime.strptime(close_time, '%H:%M')
-        if not open_time.time() <= self.date_from.time() <= close_time.time() and not \
-                open_time.time() <= self.date_to.time() <= close_time.time():
+        time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
+        date_from = self.date_from + time_zone
+        date_to = self.date_to + time_zone
+
+        if not open_time.time() <= date_from.time() <= close_time.time() and not \
+                open_time.time() <= date_to.time() <= close_time.time():
             raise ResponseException('The selected time does not fall into the office work schedule',
                                     status_code=status.HTTP_400_BAD_REQUEST)
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
@@ -160,6 +165,8 @@ class Booking(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         self.set_booking_over()
+        if self.group_booking and self.group_booking.bookings.count() == 1:
+            self.group_booking.delete()
         super(self.__class__, self).delete(using, keep_parents)
 
     def set_booking_active(self, *args, **kwargs):
