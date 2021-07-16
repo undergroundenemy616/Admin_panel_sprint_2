@@ -160,7 +160,7 @@ class Booking(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         self.set_booking_over()
-        if self.group_booking and  self.group_booking.bookings.count() == 1:
+        if self.group_booking and self.group_booking.bookings.count() == 1:
             self.group_booking.delete()
         super(self.__class__, self).delete(using, keep_parents)
 
