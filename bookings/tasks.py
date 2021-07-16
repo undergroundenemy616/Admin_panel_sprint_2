@@ -202,7 +202,7 @@ def notify_about_booking_activation(uuid, language):
 
 
 @shared_task()
-def notify_about_book_ending(uuid):
+def notify_about_book_ending(uuid, language):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute notify_about_book_ending " + str(uuid))
 
@@ -217,17 +217,30 @@ def notify_about_book_ending(uuid):
 
     if push_group and not instance.is_over \
             and instance.user:
-        expo_data = {
-            "account": str(instance.user.id),
-            "app": push_group,
-            "expo": {
-                "title": "Бронирование подходит к концу!",
-                "body": "Ваша бронирование заканчивается через 15 минут.",
-                "data": {
-                    "go_booking": True
+        if language == 'ru':
+            expo_data = {
+                "account": str(instance.user.id),
+                "app": push_group,
+                "expo": {
+                    "title": "Бронирование подходит к концу!",
+                    "body": "Ваша бронирование заканчивается через 15 минут.",
+                    "data": {
+                        "go_booking": True
+                    }
                 }
             }
-        }
+        else:
+            expo_data = {
+                "account": str(instance.user.id),
+                "app": push_group,
+                "expo": {
+                    "title": "Your booking is coming to the end!",
+                    "body": "Your booking ends in 15 minutes.",
+                    "data": {
+                        "go_booking": True
+                    }
+                }
+            }
         response = requests.post(
             PUSH_HOST + "/send_push",
             json=expo_data,

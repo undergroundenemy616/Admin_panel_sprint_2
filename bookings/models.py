@@ -140,7 +140,8 @@ class Booking(models.Model):
                                     parameters={'uuid': str(self.id)})
             JobStore.objects.create(job_id='notify_about_book_ending_'+str(self.id),
                                     time_execute=self.date_to - timedelta(minutes=15),
-                                    parameters={'uuid': str(self.id)})
+                                    parameters={'uuid': str(self.id),
+                                                'language': language})
             if date_now + timedelta(minutes=BOOKING_TIMEDELTA_CHECK) > self.date_from:
                 JobStore.objects.create(job_id='notify_about_booking_activation_'+str(self.id),
                                         time_execute=date_now + timedelta(minutes=1),
