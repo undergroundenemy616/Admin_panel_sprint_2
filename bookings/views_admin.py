@@ -23,8 +23,9 @@ from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from files.serializers_admin import AdminFileSerializer
 from group_bookings.models import GroupBooking
-from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer, \
-    AdminGroupCombinedSerializer
+from group_bookings.serializers_admin import (AdminGroupBookingSerializer,
+                                              AdminGroupWorkspaceSerializer,
+                                              AdminGroupCombinedSerializer)
 from users.models import Account
 from users.serializers_admin import AdminUserSerializer
 
