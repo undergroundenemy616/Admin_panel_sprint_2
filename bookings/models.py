@@ -142,10 +142,9 @@ class Booking(models.Model):
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
                 tasks.notify_about_booking_activation.apply_async(
-                    args=[self.id],
+                    args=[self.id, language],
                     eta=date_now + timedelta(minutes=1),
-                    task_id='notify_about_activation_booking_' + str(self.id),
-                    language=language)
+                    task_id='notify_about_activation_booking_' + str(self.id))
             else:
                 JobStore.objects.create(job_id='notify_about_booking_activation_' + str(self.id),
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
