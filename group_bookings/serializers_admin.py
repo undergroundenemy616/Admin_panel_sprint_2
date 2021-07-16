@@ -73,8 +73,7 @@ class AdminGroupBookingSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(AdminGroupBookingSerializer, self).to_representation(instance)
-        print(instance.id)
-        booking_info = AdminBookingInfoSerializer(instance=instance.bookings.all(), many=True).data if instance.bookings.all() else []
+        booking_info = AdminBookingInfoSerializer(instance=instance.bookings.all(), many=True).data
         response['users'] = AdminGroupBookingAuthorSerializer(instance=Account.objects.filter(booking__in=instance.bookings.all()).select_related('user'), many=True).data
         for booking in booking_info:
             for user in response['users']:
@@ -83,8 +82,7 @@ class AdminGroupBookingSerializer(serializers.ModelSerializer):
         for booking in booking_info:
             booking.pop('user')
             response['unified'] = booking.pop('unified')
-        if booking_info:
-            response.update(booking_info[0])
+        response.update(booking_info[0])
 
         return response
 
