@@ -1023,6 +1023,7 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
 
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
+
         for i in range(len(self.validated_data['users'])):
             b = Booking(user=self.validated_data['users'][i],
                         table=self.validated_data['tables'][i],
