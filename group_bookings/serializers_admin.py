@@ -110,6 +110,7 @@ class AdminGroupWorkspaceSerializer(serializers.ModelSerializer):
         response['date_to'] = instance.bookings.all()[0].date_to
         response['office'] = AdminGroupBookingOfficeSerializer(
             instance=instance.bookings.all()[0].table.room.floor.office).data
+        response['unified'] = instance.bookings.all()[0].table.room.type.unified
 
         return response
 
