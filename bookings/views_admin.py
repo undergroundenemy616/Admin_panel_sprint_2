@@ -26,6 +26,7 @@ from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import (AdminGroupBookingSerializer,
                                               AdminGroupWorkspaceSerializer,
                                               AdminGroupCombinedSerializer)
+from group_bookings.serializers_mobile import MobileGroupBookingSerializer
 from users.models import Account
 from users.serializers_admin import AdminUserSerializer
 

@@ -932,16 +932,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         office = Office.objects.get(id=attrs['room'].floor.office_id)
         time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
-        open_time, close_time = office.working_hours.split('-')
-        open_time = datetime.strptime(open_time, '%H:%M')
-        close_time = datetime.strptime(close_time, '%H:%M')
         message_date_from = attrs['date_from'] + time_zone
         message_date_to = attrs['date_to'] + time_zone
-
-        if not open_time.time() <= attrs['date_from'].time() <= close_time.time() and not \
-                open_time.time() <= attrs['date_to'].time() <= close_time.time():
-            raise ResponseException('The selected time does not fall into the office work schedule',
-                                    status_code=status.HTTP_400_BAD_REQUEST)
 
         if not attrs['room'].type.unified:
             raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
@@ -982,21 +974,16 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
         group_booking = GroupBooking.objects.create(author=self.validated_data['author'],
                                                     guests=self.validated_data.get('guests'))
 
-        bookings_to_create = []
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
         for user in self.validated_data['users']:
-            bookings_to_create.append(Booking(user=user,
-                                              table=self.validated_data['room'].tables.all()[0],
-                                              date_to=self.validated_data['date_to'],
-                                              date_from=self.validated_data['date_from'],
-                                              date_activate_until=date_activate_until,
-                                              group_booking=group_booking
-                                              ))
-
-        created_bookings = self.Meta.model.objects.bulk_create(bookings_to_create)
-        for booking in created_bookings:
-            booking.save()
+            b = Booking(user=user,
+                        table=self.validated_data['room'].tables.all()[0],
+                        date_to=self.validated_data['date_to'],
+                        date_from=self.validated_data['date_from'],
+                        date_activate_until=date_activate_until,
+                        group_booking=group_booking)
+            b.save()
 
         return AdminGroupBookingSerializer(instance=group_booking).data
 
@@ -1011,14 +998,6 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
         fields = ['id', 'author', 'date_to', 'date_from', 'users', 'tables']
 
     def validate(self, attrs):
-        office = Office.objects.get(id=attrs['tables'][0].room.floor.office_id)
-        open_time, close_time = office.working_hours.split('-')
-        open_time = datetime.strptime(open_time, '%H:%M')
-        close_time = datetime.strptime(close_time, '%H:%M')
-        if not open_time.time() <= attrs['date_from'].time() <= close_time.time() and not \
-                open_time.time() <= attrs['date_to'].time() <= close_time.time():
-            raise ResponseException('The selected time does not fall into the office work schedule',
-                                    status_code=status.HTTP_400_BAD_REQUEST)
         for table in attrs['tables']:
             if table.room.type.unified:
                 raise ResponseException("Selected table is not a workplace", status_code=status.HTTP_400_BAD_REQUEST)
@@ -1042,20 +1021,15 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
     def group_create_workplace(self, context):
         group_booking = GroupBooking.objects.create(author=self.validated_data['author'])
 
-        bookings_to_create = []
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
         for i in range(len(self.validated_data['users'])):
-            bookings_to_create.append(Booking(user=self.validated_data['users'][i],
-                                              table=self.validated_data['tables'][i],
-                                              date_to=self.validated_data['date_to'],
-                                              date_from=self.validated_data['date_from'],
-                                              date_activate_until=date_activate_until,
-                                              group_booking=group_booking
-                                              ))
-
-        created_bookings = self.Meta.model.objects.bulk_create(bookings_to_create)
-        for booking in created_bookings:
-            booking.save()
+            b = Booking(user=self.validated_data['users'][i],
+                        table=self.validated_data['tables'][i],
+                        date_to=self.validated_data['date_to'],
+                        date_from=self.validated_data['date_from'],
+                        date_activate_until=date_activate_until,
+                        group_booking=group_booking)
+            b.save()
 
         return AdminGroupWorkspaceSerializer(instance=group_booking).data
