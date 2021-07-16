@@ -227,8 +227,8 @@ class MobileBookingSerializerForTableSlots(serializers.ModelSerializer):
 
 
 class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
-    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
-    guests = serializers.JSONField(required=False, default={})
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all(), required=True)
+    guests = serializers.ListField(child=serializers.JSONField(), allow_empty=True, required=False)
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
 
     class Meta:
@@ -259,10 +259,11 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
         if attrs.get('guests'):
             for guest in attrs.get('guests'):
-                contact_data = attrs.get('guests')[guest]
+                guest_name = list(guest.keys())[0]
+                contact_data = guest[list(guest.keys())[0]]
                 try:
                     validate_email(contact_data)
-                    message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                    message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
                               f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                               f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
                               f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
@@ -271,7 +272,7 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 except ValErr:
                     try:
                         contact_data = User.normalize_phone(contact_data)
-                        message = f"Здравствуйте, {guest}. Вы были приглашены на встречу, " \
+                        message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
                                   f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
@@ -308,7 +309,7 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
 
 class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
-    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all())
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all(), required=True)
     tables = serializers.PrimaryKeyRelatedField(many=True, queryset=Table.objects.all())
 
     class Meta:

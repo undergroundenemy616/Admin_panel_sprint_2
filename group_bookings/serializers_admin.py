@@ -114,3 +114,19 @@ class AdminGroupWorkspaceSerializer(serializers.ModelSerializer):
 
         return response
 
+
+class AdminGroupCombinedSerializer(serializers.ModelSerializer):
+    author = AdminGroupBookingAuthorSerializer(read_only=True)
+
+    class Meta:
+        model = GroupBooking
+        fields = ['id', 'author']
+
+    def to_representation(self, instance):
+        response = super(AdminGroupCombinedSerializer, self).to_representation(instance)
+        response['bookings_info'] = AdminGroupWorkspaceBookingInfoSerializer(instance=instance.bookings.all(),
+                                                                             many=True).data
+        response['unified'] = instance.bookings.all()[0].table.room.type.unified
+
+        return response
+

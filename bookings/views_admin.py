@@ -3,7 +3,9 @@ from django.db.models import Q
 from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
+from rest_framework.filters import SearchFilter
 from rest_framework.generics import get_object_or_404, GenericAPIView
+from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 
 from bookings.filters_admin import AdminBookingFilter
@@ -21,7 +23,8 @@ from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from files.serializers_admin import AdminFileSerializer
 from group_bookings.models import GroupBooking
-from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer
+from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer, \
+    AdminGroupCombinedSerializer
 from users.models import Account
 from users.serializers_admin import AdminUserSerializer
 
@@ -206,4 +209,34 @@ class AdminGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
+
+
+class AdminGroupCombinedBookingSerializer(GenericAPIView,
+                                          ListModelMixin):
+    queryset = GroupBooking.objects.all().prefetch_related('bookings', 'bookings__table', 'bookings__table__room',
+                                                           'bookings__table__room__floor',
+                                                           'bookings__table__room__floor__office',
+                                                           'bookings__table__room__room_marker',
+                                                           'bookings__user')
+    permission_classes = (IsAdmin,)
+    pagination_class = LimitStartPagination
+    serializer_class = AdminGroupCombinedSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['bookings__user__first_name', 'bookings__user__last_name', 'bookings__user__email',
+                     'bookings__user__phone_number', 'author__email', 'author__first_name', 'author__last_name',
+                     'author__phone_number']
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        if request.query_params.get('user'):
+            queryset = queryset.filter(bookings__user_id=request.query_params.get('user'))
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = AdminGroupCombinedSerializer(instance=queryset, data=request.query_params, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
