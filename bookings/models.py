@@ -122,7 +122,10 @@ class Booking(models.Model):
                                     status_code=status.HTTP_400_BAD_REQUEST)
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.date_activate_until = self.calculate_date_activate_until()
-        language = kwargs.pop('kwargs')
+        try:
+            language = kwargs.pop('kwargs')
+        except Exception as e:
+            language = 'ru'
         if not JobStore.objects.filter(job_id__contains=str(self.id)):
             JobStore.objects.create(job_id='check_booking_activate_'+str(self.id),
                                     time_execute=self.date_activate_until,
@@ -141,7 +144,8 @@ class Booking(models.Model):
                 tasks.notify_about_booking_activation.apply_async(
                     args=[self.id],
                     eta=date_now + timedelta(minutes=1),
-                    task_id='notify_about_activation_booking_' + str(self.id))
+                    task_id='notify_about_activation_booking_' + str(self.id),
+                    language=language)
             else:
                 JobStore.objects.create(job_id='notify_about_booking_activation_' + str(self.id),
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK),

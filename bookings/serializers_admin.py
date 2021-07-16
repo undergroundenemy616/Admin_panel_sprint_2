@@ -163,14 +163,13 @@ class AdminBookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
-
         return self.Meta.model.objects.create(
             date_to=validated_data['date_to'],
             date_from=validated_data['date_from'],
             table=validated_data['table'],
             user=validated_data['user'],
             theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
-            kwargs=self.context.get('language', None)
+            kwargs=self.context['request'].headers.get('Language', None)
         )
 
 
@@ -194,7 +193,8 @@ class AdminBookingCreateFastSerializer(AdminBookingSerializer):
                     date_to=date_to,
                     date_from=date_from,
                     table=table,
-                    user=validated_data['user']
+                    user=validated_data['user'],
+                    kwargs=self.context['request'].headers.get('Language', None)
                 )
         raise serializers.ValidationError('No table found for fast booking')
 

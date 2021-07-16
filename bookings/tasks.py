@@ -91,7 +91,7 @@ def check_booking_status():
 
 
 @shared_task
-def notify_about_oncoming_booking(uuid, language='ru'):
+def notify_about_oncoming_booking(uuid, language):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute notify_about_oncoming_booking "+str(uuid))
     """Send PUSH-notification about oncoming booking to every user devices"""
@@ -146,7 +146,7 @@ def notify_about_oncoming_booking(uuid, language='ru'):
     job_execution('notify_about_oncoming_booking_', uuid)
 
 @shared_task
-def notify_about_booking_activation(uuid, language='ru'):
+def notify_about_booking_activation(uuid, language):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute notify_about_booking_activation "+str(uuid))
     """Send PUSH-notification about opening activation"""
@@ -164,6 +164,7 @@ def notify_about_booking_activation(uuid, language='ru'):
 
     if push_group and not instance.is_over \
             and instance.user:
+        print('TASK LANGUAGE', language)
         if language == 'ru':
             expo_data = {
                 "account": str(instance.user.id),
