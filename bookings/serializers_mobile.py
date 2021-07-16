@@ -260,7 +260,7 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
         if attrs.get('guests'):
             for guest in attrs.get('guests'):
                 guest_name = list(guest.keys())[0]
-                contact_data = guest[list(guest.keys())[0]]
+                contact_data = guest[guest_name]
                 try:
                     validate_email(contact_data)
                     message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
