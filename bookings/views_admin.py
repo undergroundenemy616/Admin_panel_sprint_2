@@ -161,7 +161,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         account = request.user.account
-        if account == instance.author or account.user.is_staff:
+        if request.query_params.get('user_id') == instance.author_id or account.user.is_staff:
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
