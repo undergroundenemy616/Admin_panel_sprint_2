@@ -165,7 +165,9 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
-            raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
+            personal_booking = instance.bookings.get(user=request.user.account)
+            personal_booking.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     def list(self, request, *args, **kwargs):
         response = super(AdminGroupMeetingBookingViewSet, self).list(request, *args, **kwargs).data
