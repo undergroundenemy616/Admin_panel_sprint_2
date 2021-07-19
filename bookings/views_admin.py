@@ -165,7 +165,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
-            personal_booking = instance.bookings.get(user=request.user.account)
+            personal_booking = instance.bookings.get(user_id=request.query_params.get('user_id'))
             personal_booking.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
