@@ -156,7 +156,7 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         account = request.user.account
-        if account == instance.author or account.user.is_staff:
+        if account == instance.author:
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:
