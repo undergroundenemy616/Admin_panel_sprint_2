@@ -78,6 +78,10 @@ class MobileLoginOrRegisterSerializer(serializers.Serializer):
     class Meta:
         model = User
 
+    def validate(self, attrs):
+        attrs['phone'] = User.normalize_phone(attrs['phone'])
+        return attrs
+
     def save(self, **kwargs):
         pass
 
