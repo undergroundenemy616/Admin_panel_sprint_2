@@ -547,12 +547,18 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
         j = 0
 
         translation_dir_path = os.path.dirname(os.path.realpath(__file__))
-        language = self.context.headers['Language']
+
+        if self.context.headers.get('Language'):
+            language = self.context.headers['Language']
+        else:
+            language = 'ru'
+
         try:
             localization = open(translation_dir_path+str(PurePath(f'/translations/{language}_statistics.json')),
                                 encoding='utf-8')
         except FileNotFoundError:
             raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
+
         localization = json.load(localization)
 
         for i in range(len(list_rows) + 1):
@@ -564,7 +570,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
                 worksheet.write('D1', localization['total_booking_time'])
                 worksheet.write('E1', localization['average_booking_duration'])
                 worksheet.write('F1', localization['number_of_bookings'])
-                worksheet.write('G1', localization['number_of_finished_bookings'])
+                worksheet.write('G1', localization['number_of_completed_bookings'])
                 worksheet.write('H1', localization['number_of_canceled_bookings'])
                 worksheet.write('I1', localization['number_of_auto_canceled_bookings'])
                 worksheet.write('J1', localization['office'])
@@ -669,8 +675,14 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
         worksheet = workbook.add_worksheet()
 
         j = 0
+
         translation_dir_path = os.path.dirname(os.path.realpath(__file__))
-        language = self.context.headers['Language']
+
+        if self.context.headers.get('Language'):
+            language = self.context.headers['Language']
+        else:
+            language = 'ru'
+
         try:
             localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
                                 encoding='utf-8')
@@ -812,8 +824,14 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         bold = workbook.add_format({'bold': 1})
 
         j = 0
+
         translation_dir_path = os.path.dirname(os.path.realpath(__file__))
-        language = self.context.headers['Language']
+
+        if self.context.headers.get('Language'):
+            language = self.context.headers['Language']
+        else:
+            language = 'ru'
+
         try:
             localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
                                 encoding='utf-8')
