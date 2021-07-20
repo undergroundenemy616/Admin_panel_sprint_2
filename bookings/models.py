@@ -113,18 +113,18 @@ class Booking(models.Model):
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
-        office = Office.objects.get(id=self.table.room.floor.office_id)
-        open_time, close_time = office.working_hours.split('-')
-        open_time = datetime.strptime(open_time, '%H:%M')
-        close_time = datetime.strptime(close_time, '%H:%M')
-        time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
-        date_from = self.date_from + time_zone
-        date_to = self.date_to + time_zone
+        # office = Office.objects.get(id=self.table.room.floor.office_id)
+        # open_time, close_time = office.working_hours.split('-')
+        # open_time = datetime.strptime(open_time, '%H:%M')
+        # close_time = datetime.strptime(close_time, '%H:%M')
+        # time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
+        # date_from = self.date_from + time_zone # TODO: Uncomment for next release
+        # date_to = self.date_to + time_zone
 
-        if not open_time.time() <= date_from.time() <= close_time.time() and not \
-                open_time.time() <= date_to.time() <= close_time.time():
-            raise ResponseException('The selected time does not fall into the office work schedule',
-                                    status_code=status.HTTP_400_BAD_REQUEST)
+        # if not open_time.time() <= date_from.time() <= close_time.time() or not \
+        #         open_time.time() <= date_to.time() <= close_time.time():
+        #     raise ResponseException('The selected time does not fall into the office work schedule',
+        #                             status_code=status.HTTP_400_BAD_REQUEST)
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.date_activate_until = self.calculate_date_activate_until()
         try:
