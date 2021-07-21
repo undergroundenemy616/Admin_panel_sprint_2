@@ -1,10 +1,12 @@
-import os
-
 from django.contrib.auth import user_logged_in
+from django.db.models import Q
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.filters import SearchFilter
+from rest_framework.generics import ListAPIView
 from rest_framework import mixins, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.permissions import AllowAny
+from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
@@ -12,14 +14,20 @@ from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
 
 from booking_api_django_new.settings import (HARDCODED_PHONE_NUMBER,
                                              HARDCODED_SMS_CODE, SMS_MOCK_CONFIRM)
+from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from users.models import Account, User
 from users.registration import confirm_code, send_code
 from users.serializers import SwaggerAccountParametr
+from users.serializers_mobile import (MobilePasswordChangeSerializer, MobilePasswordResetSetializer,
+                                      MobileUserLoginSerializer, MobileUserRegisterSerializer,
+                                      MobileSelfUpdateSerializer, MobileConformationSerializer,
+                                      MobileContactCheckSerializer, MobileCheckAvailableSerializer)
 from users.serializers_mobile import (MobileAccountSerializer,
                                       MobileAccountUpdateSerializer,
                                       MobileEntranceCollectorSerializer,
-                                      MobileLoginOrRegisterSerializer)
+                                      MobileLoginOrRegisterSerializer,
+                                      MobileAccountMeetingSearchSerializer)
 
 
 class MobileEntranceCollectorView(GenericAPIView):
@@ -30,7 +38,8 @@ class MobileEntranceCollectorView(GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"message": "OK"}, status=status.HTTP_200_OK)
+        return Response({"message": "OK",
+                         "email": bool(request.user.email)}, status=status.HTTP_200_OK)
 
 
 class MobileLoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
@@ -143,4 +152,136 @@ class MobileFirstCheckView(GenericAPIView):
         if request.headers.get('X-WORKSPACE'):
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class MobileUserRegisterView(GenericAPIView):
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = MobileUserRegisterSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        response = serializer.register()
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class MobileUserLoginView(GenericAPIView):
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = MobileUserLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        response = serializer.data
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class MobilePasswordChangeView(GenericAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = MobilePasswordChangeSerializer
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'old_password': openapi.Schema(type=openapi.TYPE_STRING),
+            'new_password': openapi.Schema(type=openapi.TYPE_STRING)
+        }
+    ))
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MobilePasswordResetView(GenericAPIView):
+    serializer_class = MobilePasswordResetSetializer
+    permission_classes = []
+    authentication_classes = []
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'email': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+        }
+    ))
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        response = serializer.reset()
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class MobileConformationView(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = MobileConformationSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        if request.data.get('code'):
+            response = serializer.confirm()
+        else:
+            response = serializer.send_code()
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class MobileAccountMeetingSearchView(ListAPIView):
+    serializer_class = MobileAccountMeetingSearchSerializer
+    queryset = Account.objects.all().select_related('user')
+    pagination_class = LimitStartPagination
+    filter_backends = [SearchFilter]
+    search_fields = ['first_name', 'last_name', 'user__phone_number', 'user__email']
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset()).exclude(user_id=request.user.id)
+
+        if request.query_params.getlist('exclude'):
+            queryset = queryset.filter(~Q(id__in=request.query_params.getlist('exclude')))
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = MobileAccountMeetingSearchSerializer(instance=queryset, data=request.query_params, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MobileSelfView(GenericAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = MobileSelfUpdateSerializer
+
+    def get(self, request, *args, **kwargs):
+        return Response(self.serializer_class(instance=request.user).data, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request}, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MobileContactCheckView(GenericAPIView,
+                             CreateModelMixin):
+    serializer_class = MobileContactCheckSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class MobileCheckAvailableView(GenericAPIView):
+    serializer_class = MobileCheckAvailableSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.check(), status=status.HTTP_200_OK)
 

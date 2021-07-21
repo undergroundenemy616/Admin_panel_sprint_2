@@ -27,7 +27,7 @@ app.conf.beat_schedule = {
     },
     'transfer_task_to_redis': {
         'task': 'bookings.tasks.transfer_task_to_redis',
-        'schedule': crontab('*/15', '4-19', '*', '*', '*'),
+        'schedule': crontab('1-59/15', '4-19', '*', '*', '*'),
     },
     'delete_task_from_db': {
         'task': 'bookings.tasks.delete_task_from_db',

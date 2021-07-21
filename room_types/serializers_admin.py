@@ -3,7 +3,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.serializers import TestBaseFileSerializer
-from offices.models import Office
 from room_types.models import RoomType
 
 

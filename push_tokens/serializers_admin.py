@@ -23,13 +23,14 @@ class AdminGroupForPushSerializer(serializers.ModelSerializer):
 class AdminAccountForPushSerializer(serializers.Serializer):
     phone_number = serializers.CharField(allow_null=True, allow_blank=True)
     id = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
-    firstname = serializers.CharField(allow_null=True, allow_blank=True, source='first_name')
-    lastname = serializers.CharField(allow_null=True, allow_blank=True, source='last_name')
-    middlename = serializers.CharField(allow_null=True, allow_blank=True, source='middle_name')
+    first_name = serializers.CharField(allow_null=True, allow_blank=True)
+    last_name = serializers.CharField(allow_null=True, allow_blank=True)
+    middle_name = serializers.CharField(allow_null=True, allow_blank=True)
 
     def to_representation(self, instance):
         response = super(AdminAccountForPushSerializer, self).to_representation(instance)
         response['phone_number'] = instance.user.phone_number
+        response['email'] = instance.user.email
         response['groups_id'] = [group.id for group in instance.groups.all()]
         return response
 

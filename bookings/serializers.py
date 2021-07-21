@@ -120,6 +120,7 @@ class BookingSerializer(serializers.ModelSerializer):
         # time.sleep(random.uniform(0.001, 0.005))
         # time.sleep(random.uniform(0.001, 0.003))
         # time.sleep(random.uniform(0.01, 0.07))
+        language = self.context.get('language', None)
         if self.Meta.model.objects.is_user_overflowed(validated_data['user'],
                                                       validated_data['table'].room.type.unified,
                                                       validated_data['date_from'],
@@ -135,13 +136,14 @@ class BookingSerializer(serializers.ModelSerializer):
                 date_from=validated_data['date_from'],
                 table=validated_data['table'],
                 user=validated_data['user'],
-                theme=validated_data['theme']
+                theme=validated_data['theme'], kwargs=language
             )
         return self.Meta.model.objects.create(
             date_to=validated_data['date_to'],
             date_from=validated_data['date_from'],
             table=validated_data['table'],
-            user=validated_data['user']
+            user=validated_data['user'],
+            kwargs=language
         )
 
 

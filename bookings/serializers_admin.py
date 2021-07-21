@@ -1,29 +1,40 @@
+import json
 import os
 import uuid
 from calendar import monthrange
 from collections import Counter
 from datetime import datetime, date, timedelta
-from pathlib import Path
+from pathlib import Path, PurePath
 from time import strptime
 import pandas as pd
+import pytz
 import requests
 import xlsxwriter
 import orjson
 
+from django.core.exceptions import ValidationError as ValErr
+from django.core.validators import validate_email
 from django.db.models import Q
 from django.db.transaction import atomic
 import pdfkit
 from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
 from workalendar.europe import Russia
 
 from booking_api_django_new.settings import FILES_HOST
 from bookings.models import Booking
+from bookings.serializers_mobile import calculate_date_activate_until
 from core.handlers import ResponseException
 from files.serializers_admin import check_token
 from files.models import File
+from group_bookings.models import GroupBooking
+from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer
+from offices.models import Office
 from room_types.models import RoomType
+from rooms.models import Room
 from tables.models import Table, TableMarker
-from users.models import Account
+from users.models import Account, User
+from users.tasks import send_email, send_sms
 
 
 def employee_statistics(stats):
@@ -59,7 +70,8 @@ def bookings_future(stats):
         "first_name": stats.first_name,
         "middle_name": stats.middle_name,
         "last_name": stats.last_name,
-        "phone_number": str(stats.phone_number),
+        "phone_number_1": str(stats.phone_number_1),
+        "phone_number_2": str(stats.phone_number_2),
         "date_from": str(stats.date_from),
         "date_to": str(stats.date_to),
         "date_activate_until": str(stats.date_activate_until)
@@ -81,7 +93,7 @@ def most_frequent(List):
 def date_validation(date):
     try:
         datetime.strptime(date, '%Y-%m-%d')
-    except ValueError:
+    except:
         raise ResponseException("Wrong date format, should be YYYY-MM-DD")
     return True
 
@@ -151,13 +163,13 @@ class AdminBookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
-
         return self.Meta.model.objects.create(
             date_to=validated_data['date_to'],
             date_from=validated_data['date_from'],
             table=validated_data['table'],
             user=validated_data['user'],
-            theme=validated_data['theme'] if 'theme' in validated_data else "Без темы"
+            theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
+            kwargs=self.context['request'].headers.get('Language', None)
         )
 
 
@@ -181,7 +193,8 @@ class AdminBookingCreateFastSerializer(AdminBookingSerializer):
                     date_to=date_to,
                     date_from=date_from,
                     table=table,
-                    user=validated_data['user']
+                    user=validated_data['user'],
+                    kwargs=self.context['request'].headers.get('Language', None)
                 )
         raise serializers.ValidationError('No table found for fast booking')
 
@@ -201,12 +214,12 @@ class AdminSwaggerBookingEmployee(serializers.Serializer):
 
 class AdminSwaggerBookingFuture(serializers.Serializer):
     office_id = serializers.UUIDField(required=False, format='hex_verbose')
-    month = serializers.CharField(required=False, max_length=10)
-    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
+    date = serializers.DateField(required=False, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
 
 class AdminSwaggerRoomType(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
     date_from = serializers.DateField(required=True, format='%Y-%m-%d')
     date_to = serializers.DateField(required=True, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
@@ -256,7 +269,7 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                               (Q(date_to__date__gt=date_from) &
                                                                Q(date_to__date__lte=date_to))
                                                       )
-                                                      ).count()
+                                                 ).count()
             number_of_activated_bookings = bookings.filter(Q(status__in=['active', 'over']) &
                                                                 Q(table__room__floor__office_id=valid_office_id) &
                                                                 (
@@ -282,9 +295,13 @@ class AdminStatisticsSerializer(serializers.Serializer):
                     (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                     (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
                     office_id = '{valid_office_id}'""")
-            tables_from_booking = bookings.filter(Q(table__room__floor__office_id=valid_office_id) &
-                                                       Q(table__room__type__is_deletable=False) &
-                                                       Q(table__room__type__bookable=True)).only('table_id')
+            tables_from_booking = bookings.filter(Q(table__room__floor__office_id=valid_office_id)
+                                                  &
+                                                  Q(table__room__type__is_deletable=False)
+                                                  &
+                                                  Q(table__room__type__bookable=True)
+                                                  &
+                                                  Q(table__room__type__unified=False)).only('table_id')
         else:
             all_tables = Table.objects.filter(Q(room__type__is_deletable=False) &
                                               Q(room__type__bookable=True) &
@@ -292,13 +309,13 @@ class AdminStatisticsSerializer(serializers.Serializer):
             tables_with_markers = TableMarker.objects.filter(Q(table__room__type__is_deletable=False) &
                                                              Q(table__room__type__bookable=True)).count()
             number_of_bookings = bookings.filter((Q(date_from__date__gte=date_from) &
-                                                       Q(date_from__date__lt=date_to))
-                                                      |
-                                                      (Q(date_from__date__lte=date_from) &
-                                                       Q(date_to__date__gte=date_to))
-                                                      |
-                                                      (Q(date_to__date__gt=date_from) &
-                                                       Q(date_to__date__lte=date_to))).count()
+                                                  Q(date_from__date__lt=date_to))
+                                                 |
+                                                 (Q(date_from__date__lte=date_from) &
+                                                  Q(date_to__date__gte=date_to))
+                                                 |
+                                                 (Q(date_to__date__gt=date_from) &
+                                                  Q(date_to__date__lte=date_to))).count()
             number_of_activated_bookings = bookings.filter(status__in=['active', 'over']).count()
             bookings_with_hours = bookings.raw(f"""SELECT 
                                 DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
@@ -306,8 +323,11 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                 WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
                                 (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                                 (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
-            tables_from_booking = bookings.filter(Q(table__room__type__is_deletable=False) &
-                                                       Q(table__room__type__bookable=True)).only('table_id')
+            tables_from_booking = bookings.filter(Q(table__room__type__is_deletable=False)
+                                                  &
+                                                  Q(table__room__type__bookable=True)
+                                                  &
+                                                  Q(table__room__type__unified=False)).only('table_id')
         all_accounts = Account.objects.all()
 
         working_days = 0
@@ -332,9 +352,17 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                month=int(month.strftime("%m %Y").split(" ")[0]), day=i + 1)):
                     working_days = working_days - 1
 
-        tables_available_for_booking = all_tables.filter(is_occupied=False).count()
+        tables_available_for_booking = all_tables.filter(is_occupied=False,
+                                                         room__type__unified=False,
+                                                         room__type__is_deletable=False,
+                                                         room__type__bookable=True).count()
         active_users = all_accounts.count()
-        total_tables = Table.objects.filter(room__floor__office_id=valid_office_id).count()
+        total_tables = Table.objects.filter(room__floor__office_id=valid_office_id,
+                                            room__type__unified=False,
+                                            room__type__is_deletable=False,
+                                            room__type__bookable=True
+                                            ).count()
+
 
         list_of_booked_tables = []
         for table in tables_from_booking:
@@ -518,29 +546,44 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
 
         j = 0
 
+        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
+
+        if self.context.headers.get('Language'):
+            language = self.context.headers['Language']
+        else:
+            language = 'ru'
+
+        try:
+            localization = open(translation_dir_path+str(PurePath(f'/translations/{language}_statistics.json')),
+                                encoding='utf-8')
+        except FileNotFoundError:
+            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
+
+        localization = json.load(localization)
+
         for i in range(len(list_rows) + 1):
             i += 1
             if i == 1:
-                worksheet.write('A1', 'Ф.И.О')
-                worksheet.write('B1', 'Тел. номер')
-                worksheet.write('C1', 'Среднее время брони в день (в часах)')
-                worksheet.write('D1', 'Общее время бронирования за месяц (в часах)')
-                worksheet.write('E1', 'Средняя длительность бронирования (в часах)')
-                worksheet.write('F1', 'Кол-во бронирований')
-                worksheet.write('G1', 'Кол-во завершенных бронирований')
-                worksheet.write('H1', 'Кол-во отмененных бронирований')
-                worksheet.write('I1', 'Кол-во бронирований отмененных автоматически')
-                worksheet.write('J1', 'Офис')
-                worksheet.write('K1', 'Часто бронируемое место')
+                worksheet.write('A1', localization['full_name'])
+                worksheet.write('B1', localization['phone_number'])
+                worksheet.write('C1', localization['average_booking_time'])
+                worksheet.write('D1', localization['total_booking_time'])
+                worksheet.write('E1', localization['average_booking_duration'])
+                worksheet.write('F1', localization['number_of_bookings'])
+                worksheet.write('G1', localization['number_of_completed_bookings'])
+                worksheet.write('H1', localization['number_of_canceled_bookings'])
+                worksheet.write('I1', localization['number_of_auto_canceled_bookings'])
+                worksheet.write('J1', localization['office'])
+                worksheet.write('K1', localization['frequently_booked_seat'])
             else:
                 full_name = str(str(list_rows[j].get('last_name')) + ' ' +
                                 str(list_rows[j].get('first_name')) + ' ' +
                                 str(list_rows[j].get('middle_name'))).replace('None', "")
                 if not full_name.replace(" ", ""):
-                    full_name = "Имя не указано"
+                    full_name = localization['full_name_not_specified']
                 worksheet.write('A' + str(i), full_name)
                 worksheet.write('B' + str(i), list_rows[j]['phone_number'] if list_rows[j][
-                                                                                  'phone_number'] != 'None' else 'Не указан')
+                                                                                  'phone_number'] != 'None' else localization['contact_not_specified'])
                 worksheet.write('C' + str(i), list_rows[j]['middle_time'])
                 worksheet.write('D' + str(i), list_rows[j]['time'])
                 worksheet.write('E' + str(i), list_rows[j]['middle_booking_time'])
@@ -552,7 +595,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
                 worksheet.write('K' + str(i), list_rows[j]['table'])
                 j += 1
 
-        worksheet.write('A' + str(len(list_rows) + 2), 'Рабочих дней в месяце:', bold)
+        worksheet.write('A' + str(len(list_rows) + 2), localization['number_of_working_days'], bold)
         worksheet.write('B' + str(len(list_rows) + 2), working_days, bold)
 
         workbook.close()
@@ -589,11 +632,8 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
 
 class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
     office_id = serializers.UUIDField(required=False, format='hex_verbose')
-    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
-    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
-    month = serializers.CharField(required=False, max_length=10)
-    year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
     date = serializers.DateField(required=False, format='%Y-%m-%d')
+    doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
     def get_statistic(self):
         date_validation(self.data.get('date'))
@@ -603,15 +643,16 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
 
         query = f"""
                 SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
-                ua.last_name as last_name, ua.phone_number as phone_number, oo.id as office_id, oo.title as office_title, 
+                ua.last_name as last_name, ua.phone_number as phone_number_1, oo.id as office_id, oo.title as office_title, 
                 ff.id as floor_id, ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
-                b.date_activate_until, b.status
+                b.date_activate_until, b.status, uu.phone_number as phone_number_2
                 FROM bookings_booking b
                 JOIN tables_table tt on b.table_id = tt.id
                 JOIN rooms_room rr on rr.id = tt.room_id
                 JOIN floors_floor ff on rr.floor_id = ff.id
                 JOIN offices_office oo on ff.office_id = oo.id
                 JOIN users_account ua on b.user_id = ua.id
+                JOIN users_user uu on ua.user_id = uu.id
                 WHERE b.date_from::date = '{date}' and (b.status = 'waiting' or b.status = 'active' or b.status = 'over' or b.status = 'auto_over')"""
 
         if self.data.get('office_id'):
@@ -635,23 +676,37 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
 
         j = 0
 
+        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
+
+        if self.context.headers.get('Language'):
+            language = self.context.headers['Language']
+        else:
+            language = 'ru'
+
+        try:
+            localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
+                                encoding='utf-8')
+        except FileNotFoundError:
+            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
+        localization = json.load(localization)
+
         for i in range(len(sql_results) + 1):
             i += 1
             if i == 1:
-                worksheet.write('A1', 'Ф.И.О')
-                worksheet.write('B1', 'Тел. номер')
-                worksheet.write('C1', 'Начало брони')
-                worksheet.write('D1', 'Окончание брони')
-                worksheet.write('E1', 'Продолжительность брони (в часах)')
-                worksheet.write('F1', 'Офис')
-                worksheet.write('G1', 'Этаж')
-                worksheet.write('H1', 'Рабочее место')
+                worksheet.write('A1', localization['full_name'])
+                worksheet.write('B1', localization['phone_number'])
+                worksheet.write('C1', localization['beginning_of_booking'])
+                worksheet.write('D1', localization['end_of_booking'])
+                worksheet.write('E1', localization['duration_of_booking'])
+                worksheet.write('F1', localization['office'])
+                worksheet.write('G1', localization['floor'])
+                worksheet.write('H1', localization['workplace'])
             else:
                 full_name = str(str(sql_results[j].get('last_name')) + ' ' +
                                 str(sql_results[j].get('first_name')) + ' ' +
                                 str(sql_results[j].get('middle_name'))).replace('None', "")
                 if not full_name.replace(" ", ""):
-                    full_name = "Имя не указано"
+                    full_name = localization['full_name_not_specified']
                 book_time = float((datetime.fromisoformat(sql_results[j]['date_to']).timestamp() -
                                    datetime.fromisoformat(
                                        sql_results[j]['date_from']).timestamp()) / 3600).__round__(2)
@@ -669,9 +724,14 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
                     r_date_to = datetime.strptime(correct_date_to.replace("T", " ").split("+")[0],
                                                   '%Y-%m-%d %H:%M:%S') + timedelta(hours=3)
 
+                phone_number = None
+                if sql_results[j]['phone_number_1'] != 'None':
+                    phone_number = sql_results[j]['phone_number_1']
+                elif sql_results[j]['phone_number_2'] != 'None':
+                    phone_number = sql_results[j]['phone_number_2']
+
                 worksheet.write('A' + str(i), full_name)
-                worksheet.write('B' + str(i), sql_results[j]['phone_number'] if sql_results[j][
-                                                                                    'phone_number'] != 'None' else 'Не указан')
+                worksheet.write('B' + str(i), phone_number if phone_number else localization['contact_not_specified'])
                 worksheet.write('C' + str(i), str(r_date_from))
                 worksheet.write('D' + str(i), str(r_date_to))
                 worksheet.write('E' + str(i), book_time),
@@ -728,8 +788,6 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         date_to = self.data.get('date_to')
         doc_format = self.data.get('doc_format')
 
-
-
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
@@ -767,23 +825,37 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
 
         j = 0
 
+        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
+
+        if self.context.headers.get('Language'):
+            language = self.context.headers['Language']
+        else:
+            language = 'ru'
+
+        try:
+            localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
+                                encoding='utf-8')
+        except FileNotFoundError:
+            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
+        localization = json.load(localization)
+
         for i in range(len(set_of_types) + 1):
             i += 1
             if i == 1:
-                worksheet.write('A1', 'Тип комнаты')
-                worksheet.write('B1', 'Число бронирований комнат такого типа')
+                worksheet.write('A1', localization['room_type'])
+                worksheet.write('B1', localization['number_of_bookings_for_this_type_of_room'])
             else:
                 worksheet.write('A' + str(i), list(set_of_types)[j])
                 worksheet.write('B' + str(i), counts.get(list(set_of_types)[j]))
                 j += 1
 
-        worksheet.write('A' + str(number_of_types + 2), 'Общее число бронирований:', bold)
+        worksheet.write('A' + str(number_of_types + 2), localization['total_number_of_bookings'], bold)
         worksheet.write('B' + str(number_of_types + 2), len(sql_results), bold)
 
         chart = workbook.add_chart({'type': 'pie'})
 
         chart.add_series({
-            'name': 'Распределение бронирований мест по типам (%)',
+            'name': localization['distribution_of_seat_bookings_by_type'],
             'categories': '=Sheet1!$A$2:$A$' + str(number_of_types + 1),
             'values': '=Sheet1!$B$2:$B$' + str(number_of_types + 1),
             'data_labels': {'percentage': True},
@@ -863,3 +935,120 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
             pass
 
         return file_storage_object
+
+
+class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all(), required=True)
+    guests = serializers.ListField(child=serializers.JSONField(), allow_empty=True, required=False)
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'author', 'date_to', 'date_from', 'users', 'room', 'guests']
+
+    def validate(self, attrs):
+        office = Office.objects.get(id=attrs['room'].floor.office_id)
+        time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
+        message_date_from = attrs['date_from'] + time_zone
+        message_date_to = attrs['date_to'] + time_zone
+
+        if not attrs['room'].type.unified:
+            raise ResponseException("Selected table is not for meetings", status_code=status.HTTP_400_BAD_REQUEST)
+
+        if Booking.objects.is_overflowed(table=attrs['room'].tables.all()[0],
+                                         date_from=attrs['date_from'],
+                                         date_to=attrs['date_to']):
+            raise ResponseException("This meeting table is occupied", status_code=status.HTTP_400_BAD_REQUEST)
+
+        if attrs.get('guests'):
+            for guest in attrs.get('guests'):
+                guest_name = list(guest.keys())[0]
+                contact_data = guest[guest_name]
+                try:
+                    validate_email(contact_data)
+                    message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
+                              f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                              f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                              f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                              f"{datetime.strftime(message_date_to, '%H:%M')}"
+                    send_email.delay(email=contact_data, subject="Встреча", message=message)
+                except ValErr:
+                    try:
+                        contact_data = User.normalize_phone(contact_data)
+                        message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
+                                  f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                                  f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                                  f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                  f"{datetime.strftime(message_date_to, '%H:%M')}"
+                        send_sms.delay(phone_number=contact_data, message=message)
+                    except ValueError:
+                        raise ResponseException("Wrong format of email or phone",
+                                                status_code=status.HTTP_400_BAD_REQUEST)
+        return attrs
+
+    @atomic()
+    def group_create_meeting(self, context):
+        group_booking = GroupBooking.objects.create(author=self.validated_data['author'],
+                                                    guests=self.validated_data.get('guests'))
+
+        date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
+                                                            self.validated_data['date_to'])
+        for user in self.validated_data['users']:
+            b = Booking(user=user,
+                        table=self.validated_data['room'].tables.all()[0],
+                        date_to=self.validated_data['date_to'],
+                        date_from=self.validated_data['date_from'],
+                        date_activate_until=date_activate_until,
+                        group_booking=group_booking)
+            b.save()
+
+        return AdminGroupBookingSerializer(instance=group_booking).data
+
+
+class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
+    users = serializers.PrimaryKeyRelatedField(many=True, queryset=Account.objects.all(), required=True)
+    tables = serializers.PrimaryKeyRelatedField(many=True, queryset=Table.objects.all())
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'author', 'date_to', 'date_from', 'users', 'tables']
+
+    def validate(self, attrs):
+        for table in attrs['tables']:
+            if table.room.type.unified:
+                raise ResponseException("Selected table is not a workplace", status_code=status.HTTP_400_BAD_REQUEST)
+
+        occupied_tables = []
+        for table in attrs['tables']:
+            if Booking.objects.is_overflowed(table=table, date_from=attrs['date_from'], date_to=attrs['date_to']):
+                occupied_tables.append(table.id)
+        if occupied_tables:
+            raise ValidationError(detail={
+                'occupied_tables': list(set(occupied_tables))
+            }, code=status.HTTP_400_BAD_REQUEST)
+
+        if len(attrs['users']) != len(attrs['tables']):
+            raise ResponseException("Selected not equal number of users and tables",
+                                    status_code=status.HTTP_400_BAD_REQUEST)
+
+        return attrs
+
+    @atomic()
+    def group_create_workplace(self, context):
+        group_booking = GroupBooking.objects.create(author=self.validated_data['author'])
+
+        date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
+                                                            self.validated_data['date_to'])
+
+        for i in range(len(self.validated_data['users'])):
+            b = Booking(user=self.validated_data['users'][i],
+                        table=self.validated_data['tables'][i],
+                        date_to=self.validated_data['date_to'],
+                        date_from=self.validated_data['date_from'],
+                        date_activate_until=date_activate_until,
+                        group_booking=group_booking)
+            b.save()
+
+        return AdminGroupWorkspaceSerializer(instance=group_booking).data

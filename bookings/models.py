@@ -1,5 +1,9 @@
 import os
 import uuid
+
+import pytz
+from rest_framework import status
+
 from booking_api_django_new.celery import app as celery_app
 from celery.app.control import Control
 import bookings.tasks as tasks
@@ -14,8 +18,11 @@ from django.utils.timezone import now
 from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
                                              BOOKING_TIMEDELTA_CHECK,
                                              PUSH_HOST)
+from core.handlers import ResponseException
+from group_bookings.models import GroupBooking
 
 from groups.models import EMPLOYEE_ACCESS
+from offices.models import Office
 from push_tokens.send_interface import send_push_message
 from tables.models import Table
 from users.models import Account, User
@@ -68,14 +75,15 @@ class BookingManager(models.Manager):
 
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
+        language = kwargs.pop('kwargs', None)
         obj = self.model(**kwargs)
         consecutive_booking = obj.get_consecutive_booking()
         if consecutive_booking:
             consecutive_booking.date_to = obj.date_to
-            consecutive_booking.save()
+            consecutive_booking.save(kwargs=language)
             return consecutive_booking
         else:
-            obj.save()
+            obj.save(kwargs=language)
             return obj
 
     def active_only(self):
@@ -100,11 +108,29 @@ class Booking(models.Model):
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
     status = models.CharField(choices=STATUS, null=False, max_length=20, default='waiting')
+    group_booking = models.ForeignKey(GroupBooking, on_delete=models.CASCADE,
+                                      null=True, default=None, related_name='bookings')
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
+        # office = Office.objects.get(id=self.table.room.floor.office_id)
+        # open_time, close_time = office.working_hours.split('-')
+        # open_time = datetime.strptime(open_time, '%H:%M')
+        # close_time = datetime.strptime(close_time, '%H:%M')
+        # time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
+        # date_from = self.date_from + time_zone # TODO: Uncomment for next release
+        # date_to = self.date_to + time_zone
+
+        # if not open_time.time() <= date_from.time() <= close_time.time() or not \
+        #         open_time.time() <= date_to.time() <= close_time.time():
+        #     raise ResponseException('The selected time does not fall into the office work schedule',
+        #                             status_code=status.HTTP_400_BAD_REQUEST)
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.date_activate_until = self.calculate_date_activate_until()
+        try:
+            language = kwargs.pop('kwargs')
+        except Exception as e:
+            language = 'ru'
         if not JobStore.objects.filter(job_id__contains=str(self.id)):
             JobStore.objects.create(job_id='check_booking_activate_'+str(self.id),
                                     time_execute=self.date_activate_until,
@@ -112,27 +138,37 @@ class Booking(models.Model):
             JobStore.objects.create(job_id='make_booking_over_'+str(self.id),
                                     time_execute=self.date_to,
                                     parameters={'uuid': str(self.id)})
+            JobStore.objects.create(job_id='notify_about_book_ending_'+str(self.id),
+                                    time_execute=self.date_to - timedelta(minutes=15),
+                                    parameters={'uuid': str(self.id),
+                                                'language': language})
             if date_now + timedelta(minutes=BOOKING_TIMEDELTA_CHECK) > self.date_from:
                 JobStore.objects.create(job_id='notify_about_booking_activation_'+str(self.id),
                                         time_execute=date_now + timedelta(minutes=1),
-                                        parameters={'uuid': str(self.id)})
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
                 tasks.notify_about_booking_activation.apply_async(
-                    args=[self.id],
+                    args=[self.id, language],
                     eta=date_now + timedelta(minutes=1),
                     task_id='notify_about_activation_booking_' + str(self.id))
             else:
                 JobStore.objects.create(job_id='notify_about_booking_activation_' + str(self.id),
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
-                                        parameters={'uuid': str(self.id)})
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
             if date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) < self.date_from:
                 JobStore.objects.create(job_id='notify_about_oncoming_booking_'+str(self.id),
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
-                                        parameters={'uuid': str(self.id)})
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
 
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
         self.set_booking_over()
+        if self.group_booking and ((self.user == self.group_booking.author and self.table.room.type.unified) or
+                                   self.group_booking.bookings.count() == 1):
+            self.group_booking.delete()
         super(self.__class__, self).delete(using, keep_parents)
 
     def set_booking_active(self, *args, **kwargs):
@@ -170,14 +206,17 @@ class Booking(models.Model):
         control = Control(app=celery_app)
         if kwargs.get('kwargs'):
             if kwargs['kwargs'].get('source') == 'check_activate':
-                control.revoke(task_id='make_booking_over_' + str(self.id))
-                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id))
-                control.revoke(task_id='notify_about_activation_booking_' + str(self.id))
+                control.revoke(task_id='make_booking_over_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_activation_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
             else:
-                control.revoke(task_id='check_booking_activate_' + str(self.id))
-                control.revoke(task_id='make_booking_over_' + str(self.id))
-                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id))
-                control.revoke(task_id='notify_about_activation_booking_' + str(self.id))
+                control.revoke(task_id='check_booking_activate_' + str(self.id), terminate=True)
+                control.revoke(task_id='make_booking_over_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_activation_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
+        tasks.all_job_delete(str(self.id))
 
         super(Booking, instance).save()
 
