@@ -48,13 +48,13 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
-
+        schema = request.tenant.schema_name
         query = f"""
         SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to, b.status
-        FROM bookings_booking b
-        INNER JOIN tables_table t ON t.id = b.table_id
-        INNER JOIN rooms_room rr ON t.room_id = rr.id
-        INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
+        FROM {schema}.bookings_booking b
+        INNER JOIN {schema}.tables_table t ON t.id = b.table_id
+        INNER JOIN {schema}.rooms_room rr ON t.room_id = rr.id
+        INNER JOIN {schema}.room_types_roomtype rtr on rr.type_id = rtr.id
         WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
         (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and b.status = 'over'"""
@@ -195,18 +195,20 @@ class BookingEmployeeStatistics(GenericAPIView):
         file_name = month + '_' + str(year) + '.xlsx'
         secure_file_name = uuid.uuid4().hex + file_name
 
-        query = f"""
+        schema = request.tenant.schema_name
+        query = f"""  
+        
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
         oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
         ua.middle_name as middle_name, ua.last_name as last_name, uu.phone_number as phone_number1,
         ua.phone_number as phone_number2, b.status
-        FROM bookings_booking b
-        JOIN tables_table tt on b.table_id = tt.id
-        JOIN rooms_room rr on rr.id = tt.room_id
-        JOIN floors_floor ff on rr.floor_id = ff.id
-        JOIN offices_office oo on ff.office_id = oo.id
-        JOIN users_account ua on b.user_id = ua.id
-        JOIN users_user uu on ua.user_id = uu.id
+        FROM {schema}.bookings_booking b
+        JOIN {schema}.tables_table tt on b.table_id = tt.id
+        JOIN {schema}.rooms_room rr on rr.id = tt.room_id
+        JOIN {schema}.floors_floor ff on rr.floor_id = ff.id
+        JOIN {schema}.offices_office oo on ff.office_id = oo.id
+        JOIN {schema}.users_account ua on b.user_id = ua.id
+        JOIN {schema}.users_user uu on ua.user_id = uu.id
         WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}
         and (b.status='over' or b.status = 'canceled' or b.status = 'auto_canceled' or b.status = 'auto_over')"""
 

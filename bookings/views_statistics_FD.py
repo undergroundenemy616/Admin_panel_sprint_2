@@ -44,17 +44,18 @@ class BookingFuture(GenericAPIView):
 
         file_name = "future_" + date + '.xlsx'
 
+        schema = request.tenant.schema_name
         query = f"""
         SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
         ua.last_name as last_name, ua.phone_number as phone_number, oo.id as office_id, oo.title as office_title, 
         ff.id as floor_id, ff.title as floor_title, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to,
         b.date_activate_until, b.status
-        FROM bookings_booking b
-        JOIN tables_table tt on b.table_id = tt.id
-        JOIN rooms_room rr on rr.id = tt.room_id
-        JOIN floors_floor ff on rr.floor_id = ff.id
-        JOIN offices_office oo on ff.office_id = oo.id
-        JOIN users_account ua on b.user_id = ua.id
+        FROM {schema}.bookings_booking b
+        JOIN {schema}.tables_table tt on b.table_id = tt.id
+        JOIN {schema}.rooms_room rr on rr.id = tt.room_id
+        JOIN {schema}.floors_floor ff on rr.floor_id = ff.id
+        JOIN {schema}.offices_office oo on ff.office_id = oo.id
+        JOIN {schema}.users_account ua on b.user_id = ua.id
         WHERE b.date_from::date = '{date}' and (b.status = 'waiting' or b.status = 'active')"""
 
         if serializer.data.get('office_id'):
@@ -176,6 +177,7 @@ class BookingStatisticsDashboard(GenericAPIView):
         else:
             date_from, date_to = date.today(), date.today()
 
+        schema = request.tenant.schema_name
         if valid_office_id:
             all_tables = Table.objects.filter(Q(room__floor__office_id=valid_office_id) &
                                               Q(room__type__is_deletable=False) &
@@ -212,11 +214,11 @@ class BookingStatisticsDashboard(GenericAPIView):
             bookings_with_hours = self.queryset.raw(f"""SELECT 
             DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
             DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, oo.id as office_id,
-            b.id from bookings_booking b
-            INNER JOIN tables_table tt on tt.id = b.table_id
-            INNER JOIN rooms_room rr on rr.id = tt.room_id
-            INNER JOIN floors_floor ff on ff.id = rr.floor_id
-            INNER JOIN offices_office oo on oo.id = ff.office_id
+            b.id from {schema}.bookings_booking b
+            INNER JOIN {schema}.tables_table tt on tt.id = b.table_id
+            INNER JOIN {schema}.rooms_room rr on rr.id = tt.room_id
+            INNER JOIN {schema}.floors_floor ff on ff.id = rr.floor_id
+            INNER JOIN {schema}.offices_office oo on oo.id = ff.office_id
             WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
             (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
             (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
@@ -241,7 +243,7 @@ class BookingStatisticsDashboard(GenericAPIView):
             number_of_activated_bookings = self.queryset.filter(status__in=['active', 'over']).count()
             bookings_with_hours = self.queryset.raw(f"""SELECT 
                         DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
-                        DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from bookings_booking b
+                        DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from {schema}.bookings_booking b
                         WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
                         (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
                         (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")

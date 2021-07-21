@@ -1,4 +1,3 @@
-from celery import shared_task
 from rest_framework.generics import get_object_or_404
 
 from booking_api_django_new.celery import app
@@ -6,7 +5,7 @@ from users.broadcasts import SMSBroadcast
 from users.models import User
 
 
-@shared_task
+@app.task()
 def send_sms_code(user_id, is_created, code):
     user = get_object_or_404(User, pk=user_id)
     broadcast = SMSBroadcast(phone_number=user.phone_number)

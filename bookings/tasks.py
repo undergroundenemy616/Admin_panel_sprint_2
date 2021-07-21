@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from celery import shared_task
 from django.utils.timezone import now
 import bookings.models as bookings
 import os
@@ -10,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from celery.app.control import Control
 from booking_api_django_new.celery import app as celery_app
 from django.core.mail import mail_admins
+from django_tenants.utils import get_tenant_model, tenant_context
 
 
 def all_job_delete(uuid):
@@ -30,7 +30,7 @@ def all_job_execution(uuid):
         job.save()
 
 
-@shared_task
+@celery_app.task()
 def check_booking_activate(uuid):
     control = Control(app=celery_app)
     try:
@@ -51,7 +51,7 @@ def check_booking_activate(uuid):
     job_execution('check_booking_activate_', uuid)
 
 
-@shared_task
+@celery_app.task()
 def make_booking_over(uuid):
     try:
         instance = bookings.Booking.objects.get(id=uuid)
@@ -65,7 +65,14 @@ def make_booking_over(uuid):
     all_job_execution(uuid)
 
 
-@shared_task
+@celery_app.task()
+def check_booking_status_in_all_schemas():
+    for tenant in get_tenant_model().objects.exclude(schema_name='public'):
+        with tenant_context(tenant):
+            check_booking_status.delay()
+
+
+@celery_app.task()
 def check_booking_status():
     now_date = now()
     subject = 'About booking on ' + os.environ.get('ADMIN_HOST')
@@ -83,7 +90,7 @@ def check_booking_status():
         mail_admins(subject, message)
 
 
-@shared_task
+@celery_app.task()
 def notify_about_oncoming_booking(uuid):
     """Send PUSH-notification about oncoming booking to every user devices"""
     push_group = os.environ.get("PUSH_GROUP")
@@ -120,7 +127,8 @@ def notify_about_oncoming_booking(uuid):
             print(f"Unable to send push message for {str(instance.user.id)}: {response.json().get('message')}")
     job_execution('notify_about_oncoming_booking', uuid)
 
-@shared_task
+
+@celery_app.task()
 def notify_about_booking_activation(uuid):
     """Send PUSH-notification about opening activation"""
     push_group = os.environ.get("PUSH_GROUP")
@@ -156,7 +164,15 @@ def notify_about_booking_activation(uuid):
             print(f"Unable to send push message for {str(instance.user.id)}: {response.json().get('message')}")
     job_execution('notify_about_booking_activation', uuid)
 
-@shared_task()
+
+@celery_app.task()
+def transfer_task_to_redis_in_all_schemas():
+    for tenant in get_tenant_model().objects.exclude(schema_name='public'):
+        with tenant_context(tenant):
+            transfer_task_to_redis.delay()
+
+
+@celery_app.task()
 def transfer_task_to_redis():
     now_time = now() + timedelta(minutes=15)
     job_to_add = bookings.JobStore.objects.filter(time_execute__lte=now_time, executed=False)
@@ -167,7 +183,14 @@ def transfer_task_to_redis():
                                          task_id=func_name+'_'+str(job.parameters['uuid']))
 
 
-@shared_task()
+@celery_app.task()
+def delete_task_from_db_in_all_schemas():
+    for tenant in get_tenant_model().objects.exclude(schema_name='public'):
+        with tenant_context(tenant):
+            delete_task_from_db.delay()
+
+
+@celery_app.task()
 def delete_task_from_db():
     job_to_delete = bookings.JobStore.objects.filter(executed=True)
     for job in job_to_delete:

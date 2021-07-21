@@ -48,3 +48,5 @@ workalendar~=15.0.2
 wkhtmltopdf==0.2
 celery==5.0.5
 django-filter~=2.4.0
+django-tenants==3.3.2
+tenant-schemas-celery==1.0.1
