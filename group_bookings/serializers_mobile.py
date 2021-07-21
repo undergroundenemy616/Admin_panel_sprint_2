@@ -81,7 +81,8 @@ class MobileGroupBookingSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(MobileGroupBookingSerializer, self).to_representation(instance)
         booking_info = MobileBookingInfoSerializer(instance=instance.bookings.all()[0]).data
-        response['users'] = MobileGroupBookingAuthorSerializer(instance=Account.objects.filter(booking__in=instance.bookings.all()).select_related('user'), many=True).data
+        response['users'] = MobileGroupBookingAuthorSerializer(instance=Account.objects.filter(
+            booking__in=instance.bookings.all()).select_related('user'), many=True).data
         response.update(booking_info)
 
         return response

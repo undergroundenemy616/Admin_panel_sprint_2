@@ -283,7 +283,7 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
-
+        my_booking_id = None
         for user in self.validated_data['users']:
             b = Booking(user=user,
                         table=self.validated_data['room'].tables.all()[0],
@@ -292,8 +292,11 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         date_activate_until=date_activate_until,
                         group_booking=group_booking)
             b.save()
-
-        return MobileGroupBookingSerializer(instance=group_booking).data
+            if user == author:
+                my_booking_id = str(b.id)
+        response = MobileGroupBookingSerializer(instance=group_booking).data
+        response['id'] = my_booking_id
+        return response
 
 
 class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
@@ -340,6 +343,7 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
 
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
+        my_booking_id = None
 
         for i in range(len(self.validated_data['users'])):
             b = Booking(user=self.validated_data['users'][i],
@@ -349,5 +353,9 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                         date_activate_until=date_activate_until,
                         group_booking=group_booking)
             b.save()
+            if self.validated_data['users'][i] == author:
+                my_booking_id = str(b.id)
+        response = MobileGroupBookingSerializer(instance=group_booking).data
+        response['id'] = my_booking_id
 
         return MobileGroupWorkspaceSerializer(instance=group_booking).data
