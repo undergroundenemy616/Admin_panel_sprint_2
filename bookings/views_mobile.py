@@ -197,8 +197,10 @@ class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         account = request.user.account
-        if account == instance.author or account.user.is_staff:
+        if account == instance.author:
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:
-            raise ResponseException("You not allowed to perform this action", status_code=status.HTTP_403_FORBIDDEN)
+            personal_booking = instance.bookings.get(user=request.user.account)
+            personal_booking.delete()
+            return HttpResponse(status=204)
