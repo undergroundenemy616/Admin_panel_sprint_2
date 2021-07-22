@@ -338,7 +338,8 @@ class MobileConformationSerializer(serializers.Serializer):
                 raise ResponseException("Wrong format of email or phone", status_code=400)
         attrs['email'] = email
         if email:
-            if User.objects.filter(email=attrs['user_identification']).exists():
+            if User.objects.filter(email=attrs['user_identification']).exists() and \
+                    attrs['user_identification'] != self.context['request'].user.email:
                 raise ResponseException("User with this email already exists")
         else:
             try:
