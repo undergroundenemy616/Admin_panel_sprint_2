@@ -37,57 +37,67 @@ def check_booking_activate(uuid):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute check_booking_activate "+str(uuid))
     try:
-        instance = bookings.Booking.objects.get(id=uuid)
-    except ObjectDoesNotExist:
-        control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
-        all_job_delete(uuid)
-        return
+        try:
+            instance = bookings.Booking.objects.get(id=uuid)
+        except ObjectDoesNotExist:
+            control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
+            all_job_delete(uuid)
+            return
 
-    if not instance.is_active:
-        flag = {'status': 'auto_canceled',
-                'source': 'check_activate'}
-        instance.set_booking_over(kwargs=flag)
+        if not instance.is_active:
+            flag = {'status': 'auto_canceled',
+                    'source': 'check_activate'}
+            instance.set_booking_over(kwargs=flag)
 
-        control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
-        all_job_execution(uuid)
-
+            control.revoke(task_id='make_booking_over_' + str(uuid), terminate=True)
+            all_job_execution(uuid)
+    except Exception as e:
+        logger.error(msg=f"Error check_booking_activate: {e}")
     job_execution('check_booking_activate_', uuid)
 
 
 @shared_task
 def make_booking_over(uuid):
     logger = logging.getLogger(__name__)
-    logger.info(msg="Execute make_booking_over "+str(uuid))
+    logger.info(msg="Start make_booking_over "+str(uuid))
     try:
-        instance = bookings.Booking.objects.get(id=uuid)
-    except ObjectDoesNotExist:
-        all_job_delete(uuid)
-        return
+        try:
+            instance = bookings.Booking.objects.get(id=uuid)
+        except ObjectDoesNotExist:
+            all_job_delete(uuid)
+            return
 
-    flag = {'status': 'auto_over',
-            'source': 'make_over'}
-    instance.set_booking_over(kwargs=flag)
-    all_job_execution(uuid)
+        flag = {'status': 'auto_over',
+                'source': 'make_over'}
+        instance.set_booking_over(kwargs=flag)
+        all_job_execution(uuid)
+    except Exception as e:
+        logger.error(msg=f"Error make_booking_over: {e}")
+    logger.info(msg="Finish make_booking_over " + str(uuid))
 
 
 @shared_task
 def check_booking_status():
     logger = logging.getLogger(__name__)
-    logger.info(msg="Execute check_booking_status")
-    now_date = now()
-    subject = 'About booking on ' + os.environ.get('ADMIN_HOST')
-    bad_status = ['active', 'waiting']
-    query_booking = bookings.Booking.objects.filter(date_activate_until__lt=now_date, status__in=bad_status)
-    if len(query_booking) > 0:
-        message = 'Amount of bad bookings: ' + str(len(query_booking)) + '\n'
-        message += 'ids: \n'
-        for book in query_booking:
-            book.is_over = True
-            book.is_active = False
-            book.status = 'over'
-            book.save()
-            message += str(book.id) + '\n'
-        mail_admins(subject, message)
+    logger.info(msg="Start check_booking_status")
+    try:
+        now_date = now()
+        subject = 'About booking on ' + os.environ.get('ADMIN_HOST')
+        bad_status = ['active', 'waiting']
+        query_booking = bookings.Booking.objects.filter(date_activate_until__lt=now_date, status__in=bad_status)
+        if len(query_booking) > 0:
+            message = 'Amount of bad bookings: ' + str(len(query_booking)) + '\n'
+            message += 'ids: \n'
+            for book in query_booking:
+                book.is_over = True
+                book.is_active = False
+                book.status = 'over'
+                book.save()
+                message += str(book.id) + '\n'
+            mail_admins(subject, message)
+    except Exception as e:
+        logger.error(msg=f"Error check_booking_status: {e}")
+    logger.info(msg="Finish check_booking_status ")
 
 
 @shared_task
@@ -144,6 +154,7 @@ def notify_about_oncoming_booking(uuid, language):
     else:
         logger.info(msg="Problem with push group or booking is over: " + str(uuid))
     job_execution('notify_about_oncoming_booking_', uuid)
+
 
 @shared_task
 def notify_about_booking_activation(uuid, language):
@@ -257,16 +268,20 @@ def notify_about_book_ending(uuid, language):
 @shared_task()
 def transfer_task_to_redis():
     logger = logging.getLogger(__name__)
-    logger.info(msg="Execute transfer_task_to_redis")
-    now_time = now() + timedelta(minutes=15)
-    job_to_add = bookings.JobStore.objects.filter(time_execute__lte=now_time, executed=False)
-    for job in job_to_add:
+    logger.info(msg="Start transfer_task_to_redis")
+    try:
+        now_time = now() + timedelta(minutes=15)
+        job_to_add = bookings.JobStore.objects.filter(time_execute__lte=now_time, executed=False)
+        for job in job_to_add:
 
-        func_name = '_'.join(job.job_id.split('_')[:-1])
-        task_id = str(job.parameters['uuid'])
-        globals()[func_name].apply_async(args=[i for i in job.parameters.values()], eta=job.time_execute,
-                                         task_id=func_name+'_'+task_id)
-        logger.info(msg=f'Add task: {func_name} + {task_id}')
+            func_name = '_'.join(job.job_id.split('_')[:-1])
+            task_id = str(job.parameters['uuid'])
+            globals()[func_name].apply_async(args=[i for i in job.parameters.values()], eta=job.time_execute,
+                                             task_id=func_name+'_'+task_id)
+            logger.info(msg=f'Add task: {func_name} + {task_id}')
+    except Exception as e:
+        logger.error(msg=f"Error transfer_task_to_redis: {e}")
+    logger.info(msg="Finish transfer_task_to_redis")
 
 
 @shared_task()
