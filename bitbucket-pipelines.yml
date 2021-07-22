@@ -78,6 +78,9 @@ pipelines:
     feature/tenant:
       - step: 
           <<: *Build
+      - step:
+          <<: *Build
+          deployment: dev-tenant-simple-office
 
   custom:
     prod_simple-office/prod-deploy:
