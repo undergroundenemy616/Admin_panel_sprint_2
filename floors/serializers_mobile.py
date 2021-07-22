@@ -125,7 +125,7 @@ class MobileRoomMarkersSerializer(serializers.Serializer):
             response['table_title'] = instance.room.tables.first().title
             response['is_available'] = True
         else:
-            response['suitable_tables_count'] = instance.room.tables.count()
+            response['suitable_tables_count'] = instance.room.tables.filter(table_marker__isnull=False).count()
         return response
 
 
