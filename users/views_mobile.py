@@ -39,7 +39,7 @@ class MobileEntranceCollectorView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"message": "OK",
-                         "email": bool(request.user.email)}, status=status.HTTP_200_OK)
+                         "email": bool(request.user.email) and bool(request.user.password)}, status=status.HTTP_200_OK)
 
 
 class MobileLoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
