@@ -79,7 +79,7 @@ pipelines:
       - step: 
           <<: *Build
       - step:
-          <<: *Build
+          <<: *Deploy
           deployment: dev-tenant-simple-office
 
   custom:
