@@ -38,6 +38,8 @@ definitions:
           script:
             - pip install --user -r requirements.txt
             - pip install pyarmor
+            - echo $PYARMOR_KEY > pyarmor_key.txt
+            - pyarmor register pyarmor_key.txt
             - pyarmor obfuscate --src="." -r --output=/var/distribute manage.py
             - pyarmor obfuscate --no-runtime --output=/var/distribute/booking_api_django_new --exact booking_api_django_new/__init__.py
             - sed -i "s|.pytransform|pytransform|g" /var/distribute/booking_api_django_new/__init__.py
