@@ -157,10 +157,17 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         account = request.user.account
         if account == instance.author:
+            if instance.bookings.filter(user=instance.author)[0].status != 'waiting':
+                for booking in instance.bookings.all():
+                    booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:
             personal_booking = instance.bookings.get(user=request.user.account)
+            if personal_booking.status != 'waiting':
+                personal_booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
             personal_booking.delete()
             return HttpResponse(status=204)
 
@@ -198,9 +205,16 @@ class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         account = request.user.account
         if account == instance.author:
+            if instance.bookings.filter(user=instance.author)[0].status != 'waiting':
+                for booking in instance.bookings.all():
+                    booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:
             personal_booking = instance.bookings.get(user=request.user.account)
+            if personal_booking.status != 'waiting':
+                personal_booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
             personal_booking.delete()
             return HttpResponse(status=204)
