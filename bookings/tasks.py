@@ -175,7 +175,6 @@ def notify_about_booking_activation(uuid, language):
 
     if push_group and not instance.is_over \
             and instance.user:
-        print('TASK LANGUAGE', language)
         if language == 'ru':
             expo_data = {
                 "account": str(instance.user.id),
@@ -278,7 +277,7 @@ def transfer_task_to_redis():
             task_id = str(job.parameters['uuid'])
             globals()[func_name].apply_async(args=[i for i in job.parameters.values()], eta=job.time_execute,
                                              task_id=func_name+'_'+task_id)
-            logger.info(msg=f'Add task: {func_name} + {task_id}')
+            logger.info(msg=f'Add task: {func_name}_{task_id}')
     except Exception as e:
         logger.error(msg=f"Error transfer_task_to_redis: {e}")
     logger.info(msg="Finish transfer_task_to_redis")
