@@ -275,7 +275,7 @@ def transfer_task_to_redis():
 
             func_name = '_'.join(job.job_id.split('_')[:-1])
             task_id = str(job.parameters['uuid'])
-            globals()[func_name].apply_async(args=[i for i in job.parameters.values()], eta=time,
+            globals()[func_name].apply_async(args=[i for i in job.parameters.values()], eta=job.time_execute,
                                              task_id=func_name+'_'+task_id)
             logger.info(msg=f'Add task: {func_name}_{task_id}')
     except Exception as e:
