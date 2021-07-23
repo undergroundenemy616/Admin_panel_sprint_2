@@ -51,7 +51,7 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Current urls
-    path('tenant', include('clients.urls'))
+    path('tenant', include('clients.urls')),
     path('admin', include('booking_api_django_new.urls_admin'))
 
 ]
