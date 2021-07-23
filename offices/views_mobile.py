@@ -6,7 +6,7 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 
 from core.pagination import DefaultPagination
-from core.permissions import IsAdmin, IsAuthenticated
+from core.permissions import IsAuthenticated
 from offices.models import Office
 from offices.serializers import SwaggerOfficeParametrs
 from offices.serializers_mobile import (MobileOfficeBaseSerializer,
@@ -18,7 +18,7 @@ class MobileRetrieveOfficeView(RetrieveModelMixin,
     """Detail Office view. All request required {id}"""
     serializer_class = MobileOfficeSerializer
     queryset = Office.objects.all()
-    permission_classes = (IsAdmin, )
+    permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
         """Get detail office by primary key."""

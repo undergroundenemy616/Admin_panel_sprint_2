@@ -1,30 +1,36 @@
+from http import HTTPStatus
+
 from django.db.models import Q
-from django.utils.timezone import now
+from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import CreateModelMixin, ListModelMixin
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 
 from bookings.models import Booking
 from bookings.serializers import BookingPersonalSerializer
 from bookings.serializers_mobile import (
     MobileBookingActivateActionSerializer,
-    MobileBookingDeactivateActionSerializer, MobileBookingSerializer)
+    MobileBookingDeactivateActionSerializer, MobileBookingSerializer, MobileMeetingGroupBookingSerializer,
+    MobileWorkplaceGroupBookingSerializer)
+from core.handlers import ResponseException
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAuthenticated
+from group_bookings.models import GroupBooking
+from group_bookings.serializers_mobile import MobileGroupBookingSerializer, MobileGroupWorkspaceSerializer
 
 
 class MobileBookingsView(GenericAPIView,
                          CreateModelMixin,
-                         ListModelMixin):
+                         DestroyModelMixin):
     serializer_class = MobileBookingSerializer
     queryset = Booking.objects.all().select_related('table', 'table__room', 'table__table_marker',
                                                     'table__room__floor', 'table__room__floor__office',
-                                                    'table__room__zone', 'table__room__type'
-                                                    ).prefetch_related('user', 'table__tags', 'table__tags__icon',
-                                                                       'table__images')
+                                                    'table__room__zone', 'table__room__type', 'user'
+                                                    ).prefetch_related('table__tags', 'table__tags__icon',
+                                                                       'table__images').order_by('-date_from')
     pagination_class = DefaultPagination
     permission_classes = (IsAuthenticated,)
 
@@ -35,15 +41,14 @@ class MobileBookingsView(GenericAPIView,
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
-
 
 class MobileBookingListPersonalView(GenericAPIView, ListModelMixin):
     serializer_class = BookingPersonalSerializer
-    queryset = Booking.objects.all().select_related('table', 'user').prefetch_related(
-        'table__room__floor__office', 'table__room__type', 'table__room__zone', 'table__tags',
-        'table__images', 'table__table_marker').order_by('-date_from', 'id')
+    queryset = Booking.objects.all().select_related('table', 'user', 'table__room__floor__office',
+                                                    'table__room__type', 'table__room__zone',
+                                                    'table__table_marker', 'group_booking',
+                                                    'group_booking__author', 'table__room__floor').\
+        prefetch_related('table__tags', 'table__images').order_by('-date_from', 'id')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
     search_fields = ['table__title',
@@ -79,7 +84,7 @@ class MobileCancelBooking(GenericAPIView):
         instance = get_object_or_404(Booking, pk=pk)
         if instance.status == 'waiting':
             instance.delete()
-            return Response(data={"result": "Booking is deleted"}, status=status.HTTP_204_NO_CONTENT)
+            return HttpResponse(status=204)
         elif instance.status == 'active':
             flag = {'status': 'over'}
             instance.set_booking_over(kwargs=flag)
@@ -117,3 +122,99 @@ class MobileActionCancelBookingsView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(serializer.to_representation(instance=instance), status=status.HTTP_200_OK)
+
+
+class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
+    queryset = GroupBooking.objects.all()
+    permission_classes = (IsAuthenticated,)
+    pagination_class = LimitStartPagination
+    serializer_class = MobileGroupBookingSerializer
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=True,
+                                                   bookings__table__room__type__bookable=True,
+                                                   bookings__table__room__type__is_deletable=False)).\
+                prefetch_related('bookings', 'bookings__table',
+                                 'bookings__table__room', 'bookings__table__room__room_marker',
+                                 'bookings__table__room__type', 'bookings__table__room__floor',
+                                 'bookings__table__room__floor__office', 'bookings__user').distinct()
+        return self.queryset.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return MobileMeetingGroupBookingSerializer
+        return self.serializer_class
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create_meeting(context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        account = request.user.account
+        if account == instance.author:
+            if instance.bookings.filter(user=instance.author)[0].status != 'waiting':
+                for booking in instance.bookings.all():
+                    booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
+            self.perform_destroy(instance)
+            return HttpResponse(status=204)
+        else:
+            personal_booking = instance.bookings.get(user=request.user.account)
+            if personal_booking.status != 'waiting':
+                personal_booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
+            personal_booking.delete()
+            return HttpResponse(status=204)
+
+
+class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
+    queryset = GroupBooking.objects.all()
+    permission_classes = (IsAuthenticated,)
+    pagination_class = LimitStartPagination
+    serializer_class = MobileGroupWorkspaceSerializer
+
+    def get_queryset(self):
+        if self.request.method == "GET":
+            self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=False,
+                                                   bookings__table__room__type__bookable=True,
+                                                   bookings__table__room__type__is_deletable=False)).\
+                prefetch_related('bookings', 'bookings__table',
+                                 'bookings__table__room', 'bookings__table__room__room_marker',
+                                 'bookings__table__room__type', 'bookings__table__room__floor',
+                                 'bookings__table__room__floor__office', 'bookings__user').distinct()
+        return self.queryset.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return MobileWorkplaceGroupBookingSerializer
+        return self.serializer_class
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.group_create_workplace(context=self.request.parser_context)
+        headers = self.get_success_headers(serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED, headers=headers)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        account = request.user.account
+        if account == instance.author:
+            if instance.bookings.filter(user=instance.author)[0].status != 'waiting':
+                for booking in instance.bookings.all():
+                    booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
+            self.perform_destroy(instance)
+            return HttpResponse(status=204)
+        else:
+            personal_booking = instance.bookings.get(user=request.user.account)
+            if personal_booking.status != 'waiting':
+                personal_booking.make_booking_over()
+                return Response(status=status.HTTP_200_OK)
+            personal_booking.delete()
+            return HttpResponse(status=204)

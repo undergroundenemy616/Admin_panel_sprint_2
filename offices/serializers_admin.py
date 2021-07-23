@@ -1,14 +1,12 @@
 from datetime import datetime
 
-from django.db.models import Count
 from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
 from floors.models import Floor
-from groups.models import ADMIN_ACCESS, Group
-from groups.serializers import GroupSerializer
+from groups.models import Group
 from groups.serializers_admin import AdminGroupForOfficeSerializer
 from licenses.models import License
 from offices.models import Office, OfficeZone
@@ -233,6 +231,11 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
 
 
 class AdminOfficeSingleSerializer(AdminOfficeSerializer):
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True)
+
+    class Meta:
+        model = Office
+        fields = '__all__'
 
     def to_representation(self, instance):
         response = super(AdminOfficeSingleSerializer, self).to_representation(instance)

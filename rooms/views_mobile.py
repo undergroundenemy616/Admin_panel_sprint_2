@@ -38,12 +38,12 @@ class SuitableRoomsMobileView(GenericAPIView):
         try:
             room_type = RoomType.objects.get(title=room_type_title, office_id=office, bookable=True)
         except ObjectDoesNotExist:
-            return Response("Type not found", status=status.HTTP_404_NOT_FOUND)
+            return Response("Suitable places not found", status=status.HTTP_200_OK)
 
         rooms = Room.objects.is_allowed(user_id=request.user.id).filter(floor__office_id=office, type=room_type)
 
-        tables = Table.objects.filter(room__id__in=rooms, is_occupied=False).select_related('table_marker', 'room',
-                                                                                            'room__floor', 'room__zone')
+        tables = Table.objects.filter(room__id__in=rooms).select_related('table_marker', 'room',
+                                                                         'room__floor', 'room__zone')
 
         bookings = Booking.objects.filter(Q(table__id__in=tables, status__in=['waiting', 'active']) &
                                           (Q(date_from__lt=date_to, date_to__gte=date_to)

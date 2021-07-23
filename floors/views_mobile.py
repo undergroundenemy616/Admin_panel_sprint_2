@@ -1,5 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Q, When, Case, Prefetch
+from django.db.models import Count, Q, Prefetch
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, Response, status
@@ -94,8 +94,6 @@ class MobileSuitableFloorView(GenericAPIView):
             if room_type.unified:
                 tables_count = Table.objects.filter(Q(room__floor__in=self.queryset)
                                                     &
-                                                    Q(is_occupied=False)
-                                                    &
                                                     Q(room__type__title=room_type.title)
                                                     &
                                                     Q(room__room_marker__isnull=False)
@@ -109,8 +107,6 @@ class MobileSuitableFloorView(GenericAPIView):
                                                                                         'room').prefetch_related('tags')
             else:
                 tables_count = Table.objects.filter(Q(room__floor__in=self.queryset)
-                                                    &
-                                                    Q(is_occupied=False)
                                                     &
                                                     Q(room__type__title=room_type.title)
                                                     &
@@ -156,8 +152,6 @@ class MobileSuitableFloorView(GenericAPIView):
                 self.queryset = self.queryset.filter(office_id=request.query_params.get('office')).annotate(
                     suitable=Count('rooms__tables', filter=Q(rooms__type__title=room_type.title)
                                                            &
-                                                           Q(rooms__tables__is_occupied=False)
-                                                           &
                                                            Q(rooms__room_marker__isnull=False)
                                                            &
                                                            Q(rooms__tables__table_marker__isnull=False)
@@ -202,60 +196,34 @@ class MobileFloorMarkers(GenericAPIView):
         allowed_rooms = Room.objects.is_allowed(user_id=request.user.id).filter(floor__id=pk).\
             select_related("room_marker", "type", "type__icon").prefetch_related("tables", "tables__table_marker")
 
-        try:
-            self.queryset = self.queryset.filter(id=pk)
-        except Floor.DoesNotExist:
-            raise ResponseException("Floor not found", status_code=status.HTTP_404_NOT_FOUND)
-
+        self.queryset = self.queryset.filter(pk=pk)
+        if self.queryset.count() == 0:
+            raise ResponseException("Floor not found", status_code=404)
         if serializer.data.get('room_type'):
-            try:
-                room_type = RoomType.objects.get(title=serializer.data.get('room_type'),
-                                                 office__floors__id=pk)
-            except ObjectDoesNotExist:
-                raise ResponseException("RoomType not found", status_code=status.HTTP_404_NOT_FOUND)
+            room_type = RoomType.objects.get(title=serializer.data.get('room_type'),
+                                             office__floors__id=pk)
 
-            if room_type.bookable and room_type.unified and not room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=True,
-                                                       type__is_deletable=False)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
-            elif room_type.bookable and not room_type.unified and not room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=False,
-                                                       type__is_deletable=False)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
-            elif room_type.bookable and not room_type.unified and room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=False,
-                                                       type__is_deletable=True)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
-            elif room_type.bookable and room_type.unified and room_type.is_deletable:
-                allowed_rooms = allowed_rooms.filter(Q(type__bookable=True,
-                                                       type__unified=True,
-                                                       type__is_deletable=True)
-                                                     |
-                                                     Q(type__bookable=False,
-                                                       type__unified=False,
-                                                       type__is_deletable=True))
-
-        if serializer.data.get('tag'):
-            tables_with_tag = Table.objects.filter(tags__id__in=tag)
-            allowed_rooms = allowed_rooms.filter(Q(tables__id__in=tables_with_tag)
+            allowed_rooms = allowed_rooms.filter(Q(type__bookable=room_type.bookable,
+                                                   type__unified=room_type.unified,
+                                                   type__is_deletable=room_type.is_deletable)
                                                  |
-                                                 Q(type__bookable=False))
+                                                 Q(type__bookable=False,
+                                                   type__unified=False,
+                                                   type__is_deletable=True))
+
+        tables = Table.objects.filter(Q(room__in=allowed_rooms) & Q(Q(table_marker__isnull=False)
+                                                                    | Q(room__type__unified=True)))
+
+        if tag:
+            for t in tag:
+                tables = tables.filter(tags=t)
+        allowed_rooms = allowed_rooms.filter(Q(tables__id__in=tables)
+                                             |
+                                             Q(type__bookable=False))
 
         self.queryset = self.queryset.prefetch_related(Prefetch("rooms", queryset=allowed_rooms))
 
-        markers = self.serializer_class(instance=self.queryset, many=True).data
+        markers = self.serializer_class(instance=self.queryset, many=True, context={'tables': tables}).data
 
         try:
             markers = markers[0]
@@ -269,16 +237,20 @@ class MobileFloorMarkers(GenericAPIView):
         if date_from and date_to:
             bookings = Booking.objects.filter(Q(status__in=['waiting', 'active']) &
                                               (Q(date_from__lt=date_to, date_to__gte=date_to)
-                                               | Q(date_from__lte=date_from, date_to__gt=date_from)
-                                               | Q(date_from__gte=date_from, date_to__lte=date_to)) &
+                                              | Q(date_from__lte=date_from, date_to__gt=date_from)
+                                              | Q(date_from__gte=date_from, date_to__lte=date_to)) &
                                               Q(date_from__lt=date_to)).values_list('table__id', flat=True)
 
             if bookings:
-                for table_marker in markers[0]['table_markers']:
-                    if uuid.UUID(table_marker.get('table_id')) in list(bookings):
+                for table_marker in markers['table_markers']:
+                    if table_marker.get('table_id') and uuid.UUID(table_marker.get('table_id')) in bookings:
                         table_marker['is_available'] = False
-                for room_marker in markers[0]['room_markers_bookable']:
-                    if room_marker.get('table_id') in list(bookings):
+                for room_marker in markers['room_markers_bookable']:
+                    if room_marker.get('table_id') and room_marker.get('table_id') in bookings:
                         room_marker['is_available'] = False
+                    else:
+                        for table in markers['table_markers']:
+                            if not table['is_available'] and table['room_id'] == room_marker['room_id']:
+                                room_marker['suitable_tables_count'] -= 1
 
         return Response(markers, status=status.HTTP_200_OK)

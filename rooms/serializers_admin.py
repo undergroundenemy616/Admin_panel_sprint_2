@@ -4,7 +4,6 @@ from rest_framework import serializers
 
 from files.serializers import TestBaseFileSerializer
 from rooms.models import Room, RoomMarker
-from rooms.serializers import room_marker_serializer
 from tables.models import Table
 from tables.serializers_admin import AdminTableSerializer
 

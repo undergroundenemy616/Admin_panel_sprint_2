@@ -32,10 +32,14 @@ LOCAL = False if os.environ.get('LOCAL') else True
 DEBUG = True  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
 ADMIN_HOST = os.environ.get('ADMIN_HOST')
+EMAIL_FOR_DEMOS = os.environ.get('EMAIL_FOR_DEMOS')
 
 SMS_MOCK_CONFIRM = os.environ.get("SMS_MOCK_CONFIRM")
 
 KEY_EXPIRATION = 60  # seconds
+KEY_EXPIRATION_EMAIL = 60 * 15 # 15 min
+
+SESSION_COOKIE_AGE = 15 * 60
 
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 BOOKING_TIMEDELTA_CHECK = 15
@@ -129,6 +133,7 @@ SHARED_APPS = [
     'clients',
     'users.apps.UsersConfig',
     'groups.apps.GroupsConfig',
+    'group_bookings',
     'files',
     'floors',
     'licenses',
@@ -139,6 +144,7 @@ SHARED_APPS = [
     'reports',
     'bookings',
     'push_tokens',
+    'teams',
     'rest_framework',
     'drf_yasg',
     'mail',
