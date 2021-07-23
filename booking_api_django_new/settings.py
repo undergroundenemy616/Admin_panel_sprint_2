@@ -29,7 +29,7 @@ SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
 LOCAL = False if os.environ.get('LOCAL') else True
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False  # if os.environ.get('BRANCH') == 'prod_gpn' else True
+DEBUG = True  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
 ADMIN_HOST = os.environ.get('ADMIN_HOST')
 
