@@ -14,7 +14,6 @@
     "pk": "7689fea5-32e6-4b36-a353-e152e8eb814d",
     "fields": {
       "user": "fe87620c-5e80-4a1c-9c30-c4681387483a",
-      "groups": ["5c26647a-4016-46c5-ae02-e386c67dfb11"],
       "account_type": "user",
       "description": "Тестовый Аккаунт",
       "gender": "undefined",
