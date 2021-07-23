@@ -210,6 +210,11 @@ class Booking(models.Model):
                 control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id), terminate=True)
                 control.revoke(task_id='notify_about_activation_booking_' + str(self.id), terminate=True)
                 control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
+            elif kwargs['kwargs'].get('source') == 'make_over':
+                control.revoke(task_id='check_booking_activate_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_activation_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
             else:
                 control.revoke(task_id='check_booking_activate_' + str(self.id), terminate=True)
                 control.revoke(task_id='make_booking_over_' + str(self.id), terminate=True)
