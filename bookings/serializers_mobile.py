@@ -87,6 +87,10 @@ class MobileBookingSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         try:
             if self.context.method == 'GET':
+                if instance.table.room.type.unified and not instance.group_booking:
+                    group_booking = GroupBooking.objects.create(author=instance.user, guests=[])
+                    instance.group_booking = group_booking
+                    instance.save()
                 response = super(MobileBookingSerializer, self).to_representation(instance)
                 response['table'] = MobileBookingTableSerializer(instance=instance.table).data
                 if instance.group_booking and instance.group_booking.author == instance.user:
@@ -123,6 +127,10 @@ class MobileBookingSerializer(serializers.ModelSerializer):
 
                 return response
         except AttributeError:
+            if instance.table.room.type.unified and not instance.group_booking:
+                group_booking = GroupBooking.objects.create(author=instance.user, guests=[])
+                instance.group_booking = group_booking
+                instance.save()
             response = super(MobileBookingSerializer, self).to_representation(instance)
             response['table'] = MobileBookingTableSerializer(instance=instance.table).data
             if instance.group_booking and instance.group_booking.author == instance.user:
