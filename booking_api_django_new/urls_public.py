@@ -52,5 +52,7 @@ urlpatterns = [
 
     # Current urls
     path('tenant', include('clients.urls'))
+    path('admin', include('booking_api_django_new.urls_admin'))
+
 ]
 
