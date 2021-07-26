@@ -3,6 +3,8 @@ from datetime import datetime
 from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import raise_errors_on_nested_writes
+from rest_framework.utils import model_meta
 
 from files.models import File
 from floors.models import Floor
@@ -241,3 +243,11 @@ class AdminOfficeSingleSerializer(AdminOfficeSerializer):
         response = super(AdminOfficeSingleSerializer, self).to_representation(instance)
         response['images'] = AdminFileForOffice(instance=instance.images, many=True).data
         return response
+
+    @atomic()
+    def update(self, instance, validated_data):
+        for image in instance.images.all():
+            if str(image.id) not in validated_data.get('images'):
+                image.delete()
+
+        return super(AdminOfficeSingleSerializer, self).update(instance=instance, validated_data=validated_data)

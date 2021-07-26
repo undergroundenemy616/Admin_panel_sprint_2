@@ -436,6 +436,12 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
     @atomic()
     def update(self, instance, validated_data):
         account_params = validated_data.pop('account') if validated_data.get('account') else None
+        if account_params.get('photo') != str(instance.account.photo_id):
+            try:
+                instance.account.photo.delete()
+                instance.account.photo = None
+            except AttributeError:
+                pass
         if account_params:
             if account_params.get('gender') == "":
                 account_params['gender'] = None
@@ -450,6 +456,7 @@ class MobileSelfUpdateSerializer(serializers.ModelSerializer):
             del self.context['request'].session['email_confirm']
         if self.context['request'].session.get('phone_confirm'):
             del self.context['request'].session['phone_confirm']
+
         return instance
 
     def to_representation(self, instance):

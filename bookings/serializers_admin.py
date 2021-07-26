@@ -21,11 +21,11 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from workalendar.europe import Russia
 
+from booking_api_django_new.filestorage_auth import check_token
 from booking_api_django_new.settings import FILES_HOST
 from bookings.models import Booking
 from bookings.serializers_mobile import calculate_date_activate_until
 from core.handlers import ResponseException
-from files.serializers_admin import check_token
 from files.models import File
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer
