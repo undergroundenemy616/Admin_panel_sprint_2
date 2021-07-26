@@ -99,6 +99,13 @@ class AdminTableTagSerializer(serializers.ModelSerializer):
         response = super(AdminTableTagSerializer, self).to_representation(instance)
         response['icon'] = AdminFileSerializer(instance=instance.icon).data if instance.icon else None
         return response
+    
+    @atomic()
+    def update(self, instance, validated_data):
+        if instance.icon and validated_data.get('icon') != instance.icon:
+            instance.icon.delete()
+            
+        return super(AdminTableTagSerializer, self).update(instance=instance, validated_data=validated_data)
 
 
 class AdminTableTagCreateSerializer(serializers.ModelSerializer):
