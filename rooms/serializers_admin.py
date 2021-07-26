@@ -63,6 +63,9 @@ class AdminRoomCreateUpdateSerializer(serializers.ModelSerializer):
         if hasattr(instance, 'room_marker') and validated_data.get('icon'):
             instance.room_marker.icon = validated_data['icon']
             instance.room_marker.save()
+        for image in instance.images.all():
+            if str(image.id) not in validated_data.get('images'):
+                image.delete()
         if instance.type and validated_data.get('type'):
             if instance.type.unified != validated_data.get('type').unified or \
                     instance.type.bookable != validated_data.get('type').bookable:

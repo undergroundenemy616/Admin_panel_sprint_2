@@ -60,6 +60,10 @@ class AdminTableCreateUpdateSerializer(serializers.ModelSerializer):
         if validated_data.get('room') and validated_data['room'] != instance.room:
             instance.table_marker.delete()
             instance.refresh_from_db()
+        for image in instance.images.all():
+            if str(image.id) not in validated_data.get('images'):
+                image.delete()
+
         return super(AdminTableCreateUpdateSerializer, self).update(instance, validated_data)
 
     def to_representation(self, instance):
