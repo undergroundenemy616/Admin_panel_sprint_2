@@ -72,7 +72,7 @@ class AdminBookingStatisticsDashboardView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         serializer = AdminStatisticsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        response = serializer.get_statistic()
+        response = serializer.get_statistic(request)
 
         return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
 
@@ -85,7 +85,7 @@ class AdminBookingEmployeeStatisticsView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         serializer = AdminBookingEmployeeStatisticsSerializer(data=request.query_params, context=request)
         serializer.is_valid(raise_exception=True)
-        response = serializer.get_statistic()
+        response = serializer.get_statistic(request)
 
         return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
 
@@ -98,7 +98,7 @@ class AdminBookingFutureStatisticsView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         serializer = AdminBookingFutureStatisticsSerializer(data=request.query_params, context=request)
         serializer.is_valid(raise_exception=True)
-        response = serializer.get_statistic()
+        response = serializer.get_statistic(request)
 
         return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
 
@@ -111,7 +111,7 @@ class AdminBookingRoomTypeStatisticsView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         serializer = AdminBookingRoomTypeSerializer(data=request.query_params, context=request)
         serializer.is_valid(raise_exception=True)
-        response = serializer.get_statistic()
+        response = serializer.get_statistic(request)
 
         return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
 

@@ -234,7 +234,7 @@ class AdminStatisticsSerializer(serializers.Serializer):
     date = serializers.DateField(required=False, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
-    def get_statistic(self):
+    def get_statistic(self, request):
         bookings = Booking.objects.all()
         valid_office_id = None
         if self.data.get('office_id'):
@@ -250,7 +250,7 @@ class AdminStatisticsSerializer(serializers.Serializer):
         else:
             date_from, date_to = date.today(), date.today()
 
-        schema = self.context['request'].tenant.schema_name
+        schema = request.tenant.schema_name
         if valid_office_id:
             all_tables = Table.objects.filter(Q(room__floor__office_id=valid_office_id) &
                                               Q(room__type__is_deletable=False) &
@@ -425,7 +425,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
     year = serializers.IntegerField(required=False, max_value=2500, min_value=1970)
     date = serializers.DateField(required=False, format='%Y-%m-%d')
 
-    def get_statistic(self):
+    def get_statistic(self, request):
 
         if len(self.data.get('month')) > 10 or \
                 int(self.data.get('year')) not in range(1970, 2500):
@@ -445,7 +445,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
         file_name = month + '_' + str(year) + '.xlsx'
         secure_file_name = uuid.uuid4().hex + file_name
 
-        schema = self.context['request'].tenant.schema_name
+        schema = request.tenant.schema_name
         query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
         oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
@@ -637,13 +637,13 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
     date = serializers.DateField(required=False, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False, default='xlsx', max_length=4)
 
-    def get_statistic(self):
+    def get_statistic(self, request):
         date_validation(self.data.get('date'))
         date = self.data.get('date')
 
         file_name = "future_" + date + '.xlsx'
 
-        schema = self.context['request'].tenant.schema_name
+        schema = request.tenant.schema_name
         query = f"""
                 SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
                 ua.last_name as last_name, ua.phone_number as phone_number_1, oo.id as office_id, oo.title as office_title, 
@@ -784,7 +784,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
     date = serializers.DateField(required=False, format='%Y-%m-%d')
     doc_format = serializers.CharField(required=False)
 
-    def get_statistic(self):
+    def get_statistic(self, request):
         date_validation(self.data.get('date_from'))
         date_validation(self.data.get('date_to'))
         date_from = self.data.get('date_from')
@@ -794,7 +794,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
-        schema = self.context['request'].tenant.schema_name
+        schema = request.tenant.schema_name
         query = f"""
                 SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to, b.status
                 FROM {schema}.bookings_booking b
