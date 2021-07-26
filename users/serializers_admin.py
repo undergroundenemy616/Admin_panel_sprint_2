@@ -114,6 +114,17 @@ class AdminUserSerializer(serializers.ModelSerializer):
         except KeyError:
             pass
         return response
+    
+    @atomic()
+    def update(self, instance, validated_data):
+        if validated_data.get('photo') != str(instance.account.photo_id):
+            try:
+                instance.account.photo.delete()
+                instance.account.photo = None
+            except AttributeError:
+                pass
+        
+        return super(AdminUserSerializer, self).update(instance=instance, validated_data=validated_data)
 
 
 class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
