@@ -270,7 +270,7 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                                Q(date_to__date__lte=date_to))
                                                       )
                                                  ).count()
-            number_of_activated_bookings = bookings.filter(Q(status__in=['active', 'over']) &
+            number_of_activated_bookings = bookings.filter(Q(status__in=['active', 'over', 'auto_over']) &
                                                                 Q(table__room__floor__office_id=valid_office_id) &
                                                                 (
                                                                         (Q(date_from__date__gte=date_from) &
