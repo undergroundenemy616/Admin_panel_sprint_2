@@ -1,4 +1,3 @@
-import json
 import os
 import uuid
 from calendar import monthrange
@@ -558,8 +557,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
                                 encoding='utf-8')
         except FileNotFoundError:
             raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
-
-        localization = json.load(localization)
+        localization = orjson.loads(localization.read())
 
         for i in range(len(list_rows) + 1):
             i += 1
@@ -688,7 +686,7 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
                                 encoding='utf-8')
         except FileNotFoundError:
             raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
-        localization = json.load(localization)
+        localization = orjson.loads(localization.read())
 
         for i in range(len(sql_results) + 1):
             i += 1
@@ -837,7 +835,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
                                 encoding='utf-8')
         except FileNotFoundError:
             raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
-        localization = json.load(localization)
+        localization = orjson.loads(localization.read())
 
         for i in range(len(set_of_types) + 1):
             i += 1
