@@ -159,6 +159,8 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                                      'bookings__table__room', 'bookings__table__room__room_marker',
                                      'bookings__table__room__type', 'bookings__table__room__floor',
                                      'bookings__table__room__floor__office', 'bookings__user').distinct()
+            if self.request.query_params.get('table'):
+                self.queryset = self.queryset.filter(bookings__table_id=self.request.query_params.get('table')).distinct()
         return self.queryset.all()
 
     def get_serializer_class(self):
