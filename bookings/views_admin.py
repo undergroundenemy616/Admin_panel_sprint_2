@@ -22,6 +22,7 @@ from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from files.serializers_admin import AdminFileSerializer
+from group_bookings.filters_admin import AdminGroupBookingMeetingFilter
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import (AdminGroupBookingSerializer,
                                               AdminGroupWorkspaceSerializer,
@@ -136,6 +137,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdmin,)
     pagination_class = LimitStartPagination
     serializer_class = AdminGroupBookingSerializer
+    filterset_class = AdminGroupBookingMeetingFilter
 
     def get_queryset(self):
         if self.request.method == "GET":
@@ -159,8 +161,6 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                                      'bookings__table__room', 'bookings__table__room__room_marker',
                                      'bookings__table__room__type', 'bookings__table__room__floor',
                                      'bookings__table__room__floor__office', 'bookings__user').distinct()
-            if self.request.query_params.get('table'):
-                self.queryset = self.queryset.filter(bookings__table_id=self.request.query_params.get('table')).distinct()
         return self.queryset.all()
 
     def get_serializer_class(self):
