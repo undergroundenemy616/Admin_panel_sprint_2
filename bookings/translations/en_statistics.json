@@ -21,5 +21,15 @@
   "end_of_booking": "End of booking",
   "duration_of_booking": "Duration of booking (in hours)",
   "floor": "Floor",
-  "workplace": "Workplace"
+  "workplace": "Workplace",
+  "number_of_visits" : "Number of visits",
+  "day_of_week": "Day of week",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday ": "Saturday",
+  "sunday": "Sunday",
+  "dynamics_of_visits_by_days_of_the_week": "Dynamics of visits by days of the week"
 }
