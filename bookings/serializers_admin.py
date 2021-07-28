@@ -1020,33 +1020,48 @@ class AdminBookingDynamicsOfVisitsSerializer(serializers.Serializer):
         file_name = "Dynamics_Of_Visits_From_" + self.data['date_from'] + "_To_" + self.data['date_to'] + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
+        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
+
+        if self.context.headers.get('Language'):
+            language = self.context.headers['Language']
+        else:
+            language = 'ru'
+        try:
+            localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
+                                encoding='utf-8')
+        except FileNotFoundError:
+            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
+        localization = orjson.loads(localization.read())
+
         workbook = xlsxwriter.Workbook(secure_file_name)
 
         worksheet = workbook.add_worksheet()
         chart = workbook.add_chart({'type': 'column'})
         bold = workbook.add_format({'bold': 1})
 
-        worksheet.write('A1', "День недели", bold)
-        worksheet.write('B1', "Кол-во посещений", bold)
-        worksheet.write('A2', "Понедельник")
+        worksheet.write('A1', localization['day_of_week'], bold)
+        worksheet.write('B1', localization['number_of_visits'], bold)
+        worksheet.write('A2', localization['monday'])
         worksheet.write('B2', bookings_per_day[1])
-        worksheet.write('A3', "Вторник")
+        worksheet.write('A3', localization['tuesday'])
         worksheet.write('B3', bookings_per_day[2])
-        worksheet.write('A4', "Среда")
+        worksheet.write('A4', localization['wednesday'])
         worksheet.write('B4', bookings_per_day[3])
-        worksheet.write('A5', "Четверг")
+        worksheet.write('A5', localization['thursday'])
         worksheet.write('B5', bookings_per_day[4])
-        worksheet.write('A6', "Пятница")
+        worksheet.write('A6', localization['friday'])
         worksheet.write('B6', bookings_per_day[5])
-        worksheet.write('A7', "Суббота")
+        worksheet.write('A7', localization['saturday'])
         worksheet.write('B7', bookings_per_day[6])
-        worksheet.write('A8', "Воскресенье")
+        worksheet.write('A8', localization['sunday'])
         worksheet.write('B8', bookings_per_day[7])
 
         chart.add_series({
-            'name': "Динамика посещений по дням недели",
+            'name': localization['number_of_visits'],
             'categories': '=Sheet1!$A$2:$A$8',
             'values': '=Sheet1!$B$2:$B$8'})
+
+        chart.set_title({'name': localization['dynamics_of_visits_by_days_of_the_week']})
 
         worksheet.insert_chart('C12', chart)
 
