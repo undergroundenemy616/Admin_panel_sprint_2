@@ -119,7 +119,7 @@ class AdminSendPushView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context=request.headers)
         serializer.is_valid(raise_exception=True)
-        serializer.send_message_to_push_service()
+        serializer.send_message_to_push_service(request)
         return Response("OK", status=status.HTTP_200_OK)
 
 

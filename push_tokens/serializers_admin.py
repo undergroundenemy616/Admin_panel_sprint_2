@@ -39,8 +39,7 @@ class AdminSendPushSerializer(serializers.Serializer):
     accounts = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=Account.objects.all()))
     expo = serializers.DictField(child=serializers.CharField(), required=True)
 
-    def send_message_to_push_service(self):
-        request = self.context
+    def send_message_to_push_service(self, request):
         workspace = f"simpleoffice-{request.tenant.schema_name}"
         # check_token()
         # headers = {'Authorization': 'Bearer ' + os.environ.get('PUSH_TOKEN')}
