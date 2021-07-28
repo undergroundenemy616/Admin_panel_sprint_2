@@ -168,7 +168,7 @@ def notify_about_oncoming_booking(uuid, language):
 @celery_app.task()
 def notify_about_booking_activation(uuid, language):
     logger = logging.getLogger(__name__)
-    logger.info(msg="Execute notify_about_booking_activation "+str(uuid))
+    logger.info(msg=f"Execute notify_about_booking_activation {str(uuid)} for tenant {connection.schema_name}")
     """Send PUSH-notification about opening activation"""
     push_group = f"simpleoffice-{connection.schema_name}"
     control = Control(app=celery_app)
