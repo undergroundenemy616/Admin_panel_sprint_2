@@ -41,7 +41,7 @@ class PushTokenSendSingleView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         account = get_object_or_404(Account, id=serializer.data.get('account'))
         data_for_expo = serializer.data.get('expo')
-        push_group = os.environ.get("PUSH_GROUP")
+        push_group = request.tenant.schema_name
 
         expo_data = {
             "account": str(account.id),
@@ -79,7 +79,7 @@ class PushTokenSendBroadcastView(PushTokenSendSingleView):
         serializer.is_valid(raise_exception=True)
         accounts = [get_object_or_404(Account, id=account_id) for account_id in serializer.data.get('accounts')]
         data_for_expo = serializer.data.get('expo')
-        push_group = os.environ.get("PUSH_GROUP")
+        push_group = request.tenant.schema_name
         responses = {}
 
         for account in accounts:

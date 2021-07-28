@@ -1,5 +1,6 @@
 import os
 import uuid
+from django.db import connection
 
 import pytz
 from rest_framework import status
@@ -264,7 +265,7 @@ class Booking(models.Model):
     def notify_about_oncoming_booking(self):
         """Send PUSH-notification about oncoming booking to every user devices"""
         #  and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_PUSH_NOTIFY_UNTIL_MINS + 5 \
-        push_group = os.environ.get("PUSH_GROUP")
+        push_group = f"simpleoffice-{connection.schema_name}"
         if push_group and not self.is_over \
                 and self.user:
             expo_data = {
@@ -290,7 +291,7 @@ class Booking(models.Model):
     def notify_about_booking_activation(self):
         """Send PUSH-notification about opening activation"""
         #  and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_TIMEDELTA_CHECK \
-        push_group = os.environ.get("PUSH_GROUP")
+        push_group = f"simpleoffice-{connection.schema_name}"
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if push_group and not self.is_over \
                 and self.user:
