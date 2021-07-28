@@ -258,30 +258,40 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                              Q(table__room__type__is_deletable=False) &
                                                              Q(table__room__type__bookable=True)).count()
             number_of_bookings = bookings.filter(Q(table__room__floor__office_id=valid_office_id) &
-                                                      (
-                                                              (Q(date_from__date__gte=date_from) &
-                                                               Q(date_from__date__lt=date_to))
-                                                              |
-                                                              (Q(date_from__date__lte=date_from) &
-                                                               Q(date_to__date__gte=date_to))
-                                                              |
-                                                              (Q(date_to__date__gt=date_from) &
-                                                               Q(date_to__date__lte=date_to))
-                                                      )
-                                                 ).count()
+                                                 (
+                                                         (Q(date_from__date__gte=date_from) &
+                                                          Q(date_from__date__lt=date_to))
+                                                         |
+                                                         (Q(date_from__date__lte=date_from) &
+                                                          Q(date_to__date__gte=date_to))
+                                                         |
+                                                         (Q(date_to__date__gt=date_from) &
+                                                          Q(date_to__date__lte=date_to))
+                                                 )).count()
             number_of_activated_bookings = bookings.filter(Q(status__in=['active', 'over', 'auto_over']) &
-                                                                Q(table__room__floor__office_id=valid_office_id) &
-                                                                (
-                                                                        (Q(date_from__date__gte=date_from) &
-                                                                         Q(date_from__date__lt=date_to))
-                                                                        |
-                                                                        (Q(date_from__date__lte=date_from) &
-                                                                         Q(date_to__date__gte=date_to))
-                                                                        |
-                                                                        (Q(date_to__date__gt=date_from) &
-                                                                         Q(date_to__date__lte=date_to))
-                                                                )
-                                                                ).count()
+                                                           Q(table__room__floor__office_id=valid_office_id) &
+                                                           (
+                                                                   (Q(date_from__date__gte=date_from) &
+                                                                    Q(date_from__date__lt=date_to))
+                                                                   |
+                                                                   (Q(date_from__date__lte=date_from) &
+                                                                    Q(date_to__date__gte=date_to))
+                                                                   |
+                                                                   (Q(date_to__date__gt=date_from) &
+                                                                    Q(date_to__date__lte=date_to))
+                                                           )).count()
+            number_of_planned_bookings = bookings.filter(Q(status='waiting') &
+                                                         Q(table__room__floor__office_id=valid_office_id) &
+                                                         (
+                                                                 (Q(date_from__date__gte=date_from) &
+                                                                  Q(date_from__date__lt=date_to))
+                                                                 |
+                                                                 (Q(date_from__date__lte=date_from) &
+                                                                  Q(date_to__date__gte=date_to))
+                                                                 |
+                                                                 (Q(date_to__date__gt=date_from) &
+                                                                  Q(date_to__date__lte=date_to))
+                                                         )).count()
             bookings_with_hours = bookings.raw(f"""SELECT 
                     DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
                     DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, oo.id as office_id,
@@ -315,7 +325,28 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                  |
                                                  (Q(date_to__date__gt=date_from) &
                                                   Q(date_to__date__lte=date_to))).count()
-            number_of_activated_bookings = bookings.filter(status__in=['active', 'over']).count()
+
+            number_of_activated_bookings = bookings.filter(Q(status__in=['active', 'over', 'auto_over']) &
+                                                           (Q(date_from__date__gte=date_from) &
+                                                            Q(date_from__date__lt=date_to))
+                                                           |
+                                                           (Q(date_from__date__lte=date_from) &
+                                                            Q(date_to__date__gte=date_to))
+                                                           |
+                                                           (Q(date_to__date__gt=date_from) &
+                                                            Q(date_to__date__lte=date_to))
+                                                           ).count()
+            number_of_planned_bookings = bookings.filter(Q(status='waiting') &
+                                                         (
+                                                                 (Q(date_from__date__gte=date_from) &
+                                                                  Q(date_from__date__lt=date_to))
+                                                                 |
+                                                                 (Q(date_from__date__lte=date_from) &
+                                                                  Q(date_to__date__gte=date_to))
+                                                                 |
+                                                                 (Q(date_to__date__gt=date_from) &
+                                                                  Q(date_to__date__lte=date_to))
+                                                         )).count()
             bookings_with_hours = bookings.raw(f"""SELECT 
                                 DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
                                 DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from bookings_booking b
@@ -401,6 +432,21 @@ class AdminStatisticsSerializer(serializers.Serializer):
         except ZeroDivisionError:
             percent_of_tables_booked_at_least_once = 0
 
+        try:
+            average_booking_time = sum_of_booking_hours / number_of_bookings
+        except ZeroDivisionError:
+            average_booking_time = 0
+
+        try:
+            average_number_of_planned_bookings = number_of_planned_bookings / (date_to.date()-date_from.date()).days
+        except ZeroDivisionError:
+            average_number_of_planned_bookings = 0
+
+        try:
+            average_number_of_confirmed_bookings = number_of_activated_bookings / (date_to.date()-date_from.date()).days
+        except ZeroDivisionError:
+            average_number_of_confirmed_bookings = 0
+
         response = {
             "tables_available_for_booking": tables_available_for_booking,
             "percentage_of_tables_available_for_booking": percentage_of_tables_available_for_booking.__round__(2),
@@ -409,7 +455,10 @@ class AdminStatisticsSerializer(serializers.Serializer):
             "percent_of_tables_booked_at_least_once": percent_of_tables_booked_at_least_once.__round__(2),
             "share_of_confirmed_bookings": share_of_confirmed_bookings.__round__(2),
             "recycling_percentage_for_all_workplaces": recycling_percentage_for_all_workplaces.__round__(2),
-            "percentage_of_registered_tables": percentage_of_registered_tables.__round__(2)
+            "percentage_of_registered_tables": percentage_of_registered_tables.__round__(2),
+            "average_number_of_planned_bookings": average_number_of_planned_bookings.__round__(2),
+            "average_number_of_confirmed_bookings": average_number_of_confirmed_bookings.__round__(2),
+            "average_booking_time": average_booking_time.__round__(2),
         }
 
         return response
@@ -609,7 +658,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
                 headers=headers,
             )
         except requests.exceptions.RequestException:
-            return {"message": "Error occured during file upload"}, 500
+            return {"message": "Error occurred during file upload"}, 500
 
         response_dict = orjson.loads(response.text)
         file_attrs = {
@@ -751,7 +800,7 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
                 headers=headers,
             )
         except requests.exceptions.RequestException:
-            return {"message": "Error occured during file upload"}, 500
+            return {"message": "Error occurred during file upload"}, 500
 
         response_dict = orjson.loads(response.text)
         file_attrs = {
@@ -797,7 +846,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
                 INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
                 WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
                 (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-                (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and (b.status = 'over' or b.status = 'auto_over')"""
+                (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and (b.status = 'over' or b.status = 'auto_over' or b.status = 'waiting' or b.status = 'active')"""
 
         if self.data.get('office_id'):
             query = query + f""" and rtr.office_id = '{self.data.get('office_id')}'"""
@@ -886,7 +935,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
                         headers=headers,
                     )
                 except requests.exceptions.RequestException:
-                    return {"message": "Error occured during file upload"}, 500
+                    return {"message": "Error occurred during file upload"}, 500
             elif doc_format == 'xlsx':
                 try:
                     response = requests.post(
@@ -897,7 +946,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
                         headers=headers,
                     )
                 except requests.exceptions.RequestException:
-                    return {"message": "Error occured during file upload"}, 500
+                    return {"message": "Error occurred during file upload"}, 500
         if not doc_format:
             try:
                 response = requests.post(
@@ -908,7 +957,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
                     headers=headers,
                 )
             except requests.exceptions.RequestException:
-                return {"message": "Error occured during file upload"}, 500
+                return {"message": "Error occurred during file upload"}, 500
 
         response_dict = orjson.loads(response.text)
         file_attrs = {
@@ -917,6 +966,111 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
             "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size,  #if
             # doc_format == 'xlsx' else
             # Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).stat().st_size,
+        }
+
+        if response_dict.get("thumb"):
+            file_attrs['thumb'] = FILES_HOST + str(response_dict.get("thumb"))
+
+        file_storage_object = File(**file_attrs)
+        file_storage_object.save()
+
+        Path(str(Path.cwd()) + "/" + secure_file_name).unlink()
+        try:
+            Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.html')).unlink()
+            Path(str(Path.cwd()) + "/" + secure_file_name.replace('.xlsx', '.pdf')).unlink()
+        except FileNotFoundError:
+            pass
+
+        return file_storage_object
+
+
+class AdminBookingDynamicsOfVisitsSerializer(serializers.Serializer):
+    office_id = serializers.UUIDField(required=False, format='hex_verbose')
+    date_from = serializers.DateField(required=False, format='%Y-%m-%d')
+    date_to = serializers.DateField(required=False, format='%Y-%m-%d')
+
+    def get_statistic(self):
+        date_validation(self.data.get('date_from'))
+        date_validation(self.data.get('date_to'))
+        date_from = self.data.get('date_from')
+        date_to = self.data.get('date_to')
+        valid_office_id = None
+        if self.data.get('office_id'):
+            try:
+                valid_office_id = uuid.UUID(self.data.get('office_id')).hex
+            except ValueError:
+                raise ResponseException("Office ID is not valid", status.HTTP_400_BAD_REQUEST)
+
+        filtered_bookings = Booking.objects.filter((Q(date_from__date__gte=date_from) &
+                                                    Q(date_from__date__lt=date_to))
+                                                   |
+                                                   (Q(date_from__date__lte=date_from) &
+                                                    Q(date_to__date__gte=date_to))
+                                                   |
+                                                   (Q(date_to__date__gt=date_from) &
+                                                    Q(date_to__date__lte=date_to)) &
+                                                   Q(status__in=['active', 'waiting', 'over', 'auto_over']))
+        if valid_office_id:
+            filtered_bookings = filtered_bookings.filter(table__room__floor__office_id=valid_office_id)
+        bookings_per_day = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0}
+
+        for booking in filtered_bookings:
+            bookings_per_day[booking.date_from.isoweekday()] += 1
+
+        file_name = "Dynamics_Of_Visits_From_" + self.data['date_from'] + "_To_" + self.data['date_to'] + ".xlsx"
+        secure_file_name = uuid.uuid4().hex + file_name
+
+        workbook = xlsxwriter.Workbook(secure_file_name)
+
+        worksheet = workbook.add_worksheet()
+        chart = workbook.add_chart({'type': 'column'})
+        bold = workbook.add_format({'bold': 1})
+
+        worksheet.write('A1', "День недели", bold)
+        worksheet.write('B1', "Кол-во посещений", bold)
+        worksheet.write('A2', "Понедельник")
+        worksheet.write('B2', bookings_per_day[1])
+        worksheet.write('A3', "Вторник")
+        worksheet.write('B3', bookings_per_day[2])
+        worksheet.write('A4', "Среда")
+        worksheet.write('B4', bookings_per_day[3])
+        worksheet.write('A5', "Четверг")
+        worksheet.write('B5', bookings_per_day[4])
+        worksheet.write('A6', "Пятница")
+        worksheet.write('B6', bookings_per_day[5])
+        worksheet.write('A7', "Суббота")
+        worksheet.write('B7', bookings_per_day[6])
+        worksheet.write('A8', "Воскресенье")
+        worksheet.write('B8', bookings_per_day[7])
+
+        chart.add_series({
+            'name': "Динамика посещений по дням недели",
+            'categories': '=Sheet1!$A$2:$A$8',
+            'values': '=Sheet1!$B$2:$B$8'})
+
+        worksheet.insert_chart('C12', chart)
+
+        workbook.close()
+
+        check_token()
+        headers = {'Authorization': 'Bearer ' + os.environ.get('FILES_TOKEN')}
+
+        try:
+            response = requests.post(
+                url=FILES_HOST + "/upload",
+                files={
+                    "file": (secure_file_name, open(Path(str(Path.cwd()) + "/" + secure_file_name), "rb"),
+                             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                headers=headers,
+            )
+        except requests.exceptions.RequestException:
+            return {"message": "Error occurred during file upload"}, 500
+
+        response_dict = orjson.loads(response.text)
+        file_attrs = {
+            "path": FILES_HOST + str(response_dict.get("path")),
+            "title": secure_file_name,
+            "size": Path(str(Path.cwd()) + "/" + secure_file_name).stat().st_size
         }
 
         if response_dict.get("thumb"):
