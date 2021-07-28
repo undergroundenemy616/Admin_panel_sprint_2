@@ -41,7 +41,7 @@ class AdminSendPushSerializer(serializers.Serializer):
 
     def send_message_to_push_service(self):
         request = self.context
-        workspace = f"simpleoffice-{request.get('X-WORKSPACE')}"
+        workspace = f"simpleoffice-{request.tenant.schema_name}"
         # check_token()
         # headers = {'Authorization': 'Bearer ' + os.environ.get('PUSH_TOKEN')}
         # response_from_push_service = requests.post(
