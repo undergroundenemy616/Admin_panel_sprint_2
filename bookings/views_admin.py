@@ -22,6 +22,7 @@ from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from files.serializers_admin import AdminFileSerializer
+from group_bookings.filters_admin import AdminGroupBookingMeetingFilter
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import (AdminGroupBookingSerializer,
                                               AdminGroupWorkspaceSerializer,
@@ -136,6 +137,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdmin,)
     pagination_class = LimitStartPagination
     serializer_class = AdminGroupBookingSerializer
+    filterset_class = AdminGroupBookingMeetingFilter
 
     def get_queryset(self):
         if self.request.method == "GET":
