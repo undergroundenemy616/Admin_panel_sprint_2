@@ -162,6 +162,7 @@ SHARED_APPS = [
 TENANT_APPS = [
     'users.apps.UsersConfig',
     'groups.apps.GroupsConfig',
+    'group_bookings',
     'files',
     'floors',
     'licenses',
@@ -172,6 +173,7 @@ TENANT_APPS = [
     'reports',
     'bookings',
     'push_tokens',
+    'teams',
     'rest_framework',
     'drf_yasg',
     'mail',
