@@ -1,8 +1,11 @@
 import logging
 
 from celery import shared_task
+from django.template.loader import render_to_string
 from rest_framework.generics import get_object_or_404
+from django.core.mail import send_mail
 
+from booking_api_django_new.settings import EMAIL_HOST_USER
 from mail import send_html_email
 from users.broadcasts import SMSBroadcast
 from users.models import User
@@ -28,6 +31,17 @@ def send_email(email, subject, message):
         to=email,
         subject=subject,
         message=message
+    )
+
+
+@shared_task
+def send_register_email(email, subject, args):
+    send_mail(
+        recipient_list=[email],
+        from_email=EMAIL_HOST_USER,
+        subject=subject,
+        message="",
+        html_message=render_to_string("mail.html", args)
     )
 
 
