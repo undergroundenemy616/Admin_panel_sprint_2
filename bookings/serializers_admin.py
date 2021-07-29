@@ -171,6 +171,16 @@ class AdminBookingSerializer(serializers.ModelSerializer):
             kwargs=self.context['request'].headers.get('Language', None)
         )
 
+    @atomic()
+    def to_representation(self, instance):
+        if instance.table.room.type.unified and not instance.group_booking:
+            group_booking = GroupBooking.objects.create(author=instance.user, guests=[])
+            instance.group_booking = group_booking
+            instance.save()
+        response = super(AdminBookingSerializer, self).to_representation(instance)
+
+        return response
+
 
 class AdminBookingCreateFastSerializer(AdminBookingSerializer):
     type = serializers.PrimaryKeyRelatedField(queryset=RoomType.objects.all(), write_only=True)
