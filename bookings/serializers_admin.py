@@ -987,10 +987,10 @@ class AdminBookingDynamicsOfVisitsSerializer(serializers.Serializer):
                                                    Q(status__in=['active', 'waiting', 'over', 'auto_over']))
         if valid_office_id:
             filtered_bookings = filtered_bookings.filter(table__room__floor__office_id=valid_office_id)
-        bookings_per_day = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0}
+        bookings_per_day = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
 
         for booking in filtered_bookings:
-            bookings_per_day[booking.date_from.isoweekday()] += 1
+            bookings_per_day[booking.date_from.weekday()] += 1
 
         file_name = "Dynamics_Of_Visits_From_" + self.data['date_from'] + "_To_" + self.data['date_to'] + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
@@ -1006,19 +1006,14 @@ class AdminBookingDynamicsOfVisitsSerializer(serializers.Serializer):
         worksheet.write('A1', localization['day_of_week'], bold)
         worksheet.write('B1', localization['number_of_visits'], bold)
         worksheet.write('A2', localization['monday'])
-        worksheet.write('B2', bookings_per_day[1])
         worksheet.write('A3', localization['tuesday'])
-        worksheet.write('B3', bookings_per_day[2])
         worksheet.write('A4', localization['wednesday'])
-        worksheet.write('B4', bookings_per_day[3])
         worksheet.write('A5', localization['thursday'])
-        worksheet.write('B5', bookings_per_day[4])
         worksheet.write('A6', localization['friday'])
-        worksheet.write('B6', bookings_per_day[5])
         worksheet.write('A7', localization['saturday'])
-        worksheet.write('B7', bookings_per_day[6])
         worksheet.write('A8', localization['sunday'])
-        worksheet.write('B8', bookings_per_day[7])
+        for i in range(len(bookings_per_day)):
+            worksheet.write('B'+str(i+2), bookings_per_day[i])
 
         chart.add_series({
             'name': localization['number_of_visits'],
