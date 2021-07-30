@@ -8,9 +8,9 @@ from booking_api_django_new.settings.base import ALLOW_TENANT
 
 # this code copied from manage.py
 # set the default Django settings module for the 'celery' app.
-from booking_api_django_new import settings
+from booking_api_django_new.settings import non_tenant_settings as settings
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.non_tenant_settings')
 
 # you change change the name here
 app = TenantAwareCeleryApp("booking_api_django_new") if ALLOW_TENANT else Celery("booking_api_django_new")

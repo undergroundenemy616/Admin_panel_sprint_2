@@ -8,9 +8,10 @@ from users.views_mobile import (MobileAccountView, MobileEntranceCollectorView,
                                 MobileSingleAccountView,
                                 MobileAccountMeetingSearchView, MobileSelfView,
                                 MobileConformationView, MobileContactCheckView,
-                                MobileCheckAvailableView)
+                                MobileCheckAvailableView, OlegView)
 
 urlpatterns = [
+    path('', OlegView.as_view()),
     path('/auth', MobileLoginOrRegisterUserFromMobileView.as_view()),
     path('/account', MobileAccountView.as_view()),
     path('/account/<uuid:pk>', MobileSingleAccountView.as_view()),

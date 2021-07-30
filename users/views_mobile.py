@@ -42,6 +42,15 @@ class MobileEntranceCollectorView(GenericAPIView):
                          "email": bool(request.user.email) and bool(request.user.password)}, status=status.HTTP_200_OK)
 
 
+class OlegView(mixins.ListModelMixin, GenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = MobileLoginOrRegisterSerializer
+    authentication_classes = []
+
+    def get(self, request):
+        data = {"oleg": "molodec"}
+        return Response(data=data, status=status.HTTP_200_OK)
+
 class MobileLoginOrRegisterUserFromMobileView(mixins.ListModelMixin, GenericAPIView):
     queryset = User.objects.all()
     serializer_class = MobileLoginOrRegisterSerializer
