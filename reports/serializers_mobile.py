@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from booking_api_django_new.settings import EMAIL_FOR_DEMOS
+from booking_api_django_new.settings.base import EMAIL_FOR_DEMOS
 from core.handlers import ResponseException
 from files.models import File
 from reports.models import Report

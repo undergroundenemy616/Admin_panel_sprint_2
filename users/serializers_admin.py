@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError as ValErr
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from booking_api_django_new.settings import DEBUG, ADMIN_HOST
+from booking_api_django_new.settings.base import DEBUG, ADMIN_HOST
 from bookings.models import Booking
 from core.handlers import ResponseException
 from files.serializers_admin import AdminFileSerializer

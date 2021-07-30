@@ -1,7 +1,9 @@
+import os
+
 import requests
 from rest_framework import serializers
 
-from booking_api_django_new.settings import PUSH_HOST
+from booking_api_django_new.settings.base import PUSH_HOST
 from groups.models import Group
 from users.models import Account
 
@@ -40,7 +42,8 @@ class AdminSendPushSerializer(serializers.Serializer):
     expo = serializers.DictField(child=serializers.CharField(), required=True)
 
     def send_message_to_push_service(self, request):
-        workspace = f"simpleoffice-{request.tenant.schema_name}"
+        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else request.get('X-WORKSPACE')
+        workspace = f"simpleoffice-{schema}"
         # check_token()
         # headers = {'Authorization': 'Bearer ' + os.environ.get('PUSH_TOKEN')}
         # response_from_push_service = requests.post(

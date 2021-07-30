@@ -21,7 +21,7 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from workalendar.europe import Russia
 
-from booking_api_django_new.settings import FILES_HOST
+from booking_api_django_new.settings.base import FILES_HOST
 from bookings.models import Booking
 from bookings.serializers_mobile import calculate_date_activate_until
 from core.handlers import ResponseException
@@ -250,7 +250,7 @@ class AdminStatisticsSerializer(serializers.Serializer):
         else:
             date_from, date_to = date.today(), date.today()
 
-        schema = request.tenant.schema_name
+        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else 'public'
         if valid_office_id:
             all_tables = Table.objects.filter(Q(room__floor__office_id=valid_office_id) &
                                               Q(room__type__is_deletable=False) &
@@ -445,7 +445,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
         file_name = month + '_' + str(year) + '.xlsx'
         secure_file_name = uuid.uuid4().hex + file_name
 
-        schema = request.tenant.schema_name
+        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else 'public'
         query = f"""
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,
         oo.title as office_title, ff.title as floor_title, b.user_id as user_id, ua.first_name as first_name,
@@ -643,7 +643,7 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
 
         file_name = "future_" + date + '.xlsx'
 
-        schema = request.tenant.schema_name
+        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else 'public'
         query = f"""
                 SELECT b.id, b.user_id as user_id, ua.first_name as first_name, ua.middle_name as middle_name,
                 ua.last_name as last_name, ua.phone_number as phone_number_1, oo.id as office_id, oo.title as office_title, 
@@ -794,7 +794,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
-        schema = request.tenant.schema_name
+        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else 'public'
         query = f"""
                 SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to, b.status
                 FROM {schema}.bookings_booking b

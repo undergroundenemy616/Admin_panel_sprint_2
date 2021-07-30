@@ -6,7 +6,7 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, ListModelMixin, Response,
                                    status)
 
-from booking_api_django_new.settings import EMAIL_HOST_USER
+from booking_api_django_new.settings.base import EMAIL_HOST_USER
 from core.pagination import DefaultPagination
 from core.permissions import IsAuthenticated
 from reports.generate_html import generate_attach, generate_html

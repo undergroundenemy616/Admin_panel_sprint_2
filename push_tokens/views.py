@@ -6,7 +6,7 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
 
-from booking_api_django_new.settings import PUSH_HOST
+from booking_api_django_new.settings.base import PUSH_HOST
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticatedOnPost
 from push_tokens.models import PushToken
@@ -41,7 +41,7 @@ class PushTokenSendSingleView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         account = get_object_or_404(Account, id=serializer.data.get('account'))
         data_for_expo = serializer.data.get('expo')
-        push_group = request.tenant.schema_name
+        push_group = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else os.environ.get("PUSH_GROUP")
 
         expo_data = {
             "account": str(account.id),
@@ -79,7 +79,7 @@ class PushTokenSendBroadcastView(PushTokenSendSingleView):
         serializer.is_valid(raise_exception=True)
         accounts = [get_object_or_404(Account, id=account_id) for account_id in serializer.data.get('accounts')]
         data_for_expo = serializer.data.get('expo')
-        push_group = request.tenant.schema_name
+        push_group = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else os.environ.get("PUSH_GROUP")
         responses = {}
 
         for account in accounts:

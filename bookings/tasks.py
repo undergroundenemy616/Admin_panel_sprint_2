@@ -5,7 +5,7 @@ from django.utils.timezone import now
 import bookings.models as bookings
 import os
 import requests
-from booking_api_django_new.settings import PUSH_HOST
+from booking_api_django_new.settings.base import PUSH_HOST
 from django.core.exceptions import ObjectDoesNotExist
 from celery.app.control import Control
 import logging
@@ -108,13 +108,13 @@ def check_booking_status():
     logger.info(msg="Finish check_booking_status ")
 
 
-
 @celery_app.task()
 def notify_about_oncoming_booking(uuid, language):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute notify_about_oncoming_booking "+str(uuid))
     """Send PUSH-notification about oncoming booking to every user devices"""
-    push_group = f"simpleoffice-{connection.schema_name}"
+    schema = connection.schema_name if os.environ.get('ALLOW_TENANT') else os.environ.get("PUSH_GROUP")
+    push_group = f"simpleoffice-{schema}"
     control = Control(app=celery_app)
 
     try:
@@ -170,7 +170,8 @@ def notify_about_booking_activation(uuid, language):
     logger = logging.getLogger(__name__)
     logger.info(msg=f"Execute notify_about_booking_activation {str(uuid)} for tenant {connection.schema_name}")
     """Send PUSH-notification about opening activation"""
-    push_group = f"simpleoffice-{connection.schema_name}"
+    schema = connection.schema_name if os.environ.get('ALLOW_TENANT') else os.environ.get("PUSH_GROUP")
+    push_group = f"simpleoffice-{schema}"
     control = Control(app=celery_app)
 
     try:
@@ -225,7 +226,8 @@ def notify_about_book_ending(uuid, language):
     logger = logging.getLogger(__name__)
     logger.info(msg="Execute notify_about_book_ending " + str(uuid))
 
-    push_group = f"simpleoffice-{connection.schema_name}"
+    schema = connection.schema_name if os.environ.get('ALLOW_TENANT') else os.environ.get("PUSH_GROUP")
+    push_group = f"simpleoffice-{schema}"
     control = Control(app=celery_app)
     try:
         instance = bookings.Booking.objects.get(id=uuid)

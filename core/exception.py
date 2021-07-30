@@ -4,7 +4,7 @@ from django.core.mail import mail_admins
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import UnsupportedMediaType
 
-from booking_api_django_new.settings import LOCAL, ADMIN_HOST
+from booking_api_django_new.settings.base import LOCAL, ADMIN_HOST
 
 
 def detail_exception_handler(exc, context):

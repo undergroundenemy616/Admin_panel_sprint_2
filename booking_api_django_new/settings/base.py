@@ -29,7 +29,7 @@ SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
 LOCAL = False if os.environ.get('LOCAL') else True
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # if os.environ.get('BRANCH') == 'prod_gpn' else True
+DEBUG = False  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
 ADMIN_HOST = os.environ.get('ADMIN_HOST')
 EMAIL_FOR_DEMOS = os.environ.get('EMAIL_FOR_DEMOS')
@@ -37,7 +37,7 @@ EMAIL_FOR_DEMOS = os.environ.get('EMAIL_FOR_DEMOS')
 SMS_MOCK_CONFIRM = os.environ.get("SMS_MOCK_CONFIRM")
 
 KEY_EXPIRATION = 60  # seconds
-KEY_EXPIRATION_EMAIL = 60 * 15 # 15 min
+KEY_EXPIRATION_EMAIL = 60 * 15  # 15 min
 
 SESSION_COOKIE_AGE = 15 * 60
 
@@ -57,6 +57,7 @@ EMAIL_HOST_PASSWORD = 'Rfr:tktpyjujhcr&'
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
 
+ALLOW_TENANT = os.environ.get('ALLOW_TENANT')
 ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -127,74 +128,6 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=30),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
-
-SHARED_APPS = [
-    'django_tenants',
-    'clients',
-    'users.apps.UsersConfig',
-    'groups.apps.GroupsConfig',
-    'group_bookings',
-    'files',
-    'floors',
-    'licenses',
-    'offices',
-    'rooms',
-    'tables',
-    'room_types',
-    'reports',
-    'bookings',
-    'push_tokens',
-    'teams',
-    'rest_framework',
-    'drf_yasg',
-    'mail',
-    'django_apscheduler',
-    'django_filters',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.postgres',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django-advanced_password_validation',
-]
-
-TENANT_APPS = [
-    'users.apps.UsersConfig',
-    'groups.apps.GroupsConfig',
-    'group_bookings',
-    'files',
-    'floors',
-    'licenses',
-    'offices',
-    'rooms',
-    'tables',
-    'room_types',
-    'reports',
-    'bookings',
-    'push_tokens',
-    'teams',
-    'rest_framework',
-    'drf_yasg',
-    'mail',
-    'django_apscheduler',
-    'django_filters',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.postgres',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django-advanced_password_validation',
-]
-
-INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
-
-TENANT_MODEL = 'clients.Client'
-TENANT_DOMAIN_MODEL = 'clients.Domain'
-
-# 'django.contrib.admin',
-#REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
 
 REDIS_HOST = os.environ.get('REDIS_HOST')
 REDIS_PORT = os.environ.get('REDIS_PORT')
@@ -291,26 +224,6 @@ LOGGING = {
     },
 }
 
-MIDDLEWARE = [
-    'django_tenants.middleware.main.TenantMainMiddleware',
-    'core.middlewares.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'core.middlewares.SimpleLogMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'clients.middlewares.BlockUnpaidTenantMiddleware'
-]
-# 'django.contrib.messages.middleware.MessageMiddleware',
-if LOCAL:
-    MIDDLEWARE += ['booking_api_django_new.debug.PrintSqlQuery']
-    MIDDLEWARE += ['core.middlewares.RequestTimeMiddleware']
-
-ROOT_URLCONF = 'booking_api_django_new.urls'
-PUBLIC_SCHEMA_URLCONF = 'booking_api_django_new.urls_public'
 
 TEMPLATES = [
     {
@@ -328,43 +241,9 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'booking_api_django_new.wsgi.application'
 
-# Database
-
-# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('HOST') or '2.59.41.133',
-        'PORT': os.environ.get('PORT') or '5432',
-        'CONN_MAX_AGE': 1
-    }
-}
-
-DATABASE_ROUTERS = (
-    'django_tenants.routers.TenantSyncRouter',
-)
-
-# SCHEDULER_CONFIG = {
-#     "apscheduler.jobstores.default": {
-#         "class": "django_apscheduler.jobstores:DjangoJobStore"
-#     },
-#     'apscheduler.executors.processpool': {
-#         "type": "processpool",
-#         "max_workers": "2"
-#     },
-#     'apscheduler.job_defaults.coalesce': 'false',
-#     'apscheduler.job_defaults.max_instances': '2',
-# }
-# SCHEDULER_AUTOSTART = True
-
-# Password validation
-# https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -445,5 +324,3 @@ HARDCODED_PHONE_NUMBER = (
     "+13371337133"  # hardcoded phone number for passing AppStore and PlayMarket tests
 )
 HARDCODED_SMS_CODE = 4832
-
-SHOW_PUBLIC_IF_NO_TENANT_FOUND = True

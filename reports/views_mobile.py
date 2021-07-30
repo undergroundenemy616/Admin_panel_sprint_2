@@ -4,7 +4,7 @@ from django.core.mail import send_mail
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, Response, status
 
-from booking_api_django_new.settings import EMAIL_HOST_USER
+from booking_api_django_new.settings.base import EMAIL_HOST_USER
 from core.permissions import IsAuthenticated
 from reports.generate_html import generate_attach, generate_html
 from reports.models import Report

@@ -6,7 +6,12 @@ os.environ.setdefault('BRANCH', 'master')
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 
-from booking_api_django_new.settings import DATABASES
+from booking_api_django_new.settings.base import ALLOW_TENANT
+
+if ALLOW_TENANT:
+    from booking_api_django_new.settings.tenant_settings import DATABASES
+else:
+    from booking_api_django_new.settings.non_tenant_settings import DATABASES
 
 QUERY = """DROP SCHEMA public CASCADE;
         CREATE SCHEMA public;"""

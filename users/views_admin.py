@@ -9,7 +9,7 @@ from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from booking_api_django_new.settings import EMAIL_HOST_USER
+from booking_api_django_new.settings.base import EMAIL_HOST_USER
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from users.filters_admin import AdminUserFilter
