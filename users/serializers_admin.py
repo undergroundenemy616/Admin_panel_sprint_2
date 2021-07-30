@@ -10,10 +10,13 @@ from django.db.models import Q
 from django.db.transaction import atomic
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError as ValErr
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
-from booking_api_django_new.settings import DEBUG, ADMIN_HOST
+from core.utils import get_localization
+from users.tasks import send_register_email
+
+from booking_api_django_new.settings import DEBUG, ADMIN_HOST, BASE_DIR
 from bookings.models import Booking
 from core.handlers import ResponseException
 from files.serializers_admin import AdminFileSerializer
@@ -129,7 +132,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
-    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+    email = serializers.EmailField(allow_blank=True, allow_null=True)
 
     class Meta:
         model = Account
@@ -159,6 +162,15 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         user = User.objects.create(phone_number=validated_data.pop('phone_number'), is_active=True,
                                    email=validated_data.pop('email'))
         validated_data['user'] = user
+        password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+
+        localization = get_localization(self.context['request'], 'users')
+
+        user.set_password(password)
+
+        send_register_email.delay(email=user.email, subject=localization['greetings'],
+                                  args={"username": user.email, "password": password},
+                                  template=localization['greetings_template'])
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
         try:
             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
