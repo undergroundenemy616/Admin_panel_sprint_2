@@ -25,6 +25,7 @@ from booking_api_django_new.settings import FILES_HOST
 from bookings.models import Booking
 from bookings.serializers_mobile import calculate_date_activate_until
 from core.handlers import ResponseException
+from core.utils import get_localization
 from files.models import File
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import AdminGroupBookingSerializer, AdminGroupWorkspaceSerializer
@@ -604,19 +605,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
 
         j = 0
 
-        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
-
-        if self.context.headers.get('Language'):
-            language = self.context.headers['Language']
-        else:
-            language = 'ru'
-
-        try:
-            localization = open(translation_dir_path+str(PurePath(f'/translations/{language}_statistics.json')),
-                                encoding='utf-8')
-        except FileNotFoundError:
-            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
-        localization = orjson.loads(localization.read())
+        localization = get_localization(self.context, 'statistics')
 
         for i in range(len(list_rows) + 1):
             i += 1
@@ -733,19 +722,7 @@ class AdminBookingFutureStatisticsSerializer(serializers.Serializer):
 
         j = 0
 
-        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
-
-        if self.context.headers.get('Language'):
-            language = self.context.headers['Language']
-        else:
-            language = 'ru'
-
-        try:
-            localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
-                                encoding='utf-8')
-        except FileNotFoundError:
-            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
-        localization = orjson.loads(localization.read())
+        localization = get_localization(self.context, 'statistics')
 
         for i in range(len(sql_results) + 1):
             i += 1
@@ -882,19 +859,7 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
 
         j = 0
 
-        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
-
-        if self.context.headers.get('Language'):
-            language = self.context.headers['Language']
-        else:
-            language = 'ru'
-
-        try:
-            localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
-                                encoding='utf-8')
-        except FileNotFoundError:
-            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
-        localization = orjson.loads(localization.read())
+        localization = get_localization(self.context, 'statistics')
 
         for i in range(len(set_of_types) + 1):
             i += 1
@@ -1030,18 +995,7 @@ class AdminBookingDynamicsOfVisitsSerializer(serializers.Serializer):
         file_name = "Dynamics_Of_Visits_From_" + self.data['date_from'] + "_To_" + self.data['date_to'] + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
-        translation_dir_path = os.path.dirname(os.path.realpath(__file__))
-
-        if self.context.headers.get('Language'):
-            language = self.context.headers['Language']
-        else:
-            language = 'ru'
-        try:
-            localization = open(translation_dir_path + str(PurePath(f'/translations/{language}_statistics.json')),
-                                encoding='utf-8')
-        except FileNotFoundError:
-            raise ResponseException("This language is not supported", status_code=status.HTTP_400_BAD_REQUEST)
-        localization = orjson.loads(localization.read())
+        localization = get_localization(self.context, 'statistics')
 
         workbook = xlsxwriter.Workbook(secure_file_name)
 

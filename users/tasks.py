@@ -27,22 +27,30 @@ def send_sms_code(user_id, is_created, code):
 
 @shared_task
 def send_email(email, subject, message):
-    send_html_email(
-        to=email,
-        subject=subject,
-        message=message
-    )
+    try:
+        send_html_email(
+            to=email,
+            subject=subject,
+            message=message
+        )
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(msg=e)
 
 
 @shared_task
 def send_register_email(email, subject, args):
-    send_mail(
-        recipient_list=[email],
-        from_email=EMAIL_HOST_USER,
-        subject=subject,
-        message="",
-        html_message=render_to_string("mail.html", args)
-    )
+    try:
+        send_mail(
+            recipient_list=[email],
+            from_email=EMAIL_HOST_USER,
+            subject=subject,
+            message="",
+            html_message=render_to_string("mail.html", args)
+        )
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(msg=e)
 
 
 @shared_task

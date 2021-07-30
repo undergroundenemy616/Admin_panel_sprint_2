@@ -1,9 +1,7 @@
 import os
 import random
 import time
-from pathlib import PurePath
 
-import orjson
 import phonenumbers
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
@@ -169,6 +167,7 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         localization = get_localization(self.context['request'], 'users')
 
         user.set_password(password)
+
         send_register_email.delay(email=user.email, subject=localization['greetings'],
                                   args={"username": user.email, "password": password})
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
