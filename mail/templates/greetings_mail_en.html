@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial scale=1.0" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Email subject or title</title>
+  <style type="text/css">
+    html,
+    body {
+      font-family: Arial, serif;
+      font-size: 10px;
+      color: #fff;
+    }
+    .main {
+      width: 60.02rem;
+      margin: 0rem auto;
+      text-align: center;
+    }
+    td.header_frame {
+      width: 60.2rem;
+      height: 22.2rem;
+    }
+    h2 {
+      font-size: 2rem;
+    }
+    .login_details {
+      background: #fff;
+      height: 36.2rem;
+      border-radius: 1.9rem;
+      color: #004271;
+      vertical-align: top;
+      text-align: center;
+    }
+    .login_details h2 {
+      padding-top: 1.7rem;
+      padding-bottom: 2.3rem;
+      line-height: 4rem;
+    }
+    .login_details p {
+      font-size: 1.4rem;
+    }
+    .login_details a {
+      display: inline-block;
+      color: #0099e1;
+      font-size: 1.6rem;
+      /* padding-bottom: 2rem; */
+    }
+    hr {
+      width: 32.6rem;
+      border: none;
+      background: #3080f9;
+      height: 0.03rem;
+      margin-bottom: 2rem;
+    }
+    .login_details .bold_text {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #000;
+      /* padding-bottom: 0.7rem; */
+    }
+    .capabilities {
+      background: #fff;
+      width: 60.2rem;
+      height: 108rem;
+      border-radius: 1.9rem;
+      color: #004271;
+      vertical-align: top;
+    }
+    .capabilities h2 {
+      color: #004271;
+      padding-top: 2rem;
+    }
+    .capabilities p {
+      color: #706f6f;
+    }
+    .capabilities_part_1 {
+      margin: auto;
+      vertical-align: middle;
+    }
+    .capabilities_part__text_1 {
+      padding-bottom: 5rem;
+      padding-right: 4rem;
+      line-height: 2rem;
+      font-size: 1.4rem;
+    }
+    .capabilities_part_2 {
+      margin: auto;
+      vertical-align: middle;
+    }
+    .capabilities_part__text_2 {
+      padding-bottom: 5rem;
+      padding-left: 4rem;
+      line-height: 2rem;
+      font-size: 1.4rem;
+    }
+    .capabilities_part__img_2 {
+      padding-left: 4rem;
+    }
+    .third_text {
+      padding-top: 3rem;
+    }
+    .fourth_text {
+      padding-top: 5rem;
+    }
+    .links {
+      padding-top: 1.5rem;
+    }
+    .links a img {
+      display: inline-block;
+      padding-right: 2.5rem;
+    }
+    .stores-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 3rem;
+    }
+    .store-link {
+      margin-right: 1rem;
+      align-self: stretch;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+    h2 {
+      margin-top: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <table class="main" cellspacing="10">
+    <tr>
+      <td class="login_details">
+        <h2>You have been registered with</br> SimpleOffice</h2>
+        <p>Download the app</p>
+        <div class="stores-wrap">
+        <a
+          class="store-link"
+          href="https://apps.apple.com/ru/app/simple-office/id1524278405"
+          target="_blank"
+        >
+          <img src="https://i.ibb.co/GWTpvTs/App-Store-en.png" width="150" alt="App Store" />
+        </a>
+        <a
+          class="store-link"
+          href="https://play.google.com/store/apps/details?id=ru.liis.simpleoffice&hl=ru&ah=koUVkiUmBDxsDPS4f6kcVO0EgYM"
+          target="_blank"
+        >
+          <img src="https://i.ibb.co/9nYKLWc/Google-Play-en.png" width="150" alt="Google Play" />
+        </a>
+        <a class="store-link" href="https://appgallery.huawei.com/#/app/C103397491" target="_blank">
+          <img src="https://i.ibb.co/bPGfRWL/App-Gallery-en.png" width="150" alt="App Gallery" />
+        </a>
+        </div>
+        <hr style="width: 50%;" />
+        <p>Your login:</p>
+        <p class="bold_text">{{username}}</p>
+        <hr style="width: 50%;" />
+        <p>Your password:</p>
+        <p class="bold_text">{{password}}</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="capabilities">
+        <h2>Application features</h2>
+        <table class="capabilities_part_1">
+          <tr>
+            <td class="capabilities_part__img_1">
+              <img src="https://i.ibb.co/PCKr5dD/1.png" alt="Навигация" width="245" height="251" />
+            </td>
+            <td class="capabilities_part__text_1">
+              <h2>Navigation</h2>
+              <p>
+                Find the proper places <br />
+                with easy navigation
+              </p>
+            </td>
+          </tr>
+        </table>
+        <hr style="width: 50%;" />
+        <table class="capabilities_part_2">
+          <tr>
+            <td class="capabilities_part__text_2">
+              <h2>Booking</h2>
+              <p>
+                Book a convenient <br />
+                workplace
+              </p>
+            </td>
+            <td class="capabilities_part__img_2">
+              <img src="https://i.ibb.co/9NzNfrV/2.png" alt="Бронирование" width="216" height="199" />
+            </td>
+          </tr>
+        </table>
+        <hr style="width: 50%;" />
+        <table class="capabilities_part_1">
+          <tr>
+            <td class="capabilities_part__img_1">
+              <img src="https://i.ibb.co/DgJHpHt/3.png" alt="Подтверждение" width="233" height="191" />
+            </td>
+            <td class="capabilities_part__text_1 third_text">
+              <h2>Confirmation</h2>
+              <p>
+                Confirm your booking<br />
+                using the QR code <br />
+                set on the table.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <hr style="width: 50%;" />
+        <table class="capabilities_part_2">
+          <tr>
+            <td class="capabilities_part__text_2 fourth_text">
+              <h2>Feedback</h2>
+              <p>
+                Evaluate the workplace <br />
+                facilities
+              </p>
+            </td>
+            <td class="capabilities_part__img_2">
+              <img src="https://i.ibb.co/FbBWddR/4.png" alt="Обратная связь" width="210" height="189" />
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

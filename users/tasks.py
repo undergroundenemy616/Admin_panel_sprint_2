@@ -39,14 +39,14 @@ def send_email(email, subject, message):
 
 
 @shared_task
-def send_register_email(email, subject, args):
+def send_register_email(email, subject, args, template):
     try:
         send_mail(
             recipient_list=[email],
             from_email=EMAIL_HOST_USER,
             subject=subject,
             message="",
-            html_message=render_to_string("mail.html", args)
+            html_message=render_to_string(template, args)
         )
     except Exception as e:
         logger = logging.getLogger(__name__)

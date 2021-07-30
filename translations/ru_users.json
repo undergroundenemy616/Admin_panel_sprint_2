@@ -1,3 +1,4 @@
 {
-  "greetings": "Добро пожаловать в SimpleOffice!"
+  "greetings": "Добро пожаловать в SimpleOffice!",
+  "greetings_template": "greetings_mail_ru.html"
 }

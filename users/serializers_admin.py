@@ -169,7 +169,8 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         user.set_password(password)
 
         send_register_email.delay(email=user.email, subject=localization['greetings'],
-                                  args={"username": user.email, "password": password})
+                                  args={"username": user.email, "password": password},
+                                  template=localization['greetings_template'])
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
         try:
             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
