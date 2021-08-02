@@ -3,7 +3,7 @@ import uuid
 from calendar import monthrange
 from collections import Counter
 from datetime import datetime, date, timedelta
-from pathlib import Path, PurePath
+from pathlib import Path
 from time import strptime
 import pandas as pd
 import pytz
@@ -37,26 +37,6 @@ from users.models import Account, User
 from users.tasks import send_email, send_sms
 
 
-def employee_statistics(stats):
-    return {
-        "booking_id": str(stats.id),
-        "table_id": str(stats.table_id),
-        "table_title": stats.table_title,
-        "office_id": str(stats.office_id),
-        "office_title": stats.office_title,
-        "floor_title": stats.floor_title,
-        "user_id": str(stats.user_id),
-        "first_name": stats.first_name,
-        "middle_name": stats.middle_name,
-        "last_name": stats.last_name,
-        "date_from": str(stats.date_from),
-        "date_to": str(stats.date_to),
-        "phone_number1": str(stats.phone_number1),
-        "phone_number2": str(stats.phone_number2),
-        "book_status": str(stats.status)
-    }
-
-
 class BookingEmployeeStats(serializers.ModelSerializer):
     booking_id = serializers.UUIDField(required=False, source='id')
     table_id = serializers.UUIDField(required=False)
@@ -79,28 +59,6 @@ class BookingEmployeeStats(serializers.ModelSerializer):
         fields = ['booking_id', 'table_id', 'table_title', 'office_id', 'office_title',
                   'floor_title', 'user_id', 'first_name', 'middle_name', 'last_name',
                   'phone_number1', 'phone_number2', 'date_to', 'date_from', 'book_status']
-
-
-
-def bookings_future(stats):
-    return {
-        "booking_id": str(stats.id),
-        "table_id": str(stats.table_id),
-        "table_title": stats.table_title,
-        "office_id": str(stats.office_id),
-        "office_title": stats.office_title,
-        "floor_id": str(stats.floor_id),
-        "floor_title": stats.floor_title,
-        "user_id": str(stats.user_id),
-        "first_name": stats.first_name,
-        "middle_name": stats.middle_name,
-        "last_name": stats.last_name,
-        "phone_number_1": str(stats.phone_number_1),
-        "phone_number_2": str(stats.phone_number_2),
-        "date_from": str(stats.date_from),
-        "date_to": str(stats.date_to),
-        "date_activate_until": str(stats.date_activate_until)
-    }
 
 
 class BookingFutureStats(serializers.ModelSerializer):
@@ -166,12 +124,14 @@ def months_between(start_date, end_date):
             month += 1
 
 
-def room_type_statictic_serializer(stats):
-    return {
-        "booking_id": str(stats.id),
-        "room_type_title": stats.title,
-        "office_id": str(stats.office_id)
-    }
+class BookingRoomTypeStatsSerializer(serializers.ModelSerializer):
+    booking_id = serializers.UUIDField(required=False, source='id')
+    room_type_title = serializers.CharField(required=False, source='table.room.type.title')
+    office_id = serializers.UUIDField(required=False, source='table.room.floor.office.id')
+
+    class Meta:
+        model = Booking
+        fields = ['booking_id', 'room_type_title', 'office_id']
 
 
 class AdminUserForBookSerializer(serializers.ModelSerializer):
@@ -856,27 +816,31 @@ class AdminBookingRoomTypeSerializer(serializers.Serializer):
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
 
-        query = f"""
-                SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to, b.status
-                FROM bookings_booking b
-                INNER JOIN tables_table t ON t.id = b.table_id
-                INNER JOIN rooms_room rr ON t.room_id = rr.id
-                INNER JOIN room_types_roomtype rtr on rr.type_id = rtr.id
-                WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
-                (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-                (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and (b.status = 'over' or b.status = 'auto_over' or b.status = 'waiting' or b.status = 'active')"""
+        stats = Booking.objects.filter((
+            (Q(date_from__date__gte=date_from) &
+             Q(date_from__date__lt=date_to))
+            |
+            (Q(date_from__date__lte=date_from) &
+             Q(date_to__date__gte=date_to))
+            |
+            (Q(date_to__date__gt=date_from) &
+             Q(date_to__date__lte=date_to))
+        ) & Q(status__in=['over',
+                          'auto_over',
+                          'active',
+                          'waiting'])).select_related('table', 'table__room',
+                                                      'table__room__type',
+                                                      'table__room__floor__office').distinct()
 
         if self.data.get('office_id'):
-            query = query + f""" and rtr.office_id = '{self.data.get('office_id')}'"""
+            stats = stats.filter(table__room__floor__office_id=self.data.get('office_id'))
 
-        stats = Booking.objects.all().raw(query)
-        sql_results = []
         set_of_types = set()
         list_of_types = []
-        for s in stats:
-            set_of_types.add(s.title)
-            list_of_types.append(s.title)
-            sql_results.append(room_type_statictic_serializer(s))
+        sql_results = BookingRoomTypeStatsSerializer(instance=stats, many=True).data
+        for s in sql_results:
+            set_of_types.add(s['room_type_title'])
+            list_of_types.append(s['room_type_title'])
         number_of_types = len(set_of_types)
         counts = {}
         for i in list_of_types:
