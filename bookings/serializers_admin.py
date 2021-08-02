@@ -13,7 +13,7 @@ import orjson
 
 from django.core.exceptions import ValidationError as ValErr
 from django.core.validators import validate_email
-from django.db.models import Q
+from django.db.models import Q, F, Func
 from django.db.transaction import atomic
 import pdfkit
 from rest_framework import serializers, status
@@ -313,18 +313,17 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                                  (Q(date_to__date__gt=date_from) &
                                                                   Q(date_to__date__lte=date_to))
                                                          )).count()
-            bookings_with_hours = bookings.raw(f"""SELECT 
-                    DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
-                    DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, oo.id as office_id,
-                    b.id from bookings_booking b
-                    INNER JOIN tables_table tt on tt.id = b.table_id
-                    INNER JOIN rooms_room rr on rr.id = tt.room_id
-                    INNER JOIN floors_floor ff on ff.id = rr.floor_id
-                    INNER JOIN offices_office oo on oo.id = ff.office_id
-                    WHERE ((b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or
-                    (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-                    (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')) and 
-                    office_id = '{valid_office_id}'""")
+            bookings_with_hours = bookings.filter(Q(table__room__floor__office_id=valid_office_id) &
+                                                  (
+                                                          (Q(date_from__date__gte=date_from) &
+                                                           Q(date_from__date__lt=date_to))
+                                                          |
+                                                          (Q(date_from__date__lte=date_from) &
+                                                           Q(date_to__date__gte=date_to))
+                                                          |
+                                                          (Q(date_to__date__gt=date_from) &
+                                                           Q(date_to__date__lte=date_to))
+            )).annotate(hours=Func(F('date_to'), F('date_from'), function='age'))
             tables_from_booking = bookings.filter(Q(table__room__floor__office_id=valid_office_id)
                                                   &
                                                   Q(table__room__type__is_deletable=False)
@@ -368,12 +367,15 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                                                  (Q(date_to__date__gt=date_from) &
                                                                   Q(date_to__date__lte=date_to))
                                                          )).count()
-            bookings_with_hours = bookings.raw(f"""SELECT 
-                                DATE_PART('day', b.date_to::timestamp - b.date_from::timestamp) * 24 +
-                                DATE_PART('hour', b.date_to::timestamp - b.date_from::timestamp) as hours, b.id from bookings_booking b
-                                WHERE (b.date_from::date >= '{date_from}' and b.date_from::date < '{date_to}') or 
-                                (b.date_from::date <= '{date_from}' and b.date_to::date >= '{date_to}') or
-                                (b.date_to::date > '{date_from}' and b.date_to::date <= '{date_to}')""")
+            bookings_with_hours = Booking.objects.filter(
+                (Q(date_from__date__gte=date_from) &
+                 Q(date_from__date__lt=date_to))
+                |
+                (Q(date_from__date__lte=date_from) &
+                 Q(date_to__date__gte=date_to))
+                |
+                (Q(date_to__date__gt=date_from) &
+                 Q(date_to__date__lte=date_to))).annotate(hours=Func(F('date_to'), F('date_from'), function='age'))
             tables_from_booking = bookings.filter(Q(table__room__type__is_deletable=False)
                                                   &
                                                   Q(table__room__type__bookable=True)
@@ -434,7 +436,8 @@ class AdminStatisticsSerializer(serializers.Serializer):
         sum_of_booking_hours = 0
 
         for booking in bookings_with_hours:
-            sum_of_booking_hours += booking.hours
+            booking_hours = (float(booking.hours.days*24) + float(booking.hours.seconds/3600))
+            sum_of_booking_hours += booking_hours
 
         table_hours = working_days * 8 * total_tables
 
@@ -459,12 +462,12 @@ class AdminStatisticsSerializer(serializers.Serializer):
             average_booking_time = 0
 
         try:
-            average_number_of_planned_bookings = number_of_planned_bookings / (date_to.date()-date_from.date()).days
+            average_number_of_planned_bookings = number_of_planned_bookings / (date_to-date_from).days
         except ZeroDivisionError:
             average_number_of_planned_bookings = 0
 
         try:
-            average_number_of_confirmed_bookings = number_of_activated_bookings / (date_to.date()-date_from.date()).days
+            average_number_of_confirmed_bookings = number_of_activated_bookings / (date_to-date_from).days
         except ZeroDivisionError:
             average_number_of_confirmed_bookings = 0
 
