@@ -1,7 +1,7 @@
 import logging
 
 from django.core.management.base import BaseCommand
-from core.fixtures import AddFixtures
+from core.fixtures import Fixtures
 from floors.models import Floor
 from groups.models import Group
 from licenses.models import License
@@ -34,35 +34,34 @@ class Command(BaseCommand):
         self.logger.warning(msg=f'Selected language: {language}')
         self.logger.warning('--------------')
 
-        add_fixtures = AddFixtures(language)
+        fixtures = Fixtures(language)
 
-        groups = add_fixtures.add_fixture(model=Group)
+        groups = fixtures.add_fixture(model=Group)
 
-        users = add_fixtures.add_fixture(model=User)
+        users = fixtures.add_fixture(model=User)
 
-        account = add_fixtures.add_fixture(model=Account,
-                                           along_with=[{'parameter': 'user', 'values': users, 'on_value': 'email'}],
-                                           bind_with=[{'parameter': 'groups', 'values': groups, 'on_value': 'title'}])
+        account = fixtures.add_fixture(model=Account,
+                                       along_with=[{'parameter': 'user', 'values': users, 'on_value': 'email'}],
+                                       bind_with=[{'parameter': 'groups', 'values': groups, 'on_value': 'title'}])
 
-        licenses = add_fixtures.add_fixture(model=License)
+        licenses = fixtures.add_fixture(model=License)
 
-        offices = add_fixtures.add_fixture(model=Office,
-                                           parents={'parameter': 'license', 'values': licenses, 'not_strict': True})
+        offices = fixtures.add_fixture(model=Office,
+                                       parents={'parameter': 'license', 'values': licenses, 'not_strict': True})
 
-        zones = add_fixtures.add_fixture(model=OfficeZone, parents={'parameter': 'office', 'values': offices},
-                                         bind_with=[{'parameter': 'groups', 'values': groups, 'on_value': 'title'}])
+        zones = fixtures.add_fixture(model=OfficeZone, parents={'parameter': 'office', 'values': offices},
+                                     bind_with=[{'parameter': 'groups', 'values': groups, 'on_value': 'title'}])
 
-        room_types = add_fixtures.add_fixture(model=RoomType, parents={'parameter': 'office', 'values': offices})
+        room_types = fixtures.add_fixture(model=RoomType, parents={'parameter': 'office', 'values': offices})
 
-        floors = add_fixtures.add_fixture(model=Floor, parents={'parameter': 'office', 'values': offices})
+        floors = fixtures.add_fixture(model=Floor, parents={'parameter': 'office', 'values': offices})
 
-        rooms = add_fixtures.add_fixture(model=Room, parents={'parameter': 'floor', 'values': floors},
-                                         along_with=[{'parameter': 'type', 'on_value': 'title', 'values': room_types},
-                                                     {'parameter': 'zone', 'on_value': 'title', 'values': zones}])
+        rooms = fixtures.add_fixture(model=Room, parents={'parameter': 'floor', 'values': floors},
+                                     along_with=[{'parameter': 'type', 'on_value': 'title', 'values': room_types},
+                                                 {'parameter': 'zone', 'on_value': 'title', 'values': zones}])
 
-        tables = add_fixtures.add_fixture(
+        tables = fixtures.add_fixture(
             model=Table, parents={'parameter': 'room', 'values': rooms, 'exclude': ['type.unified', 'type.bookable'],
                                   'exclude_value': [True, False], 'default': [default_table_for_room, None]})
 
-        add_fixtures.print_result()
-
+        fixtures.print_result()

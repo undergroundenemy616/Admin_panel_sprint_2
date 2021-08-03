@@ -9,7 +9,7 @@ from django.db import IntegrityError
 from booking_api_django_new.settings import BASE_DIR
 
 
-class AddFixtures:
+class Fixtures:
     def __init__(self, language):
 
         self.language = language
