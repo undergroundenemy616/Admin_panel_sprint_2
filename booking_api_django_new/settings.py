@@ -145,6 +145,7 @@ INSTALLED_APPS = [
     'teams',
     'rest_framework',
     'drf_yasg',
+    'management',
     'mail',
     'django_apscheduler',
     'django_filters',
