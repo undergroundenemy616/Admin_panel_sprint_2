@@ -1,7 +1,7 @@
 [
   {
     "user": {
-      "email": "test1@liis.su",
+      "email": "test@liis.su",
       "password": "pbkdf2_sha256$180000$hv8UjgeR90dg$Vk40Y5Rt4p59oLV0+pD9C2d2BSSafMWrOPspTxBf4Yc=",
       "is_staff": true,
       "is_active": true

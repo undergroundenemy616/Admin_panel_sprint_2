@@ -1,7 +1,7 @@
 [
   {
     "account": {
-      "user": "test1@liis.su",
+      "user": "test@liis.su",
       "account_type": "user",
       "description": "Тестовый Аккаунт",
       "gender": "undefined",
@@ -11,7 +11,7 @@
       "region_string": "лиис",
       "district_string": "лиис",
       "updated_at": "2020-10-29 11:12:48.367658",
-      "groups": ["Администратор 2"]
+      "groups": ["Администратор"]
     }
   }
 ]

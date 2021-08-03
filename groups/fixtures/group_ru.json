@@ -1,28 +1,28 @@
 [
   {
     "group": {
-      "title": "Посетитель 2",
+      "title": "Посетитель",
       "access": 4,
       "is_deletable": false
     }
   },
   {
     "group": {
-      "title": "Сотрудник 2",
+      "title": "Сотрудник",
       "access": 3,
       "is_deletable": false
     }
   },
   {
     "group": {
-      "title": "Администратор 2",
+      "title": "Администратор",
       "access": 2,
       "is_deletable": false
     }
   },
   {
     "group": {
-      "title": "Информационная панель 2",
+      "title": "Информационная панель",
       "access": 2,
       "is_deletable": false
     }

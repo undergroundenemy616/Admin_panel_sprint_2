@@ -1,7 +1,7 @@
 [
   {
     "account": {
-      "user": "test1@liis.su",
+      "user": "test@liis.su",
       "account_type": "user",
       "description": "Test Account",
       "gender": "undefined",
