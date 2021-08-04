@@ -1,0 +1,17 @@
+[
+  {
+    "account": {
+      "user": "test@liis.su",
+      "account_type": "user",
+      "description": "Тестовый Аккаунт",
+      "gender": "undefined",
+      "first_name": "Тестовый",
+      "last_name": "Робот",
+      "middle_name": "ЛИИС",
+      "region_string": "лиис",
+      "district_string": "лиис",
+      "updated_at": "2020-10-29 11:12:48.367658",
+      "groups": ["Администратор"]
+    }
+  }
+]
