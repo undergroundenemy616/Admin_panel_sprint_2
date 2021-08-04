@@ -94,8 +94,8 @@ def get_duration(duration):
 
 
 def most_frequent(List):
-    occurence_count = Counter(List)
-    return occurence_count.most_common(1)[0][0]
+    occurrence_count = Counter(List)
+    return occurrence_count.most_common(1)[0][0]
 
 
 def date_validation(date):
@@ -415,7 +415,6 @@ class AdminStatisticsSerializer(serializers.Serializer):
                                             room__type__is_deletable=False,
                                             room__type__bookable=True
                                             ).count()
-
 
         list_of_booked_tables = []
         for table in tables_from_booking:
