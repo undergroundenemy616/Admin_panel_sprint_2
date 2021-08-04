@@ -38,21 +38,21 @@ from users.tasks import send_email, send_sms
 
 
 class BookingEmployeeStats(serializers.ModelSerializer):
-    booking_id = serializers.UUIDField(required=False, source='id')
-    table_id = serializers.UUIDField(required=False)
-    table_title = serializers.CharField(required=False, source='table.title')
-    office_id = serializers.UUIDField(required=False, source='table.room.floor.office_id')
-    office_title = serializers.CharField(required=False, source='table.room.floor.office.title')
-    floor_title = serializers.CharField(required=False, source='table.room.floor.title')
-    user_id = serializers.UUIDField(required=False)
-    first_name = serializers.CharField(required=False, source='user.first_name')
-    middle_name = serializers.CharField(required=False, source='user.middle_name')
-    last_name = serializers.CharField(required=False, source='user.last_name')
-    phone_number1 = serializers.CharField(required=False, source='user.phone_number')
-    phone_number2 = serializers.CharField(required=False, source='user.user.phone_number')
-    book_status = serializers.CharField(required=False, source='status')
-    date_from = serializers.DateTimeField(required=False)
-    date_to = serializers.DateTimeField(required=False)
+    booking_id = serializers.UUIDField(required=False, source='id', read_only=True)
+    table_id = serializers.UUIDField(required=False, read_only=True)
+    table_title = serializers.CharField(required=False, source='table.title', read_only=True)
+    office_id = serializers.UUIDField(required=False, source='table.room.floor.office_id', read_only=True)
+    office_title = serializers.CharField(required=False, source='table.room.floor.office.title', read_only=True)
+    floor_title = serializers.CharField(required=False, source='table.room.floor.title', read_only=True)
+    user_id = serializers.UUIDField(required=False, read_only=True)
+    first_name = serializers.CharField(required=False, source='user.first_name', read_only=True)
+    middle_name = serializers.CharField(required=False, source='user.middle_name', read_only=True)
+    last_name = serializers.CharField(required=False, source='user.last_name', read_only=True)
+    phone_number1 = serializers.CharField(required=False, source='user.phone_number', read_only=True)
+    phone_number2 = serializers.CharField(required=False, source='user.user.phone_number', read_only=True)
+    book_status = serializers.CharField(required=False, source='status', read_only=True)
+    date_from = serializers.DateTimeField(required=False, read_only=True)
+    date_to = serializers.DateTimeField(required=False, read_only=True)
 
     class Meta:
         model = Booking
@@ -62,22 +62,22 @@ class BookingEmployeeStats(serializers.ModelSerializer):
 
 
 class BookingFutureStats(serializers.ModelSerializer):
-    booking_id = serializers.UUIDField(required=False, source='id')
-    table_id = serializers.UUIDField(required=False)
-    table_title = serializers.CharField(required=False, source='table.title')
-    office_id = serializers.UUIDField(required=False, source='table.room.floor.office_id')
-    office_title = serializers.CharField(required=False, source='table.room.floor.office.title')
-    floor_title = serializers.CharField(required=False, source='table.room.floor.title')
-    user_id = serializers.UUIDField(required=False)
-    first_name = serializers.CharField(required=False, source='user.first_name')
-    middle_name = serializers.CharField(required=False, source='user.middle_name')
-    last_name = serializers.CharField(required=False, source='user.last_name')
-    phone_number_1 = serializers.CharField(required=False, source='user.phone_number')
-    phone_number_2 = serializers.CharField(required=False, source='user.user.phone_number')
-    book_status = serializers.CharField(required=False, source='status')
-    date_from = serializers.DateTimeField(required=False)
-    date_to = serializers.DateTimeField(required=False)
-    date_activate_until = serializers.DateTimeField(required=False)
+    booking_id = serializers.UUIDField(required=False, source='id', read_only=True)
+    table_id = serializers.UUIDField(required=False, read_only=True)
+    table_title = serializers.CharField(required=False, source='table.title', read_only=True)
+    office_id = serializers.UUIDField(required=False, source='table.room.floor.office_id', read_only=True)
+    office_title = serializers.CharField(required=False, source='table.room.floor.office.title', read_only=True)
+    floor_title = serializers.CharField(required=False, source='table.room.floor.title', read_only=True)
+    user_id = serializers.UUIDField(required=False, read_only=True)
+    first_name = serializers.CharField(required=False, source='user.first_name', read_only=True)
+    middle_name = serializers.CharField(required=False, source='user.middle_name', read_only=True)
+    last_name = serializers.CharField(required=False, source='user.last_name', read_only=True)
+    phone_number_1 = serializers.CharField(required=False, source='user.phone_number', read_only=True)
+    phone_number_2 = serializers.CharField(required=False, source='user.user.phone_number', read_only=True)
+    book_status = serializers.CharField(required=False, source='status', read_only=True)
+    date_from = serializers.DateTimeField(required=False, read_only=True)
+    date_to = serializers.DateTimeField(required=False, read_only=True)
+    date_activate_until = serializers.DateTimeField(required=False, read_only=True)
 
     class Meta:
         model = Booking
@@ -125,9 +125,9 @@ def months_between(start_date, end_date):
 
 
 class BookingRoomTypeStatsSerializer(serializers.ModelSerializer):
-    booking_id = serializers.UUIDField(required=False, source='id')
-    room_type_title = serializers.CharField(required=False, source='table.room.type.title')
-    office_id = serializers.UUIDField(required=False, source='table.room.floor.office.id')
+    booking_id = serializers.UUIDField(required=False, source='id', read_only=True)
+    room_type_title = serializers.CharField(required=False, source='table.room.type.title', read_only=True)
+    office_id = serializers.UUIDField(required=False, source='table.room.floor.office.id', read_only=True)
 
     class Meta:
         model = Booking
