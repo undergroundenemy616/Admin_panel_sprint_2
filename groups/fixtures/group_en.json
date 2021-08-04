@@ -1,0 +1,30 @@
+[
+  {
+    "group": {
+      "title": "Guests",
+      "access": 4,
+      "is_deletable": false
+    }
+  },
+  {
+    "group": {
+      "title": "Employee",
+      "access": 3,
+      "is_deletable": false
+    }
+  },
+  {
+    "group": {
+      "title": "Administrator",
+      "access": 2,
+      "is_deletable": false
+    }
+  },
+  {
+    "group": {
+      "title": "Info panel",
+      "access": 2,
+      "is_deletable": false
+    }
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "license": {
+      "issued_at": "2021-03-01",
+      "expires_at": "2021-09-15",
+      "support_available": true,
+      "support_expires_at": "2021-09-15",
+      "tables_available": "100",
+      "tables_infinite": true,
+      "forever": true
+    }
+  },
+  {
+      "license": {
+      "issued_at": "2021-03-01",
+      "expires_at": "2021-09-15",
+      "support_available": true,
+      "support_expires_at": "2021-09-15",
+      "tables_available": "100",
+      "tables_infinite": true,
+      "forever": true
+    }
+  }
+]

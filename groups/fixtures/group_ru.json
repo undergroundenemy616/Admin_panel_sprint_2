@@ -1,0 +1,30 @@
+[
+  {
+    "group": {
+      "title": "Посетитель",
+      "access": 4,
+      "is_deletable": false
+    }
+  },
+  {
+    "group": {
+      "title": "Сотрудник",
+      "access": 3,
+      "is_deletable": false
+    }
+  },
+  {
+    "group": {
+      "title": "Администратор",
+      "access": 2,
+      "is_deletable": false
+    }
+  },
+  {
+    "group": {
+      "title": "Информационная панель",
+      "access": 2,
+      "is_deletable": false
+    }
+  }
+]

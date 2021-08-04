@@ -1,0 +1,21 @@
+[
+  {
+    "roomtype": {
+      "title": "Workplace",
+      "bookable": true
+    }
+  },
+  {
+    "roomtype": {
+      "title": "Meeting room",
+      "bookable": true,
+      "unified": true
+    }
+  },
+  {
+    "roomtype": {
+      "title": "Unbookable",
+      "bookable": false
+    }
+  }
+]
