@@ -33,4 +33,8 @@ app.conf.beat_schedule = {
         'task': 'bookings.tasks.delete_task_from_db',
         'schedule': crontab('1', '0', '*', '*', '*'),
     },
+    'delete_old_statistics': {
+        'task': 'files.tasks.delete_old_statistics',
+        'schedule': crontab('0', '0', day_of_month='1'),
+    }
 }
