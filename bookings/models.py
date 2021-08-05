@@ -28,9 +28,10 @@ global GLOBAL_DATE_FROM_WS
 global GLOBAL_DATETIME_FROM_WS
 global GLOBAL_DATETIME_TO_WS
 utc = pytz.UTC
-GLOBAL_DATE_FROM_WS = datetime.now().date()
-GLOBAL_DATETIME_FROM_WS = datetime.now().replace(tzinfo=utc)
-GLOBAL_DATETIME_TO_WS = datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
+GLOBAL_DATE_FROM_WS = dict()
+GLOBAL_DATETIME_FROM_WS = dict()  # datetime.now().replace(tzinfo=utc)
+GLOBAL_DATETIME_TO_WS = dict()  # datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
+GLOBAL_TABLES_CHANNEL_NAMES = dict()
 
 
 class BookingManager(models.Manager):
@@ -111,23 +112,23 @@ class Booking(models.Model):
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.job_create_change_states()
         if self.table.room.type.unified:
-            if GLOBAL_DATE_FROM_WS == self.date_from.date():
+            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket()
                 try:
                     asyncio.run(self.websocket_notification_by_date(result_for_date))
                 except Exception as e:
-                    pass
+                    print('-----ERROR--CREATE--BY--DATE---', e)
             else:
                 pass
-            if ((GLOBAL_DATETIME_FROM_WS < self.date_to <= GLOBAL_DATETIME_TO_WS)
-                    or (GLOBAL_DATETIME_FROM_WS <= self.date_from < GLOBAL_DATETIME_TO_WS)
-                    or (GLOBAL_DATETIME_FROM_WS >= self.date_from >= GLOBAL_DATETIME_TO_WS)
-                    and (GLOBAL_DATETIME_FROM_WS < self.date_to)):
+            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                 result_for_datetime = self.create_response_for_datetime_websocket()
                 try:
                     asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
                 except Exception as e:
-                    pass
+                    print('-----ERROR--CREATE--BY--DATETIME---', e)
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
@@ -177,23 +178,23 @@ class Booking(models.Model):
             scheduler.remove_job(job_id="set_booking_over_" + str(self.id))
         super(Booking, instance).save()
         if self.table.room.type.unified:
-            if GLOBAL_DATE_FROM_WS == self.date_from.date():
+            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket(instance)
                 try:
                     asyncio.run(self.websocket_notification_by_date(result=result_for_date))
                 except Exception as e:
-                    pass
+                    print('-----ERROR--OVER--BY--DATE---', e)
             else:
                 pass
-            if ((GLOBAL_DATETIME_FROM_WS < self.date_to <= GLOBAL_DATETIME_TO_WS)
-                    or (GLOBAL_DATETIME_FROM_WS <= self.date_from < GLOBAL_DATETIME_TO_WS)
-                    or (GLOBAL_DATETIME_FROM_WS >= self.date_from >= GLOBAL_DATETIME_TO_WS)
-                    and (GLOBAL_DATETIME_FROM_WS < self.date_to)):
+            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                 result_for_datetime = self.create_response_for_datetime_websocket(instance)
                 try:
                     asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
                 except Exception as e:
-                    pass
+                    print('-----ERROR--OVER--BY--DATETIME---', e)
 
     def check_booking_activate(self, *args, **kwargs):
         try:
@@ -327,8 +328,21 @@ class Booking(models.Model):
         channel_layer = get_channel_layer()
         print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
+        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
         print('Send info outside model')
-        await channel_layer.group_send("dimming", result_in_json)
+        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
+        if result[0].get('delete'):
+            result = []
+            json_format = {'type': 'send_json',
+                           'text': {
+                               'type': 'timeline',
+                               'data': result
+                           }
+                           }
+            result_in_json = orjson.loads(orjson.dumps(json_format))
+        print('channel is: ', channel)
+        print('Send info outside model')
+        await channel_layer.send(str(channel), result_in_json)
 
     @staticmethod
     async def websocket_notification_by_datetime(result=None):
@@ -341,7 +355,11 @@ class Booking(models.Model):
         }
         channel_layer = get_channel_layer()
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        await channel_layer.group_send("dimming", result_in_json)
+        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
+        print('Send info outside model')
+        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
+        print('channel is: ', channel)
+        await channel_layer.send(str(channel), result_in_json)
 
     def create_response_for_datetime_websocket(self, instance=None):
         local_tz = pytz.timezone('Europe/Moscow')
@@ -350,6 +368,7 @@ class Booking(models.Model):
             result.append({
                 'status': 'occupied',
                 'id': str(self.id),
+                'table_id': str(self.table.id),
                 'title': str(self.table.room.title),
                 'date_from': str(self.date_from.astimezone(local_tz))[:16],
                 'date_to': str(self.date_to.astimezone(local_tz))[:16],
@@ -368,6 +387,7 @@ class Booking(models.Model):
                 result.append({
                     'id': str(self.table.room.id),
                     'title': str(self.table.room.title),
+                    'table_id': str(self.table.id),
                     'tables': [
                         {'id': str(self.table.id),
                          'title': str(self.table.title),
@@ -385,6 +405,7 @@ class Booking(models.Model):
                 result.append({
                     'id': str(self.table.room.id),
                     'title': str(self.table.room.title),
+                    'table_id': str(self.table.id),
                     'tables': [
                         {'id': str(self.table.id),
                          'title': str(self.table.title),
@@ -412,15 +433,20 @@ class Booking(models.Model):
                 continue
             result.append({
                 'id': str(booking.id),
+                'table_id': str(booking.table.id),
                 'date_from': str(booking.date_from.astimezone(local_tz))[0:16],
                 'date_to': str(booking.date_to.astimezone(local_tz))[0:16]
             })
         if not instance:
             result.append({
                 'id': str(self.id),
+                'table_id': str(self.table.id),
                 'date_from': str(self.date_from.astimezone(local_tz))[0:16],
                 'date_to': str(self.date_to.astimezone(local_tz))[0:16]
             })
+        if len(result) == 0:
+            result.append({'table_id': str(self.table.id),
+                           'delete': True})
         return result
 
     def job_create_change_states(self):

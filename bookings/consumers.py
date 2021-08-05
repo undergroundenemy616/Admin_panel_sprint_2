@@ -27,18 +27,25 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
 
         # Join group TODO: Make only auth connection
-        await self.channel_layer.group_add(
-            "dimming",
-            self.channel_name
-        )
+        # await self.channel_layer.group_add(
+        #     "dimming",
+        #     self.channel_name
+        # )
         await self.accept()
         print("connected")
 
     async def receive_json(self, content, **kwargs):
         print('try to find right method')
+        res = dict()
         if content.get('event', None) == 'echo':
             res = content
         else:
+            bookings.models.GLOBAL_TABLES_CHANNEL_NAMES[f'{content.get("table")}'] = self.channel_name
+            if not bookings.models.GLOBAL_DATETIME_FROM_WS.get(f'{content.get("table")}'):
+                utc = pytz.UTC
+                bookings.models.GLOBAL_DATE_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().date()
+                bookings.models.GLOBAL_DATETIME_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().replace(tzinfo=utc)
+                bookings.models.GLOBAL_DATETIME_TO_WS[f'{content.get("table")}'] = datetime.datetime.utcnow().replace(tzinfo=utc) + datetime.timedelta(hours=1)
             if content.get('event', None) == 'daily_booking':
                 content = await self.check_db_for_day_booking(date=content.get('date', str(datetime.date.today())),
                                                               table=content.get('table', None))
@@ -51,6 +58,15 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                              }
                 }
             elif content.get('event', None) == 'hours_booking':
+                if not bookings.models.GLOBAL_DATETIME_FROM_WS.get(f'{content.get("table")}'):
+                    utc = pytz.UTC
+                    bookings.models.GLOBAL_DATE_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().date()
+                    bookings.models.GLOBAL_DATETIME_FROM_WS[
+                        f'{content.get("table")}'] = datetime.datetime.now().replace(tzinfo=utc)
+                    bookings.models.GLOBAL_DATETIME_TO_WS[
+                        f'{content.get("table")}'] = datetime.datetime.utcnow().replace(
+                        tzinfo=utc) + datetime.timedelta(hours=1)
+                bookings.models.GLOBAL_TABLES_CHANNEL_NAMES[f'{content.get("table")}'] = self.channel_name
                 content = await self.check_db_for_datetime_booking(date_from_str=content.get('date_from', str(datetime.date.today())),
                                                                    date_to_str=content.get('date_to', None),
                                                                    table=content.get('table', None))
@@ -62,7 +78,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                         'data': content
                     }
                 }
-        await self.channel_layer.group_send('dimming', res)
+        await self.channel_layer.send(f'{self.channel_name}', res)
 
     @classmethod
     async def decode_json(cls, text_data):
@@ -121,7 +137,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         if not date:
             date = []
         date_from_str = datetime.datetime.strptime(date, '%Y-%m-%d').date()
-        bookings.models.GLOBAL_DATE_FROM_WS = date_from_str
+        bookings.models.GLOBAL_DATE_FROM_WS[f'{table}'] = date_from_str
         existing_booking = Booking.objects.filter(table=table,
                                                   status__in=['waiting', 'active'],
                                                   date_from__year=str(date_from_str.year),
@@ -146,8 +162,8 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         local_tz = pytz.timezone('Europe/Moscow')
         date_from = datetime.datetime.strptime(date_from_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
         date_to = datetime.datetime.strptime(date_to_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
-        bookings.models.GLOBAL_DATETIME_FROM_WS = date_from
-        bookings.models.GLOBAL_DATETIME_TO_WS = date_to
+        bookings.models.GLOBAL_DATETIME_FROM_WS[f'{table}'] = date_from
+        bookings.models.GLOBAL_DATETIME_TO_WS[f'{table}'] = date_to
         overflows = Booking.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
