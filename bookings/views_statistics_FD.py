@@ -1,3 +1,4 @@
+from booking_api_django_new.filestorage_auth import check_token
 from booking_api_django_new.settings import FILES_HOST
 from calendar import monthrange
 from core.handlers import ResponseException
@@ -24,7 +25,7 @@ from bookings.serializers import (BookingSerializer,
                                   bookings_future, date_validation, months_between)
 from core.permissions import IsAdmin
 from files.models import File
-from files.serializers import BaseFileSerializer, check_token
+from files.serializers import BaseFileSerializer
 from tables.serializers import Table, TableMarker
 from users.models import Account
 

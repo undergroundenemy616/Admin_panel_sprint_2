@@ -1,0 +1,16 @@
+[
+  {
+    "officezone": {
+      "title": "All access",
+      "is_deletable": false,
+      "groups": ["Administrator", "Employee", "Guests"]
+    }
+  },
+  {
+    "officezone": {
+      "title": "Only for admins",
+      "is_deletable": false,
+      "groups": ["Administrator"]
+    }
+  }
+]

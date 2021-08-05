@@ -1,0 +1,17 @@
+[
+  {
+    "account": {
+      "user": "test@liis.su",
+      "account_type": "user",
+      "description": "Test Account",
+      "gender": "undefined",
+      "first_name": "Testing",
+      "last_name": "Robot",
+      "middle_name": "LIIS",
+      "region_string": "liis",
+      "district_string": "liis",
+      "updated_at": "2020-10-29 11:12:48.367658",
+      "groups": ["Administrator"]
+    }
+  }
+]

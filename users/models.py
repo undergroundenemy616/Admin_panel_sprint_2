@@ -2,15 +2,14 @@ import random
 import uuid
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.core.validators import validate_ipv46_address
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.validators import validate_ipv46_address
 from django.db import models
 
 from floors.models import Floor
 from groups.models import Group
 from offices.models import Office
-from rooms.models import Room
 
 
 def activated_code():
@@ -61,6 +60,9 @@ class User(AbstractBaseUser):
     REQUIRED_FIELDS = []
     EMAIL_FIELD = 'email'
     USERNAME_FIELD = 'id'
+
+    def __str__(self):
+        return str(self.id)
 
     @classmethod
     def normalize_phone(cls, phone_number):
@@ -174,7 +176,7 @@ class OfficePanelRelation(models.Model):
     office = models.ForeignKey(Office, null=False, related_name='office_panels', on_delete=models.CASCADE)
     floor = models.ForeignKey(Floor, null=False, related_name='office_panels', on_delete=models.CASCADE)
     account = models.OneToOneField(Account, null=False, related_name='office_panels', on_delete=models.CASCADE)
-    room = models.ForeignKey(Room, related_name='office_panels', null=True, on_delete=models.SET_NULL)
+    room = models.ForeignKey("rooms.Room", related_name='office_panels', null=True, on_delete=models.SET_NULL)
     access_code = models.IntegerField(unique=True, null=False)
 
 

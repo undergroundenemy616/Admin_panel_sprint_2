@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from django.db.models import Count
 from django.db.transaction import atomic
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import raise_errors_on_nested_writes
+from rest_framework.utils import model_meta
 
 from files.models import File
 from floors.models import Floor
-from groups.models import ADMIN_ACCESS, Group
-from groups.serializers import GroupSerializer
+from groups.models import Group
 from groups.serializers_admin import AdminGroupForOfficeSerializer
 from licenses.models import License
 from offices.models import Office, OfficeZone
@@ -73,13 +73,13 @@ class AdminOfficeZoneCreateSerializer(serializers.ModelSerializer):
                 raise ValidationError(detail={"message": "OfficeZone already exists"}, code=400)
 
         if validated_data.get('group_whitelist_visit'):
-            for title in validated_data['titles']:
+            for title in set(validated_data['titles']):
                 zone = OfficeZone(title=title, office=validated_data.get('office'))
                 for group in validated_data['group_whitelist_visit']:
                     zone.groups.add(group)
                 office_zones_to_create.append(zone)
         else:
-            for title in validated_data['titles']:
+            for title in set(validated_data['titles']):
                 office_zones_to_create.append(OfficeZone(title=title, office=validated_data.get('office')))
 
         office_zones = OfficeZone.objects.bulk_create(office_zones_to_create)
@@ -210,7 +210,6 @@ class AdminOfficeCreateSerializer(serializers.ModelSerializer):
 
 
 class AdminOfficeSerializer(serializers.ModelSerializer):
-    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True, required=False)
     working_hours = serializers.CharField(max_length=128,
                                           required=False,
                                           validators=[working_hours_validator],
@@ -218,7 +217,7 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Office
-        fields = '__all__'
+        exclude = ['images']
 
     def to_representation(self, instance):
         response = super(AdminOfficeSerializer, self).to_representation(instance)
@@ -230,5 +229,25 @@ class AdminOfficeSerializer(serializers.ModelSerializer):
         response['occupied_meeting'] = instance.occupied_meeting
         response['capacity_tables'] = instance.capacity_tables
         response['occupied_tables'] = instance.occupied_tables
+        return response
+
+
+class AdminOfficeSingleSerializer(AdminOfficeSerializer):
+    images = serializers.PrimaryKeyRelatedField(queryset=File.objects.all(), many=True)
+
+    class Meta:
+        model = Office
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        response = super(AdminOfficeSingleSerializer, self).to_representation(instance)
         response['images'] = AdminFileForOffice(instance=instance.images, many=True).data
         return response
+
+    @atomic()
+    def update(self, instance, validated_data):
+        for image in instance.images.all():
+            if str(image.id) not in validated_data.get('images'):
+                image.delete()
+
+        return super(AdminOfficeSingleSerializer, self).update(instance=instance, validated_data=validated_data)

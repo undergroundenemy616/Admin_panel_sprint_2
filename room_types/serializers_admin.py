@@ -3,7 +3,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.serializers import TestBaseFileSerializer
-from offices.models import Office
 from room_types.models import RoomType
 
 
@@ -35,15 +34,16 @@ class AdminRoomTypeCreateSerializer(serializers.ModelSerializer):
         model = RoomType
         fields = ['titles', 'bookable', 'unified', 'work_interval_days', 'work_interval_hours', 'office']
 
+    def validate(self, attrs):
+        if RoomType.objects.filter(title__in=attrs.get('titles'), office=attrs.get('office')).exists():
+            raise ValidationError(detail={"message": "RoomType already exists"}, code=400)
+        return attrs
+
     @atomic()
     def create(self, validated_data):
         room_types_to_create = []
 
-        for title in validated_data.get('titles'):
-            if RoomType.objects.filter(title=title, office=validated_data['office']).exists():
-                raise ValidationError(detail={"message": "OfficeZone already exists"}, code=400)
-
-        for title in validated_data['titles']:
+        for title in set(validated_data['titles']):
             room_type = RoomType(title=title, office=validated_data.get('office'))
             if validated_data.get('bookable'):
                 room_type.bookable = validated_data['bookable']

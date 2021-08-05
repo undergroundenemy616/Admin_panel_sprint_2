@@ -1,14 +1,12 @@
+import orjson
 from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
-from rest_framework import filters
+from rest_framework import filters, status
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, RetrieveModelMixin,
                                    UpdateModelMixin)
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-import orjson
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
@@ -16,9 +14,11 @@ from offices.models import Office, OfficeZone
 from offices.serializers import (CreateOfficeSerializer,
                                  CreateUpdateOfficeZoneSerializer,
                                  ListOfficeSerializer,
-                                 OfficeZoneSerializer, TestOfficeBaseSerializer,
+                                 MobileSimpleOfficeBaseSerializer,
+                                 OfficeZoneSerializer,
+                                 OptimizeListOfficeSerializer,
                                  SwaggerOfficeParametrs, SwaggerZonesParametrs,
-                                 office_base_serializer, OptimizeListOfficeSerializer)
+                                 TestOfficeBaseSerializer)
 
 
 class ListCreateUpdateOfficeView(ListModelMixin,
@@ -47,7 +47,7 @@ class ListCreateUpdateOfficeView(ListModelMixin,
                 office = self.queryset.get(id=request.query_params.get('id'))
             except ObjectDoesNotExist:
                 return Response("Office not found", status=status.HTTP_404_NOT_FOUND)
-            return Response(orjson.loads(orjson.dumps(office_base_serializer(office=office))), status=status.HTTP_200_OK)
+            return Response(MobileSimpleOfficeBaseSerializer(instance=office).data, status=status.HTTP_200_OK)
         response = TestOfficeBaseSerializer(instance=self.queryset.all(), many=True).data
         response = {'results': response}
         return Response(data=response, status=status.HTTP_200_OK)

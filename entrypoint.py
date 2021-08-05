@@ -1,8 +1,8 @@
-import subprocess
-import socket
-import os
-import time
 import argparse
+import os
+import socket
+import subprocess
+import time
 
 host = os.environ.get('HOST')
 port = os.environ.get('PORT')
@@ -29,9 +29,9 @@ def check_database(host, port):
         client.close()
         if result == 0: return True
         else: return False
-    except socket.gaierror: 
+    except socket.gaierror:
         print(f'Name or service {host}:{port} not known')
-    except Exception as e: 
+    except Exception as e:
         print(e)
 
 def call_command(command):

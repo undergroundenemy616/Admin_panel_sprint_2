@@ -3,10 +3,13 @@ from django.shortcuts import get_list_or_404
 from rest_framework import serializers
 
 from files.serializers import TestBaseFileSerializer
-from rooms.models import Room
-from rooms.serializers import room_marker_serializer
+from rooms.models import Room, RoomMarker
 from tables.models import Table
 from tables.serializers_admin import AdminTableSerializer
+
+
+class SwaggerRoomList(serializers.Serializer):
+    tables = serializers.BooleanField(required=False)
 
 
 class AdminRoomSerializer(serializers.ModelSerializer):
@@ -35,12 +38,14 @@ class AdminRoomSerializer(serializers.ModelSerializer):
             response['room_type_color'] = None
             response['room_type_icon'] = None
             response['room_type_unified'] = None
-        response['marker'] = room_marker_serializer(instance.room_marker) if \
+        response['marker'] = AdminRoomMarkerCreateSerializer(instance=instance.room_marker).data if \
             hasattr(instance, 'room_marker') else None
         return response
 
 
 class AdminRoomCreateUpdateSerializer(serializers.ModelSerializer):
+    icon = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = Room
         fields = '__all__'
@@ -50,11 +55,17 @@ class AdminRoomCreateUpdateSerializer(serializers.ModelSerializer):
         instance = super(AdminRoomCreateUpdateSerializer, self).create(validated_data)
         self.context['tables'] = True
         if instance.type and instance.type.unified and instance.type.bookable:
-            Table.objects.create(title=instance.title, room_id=instance.id, )
+            Table.objects.create(title=validated_data['type'].title, room_id=instance.id, )
         return instance
 
     @atomic()
     def update(self, instance, validated_data):
+        if hasattr(instance, 'room_marker') and validated_data.get('icon'):
+            instance.room_marker.icon = validated_data['icon']
+            instance.room_marker.save()
+        for image in instance.images.all():
+            if str(image.id) not in validated_data.get('images'):
+                image.delete()
         if instance.type and validated_data.get('type'):
             if instance.type.unified != validated_data.get('type').unified or \
                     instance.type.bookable != validated_data.get('type').bookable:
@@ -62,7 +73,7 @@ class AdminRoomCreateUpdateSerializer(serializers.ModelSerializer):
                 for table in instance.tables.all():
                     table.delete()
                 if validated_data['type'].unified and validated_data['type'].bookable:
-                    Table.objects.create(title=instance.title, room_id=instance.id, )
+                    Table.objects.create(title=validated_data['type'].title, room_id=instance.id, )
         return super(AdminRoomCreateUpdateSerializer, self).update(instance, validated_data)
 
     def to_representation(self, instance):
@@ -85,3 +96,9 @@ class AdminRoomListDeleteSerializer(serializers.Serializer):
         query = get_list_or_404(Room, id__in=self.data['rooms'])
         for table in query:
             table.delete()
+
+
+class AdminRoomMarkerCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoomMarker
+        fields = '__all__'

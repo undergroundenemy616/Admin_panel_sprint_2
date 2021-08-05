@@ -1,13 +1,10 @@
+from rest_framework.mixins import ListModelMixin, Response, status
+from rest_framework.generics import GenericAPIView
 from rest_framework import filters
-from rest_framework.generics import GenericAPIView, get_object_or_404
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin, Response,
-                                   RetrieveModelMixin, UpdateModelMixin,
-                                   status)
 
-from core.permissions import IsAdmin
 from rooms.models import Room
-from rooms.serializers import RoomSerializer, TestRoomSerializer
+from core.permissions import IsAdmin
+from rooms.serializers import TestRoomSerializer, RoomSerializer
 from rooms.serializers_panel import PanelRoomGetSerializer, PanelSingleRoomSerializer
 from users.models import OfficePanelRelation
 
@@ -16,7 +13,7 @@ class PanelRoomsView(GenericAPIView, ListModelMixin):
     queryset = Room.objects.all().select_related('type', 'floor', 'zone', 'room_marker').prefetch_related('images')
     permission_classes = (IsAdmin, )
     serializer_class = RoomSerializer
-    # filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'type__title', 'description']
     pagination_class = None
 
@@ -32,10 +29,12 @@ class PanelRoomsView(GenericAPIView, ListModelMixin):
                 'results': results.data
             }
             return Response(response_dict, status=status.HTTP_200_OK)
-        unified_rooms_on_floor = self.queryset.filter(floor=request.query_params.get('floor'), type__unified=True)
+        unified_rooms_on_floor = self.queryset.filter(floor=request.query_params.get('floor'),
+                                                      type__unified=True, type__bookable=True)
         response = TestRoomSerializer(
-            instance=unified_rooms_on_floor.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
-                                            'type__icon', 'images').select_related(
+            instance=unified_rooms_on_floor.prefetch_related('tables', 'tables__tags',
+                                                             'tables__images', 'tables__table_marker',
+                                                             'type__icon', 'images').select_related(
                 'room_marker', 'type', 'floor', 'zone'), many=True).data
 
         copy_response = response[:]

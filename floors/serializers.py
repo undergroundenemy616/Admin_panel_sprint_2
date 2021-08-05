@@ -1,15 +1,17 @@
-from django.core.exceptions import ObjectDoesNotExist
-from rest_framework import serializers
 from typing import Any, Dict
 
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Case, Count, Q, When
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
 from files.models import File
 from files.serializers import FileSerializer, image_serializer
 from floors.models import Floor, FloorMap
 from offices.models import Office
 from rooms.models import Room
-from rooms.serializers import RoomSerializer, base_serialize_room, TestRoomSerializer
+from rooms.serializers import (RoomSerializer, TestRoomSerializer,
+                               base_serialize_room)
 from tables.models import Table
 
 
@@ -118,7 +120,7 @@ class FloorSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         if not isinstance(instance, list):
             response = BaseFloorSerializer(instance=instance).data
-            response['rooms'] = [RoomSerializer(instance=room).data for room in instance.rooms.all()]
+            response['rooms'] = RoomSerializer(instance=instance.rooms.all(), many=True).data
             floor_map = FloorMap.objects.filter(floor=instance.id).first()
             if floor_map:
                 response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
@@ -126,9 +128,9 @@ class FloorSerializer(serializers.ModelSerializer):
                 response['floor_map'] = None
             return response
         else:
-            response = []
-            for floor in instance:
-                response.append(BaseFloorSerializer(instance=floor).data)
+            response = BaseFloorSerializer(instance=instance, many=True).data
+            # for floor in instance:
+            #     response.append(BaseFloorSerializer(instance=floor).data)
             return response
 
     def validate(self, attrs):
@@ -207,7 +209,7 @@ class FloorMapSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         # data = super(FloorMapSerializer, self).to_representation(instance)
         # data['image'] = FileSerializer(instance=instance.image).data
-        data = FloorSerializer(instance=instance.floor).data
+        data = TestFloorSerializer(instance=instance.floor).data  #FloorSerializer
         return data
 
 
@@ -228,16 +230,26 @@ class TestFloorSerializer(serializers.Serializer):
     def to_representation(self, instance):
         response = super(TestFloorSerializer, self).to_representation(instance)
         response['rooms'] = TestRoomSerializer(
-            instance=instance.rooms.prefetch_related('tables', 'tables__tags', 'tables__images', 'tables__table_marker',
-                                                     'type__icon', 'images').select_related(
-                'room_marker', 'type', 'floor', 'zone'), many=True).data
-        tables = Table.objects.filter(room__floor=instance)
-        response['occupied'] = tables.filter(is_occupied=True).count()
-        response['capacity'] = tables.count()
-        response['capacity_meeting'] = tables.filter(room__type__unified=True).count()
-        response['occupied_meeting'] = tables.filter(room__type__unified=True, is_occupied=True).count()
-        response['capacity_tables'] = tables.filter(room__type__unified=False).count()
-        response['occupied_tables'] = tables.filter(room__type__unified=False, is_occupied=True).count()
+            instance=instance.rooms, many=True).data
+        tables = Table.objects.filter(room__floor__office_id=instance.id).aggregate(
+            occupied=Count(Case(When(is_occupied=True, then=1))),
+            capacity=Count('*'),
+            capacity_meeting=Count(Case(When(room__type__unified=True, then=1))),
+            occupied_meeting=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=True), then=1))),
+            capacity_tables=Count(Case(When(room__type__unified=False, then=1))),
+            occupied_tables=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=False), then=1)))
+        )
+        response['capacity'] = tables['capacity']
+        response['occupied'] = tables['occupied']
+        response['capacity_meeting'] = tables['capacity_meeting']
+        response['occupied_meeting'] = tables['occupied_meeting']
+        response['capacity_tables'] = tables['capacity_tables']
+        response['occupied_tables'] = tables['occupied_tables']
+        floor_map = instance.floormap if hasattr(instance, 'floormap') else None
+        if floor_map:
+            response['floor_map'] = BaseFloorMapSerializer(instance=floor_map).data
+        else:
+            response['floor_map'] = None
         return response
 
 

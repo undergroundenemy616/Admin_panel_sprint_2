@@ -1,3 +1,4 @@
+from booking_api_django_new.filestorage_auth import check_token
 from booking_api_django_new.settings import FILES_HOST
 from calendar import monthrange
 from core.handlers import ResponseException
@@ -27,7 +28,7 @@ from bookings.serializers import (BookingSerializer,
                                   employee_statistics, most_frequent, date_validation)
 from core.permissions import IsAdmin
 from files.models import File
-from files.serializers import BaseFileSerializer, check_token
+from files.serializers import BaseFileSerializer
 
 
 class BookingStatisticsRoomTypes(GenericAPIView):
@@ -208,7 +209,7 @@ class BookingEmployeeStatistics(GenericAPIView):
         JOIN users_account ua on b.user_id = ua.id
         JOIN users_user uu on ua.user_id = uu.id
         WHERE EXTRACT(MONTH from b.date_from) = {month_num} and EXTRACT(YEAR from b.date_from) = {year}
-        and (b.status='over' or b.status = 'canceled' or b.status = 'auto_canceled')"""
+        and (b.status='over' or b.status = 'canceled' or b.status = 'auto_canceled' or b.status = 'auto_over')"""
 
         if serializer.data.get('office_id'):
             query = query + f""" and oo.id = '{serializer.data.get('office_id')}'"""
@@ -253,7 +254,7 @@ class BookingEmployeeStatistics(GenericAPIView):
                 for result in sql_results:
                     if result['user_id'] == employee['id'] and result['office_id'] == employee['office_id']:
                         employee['book_count'] = employee['book_count'] + 1
-                        if result['book_status'] == 'over':
+                        if result['book_status'] == 'over' or result['book_status'] == 'auto_over':
                             employee['over_book'] = employee['over_book'] + 1
                         elif result['book_status'] == 'canceled':
                             employee['canceled_book'] = employee['canceled_book'] + 1
@@ -363,4 +364,3 @@ class BookingEmployeeStatistics(GenericAPIView):
             return Response(BaseFileSerializer(instance=file_storage_object).data, status=status.HTTP_201_CREATED)
         else:
             return Response("Data not found", status=status.HTTP_404_NOT_FOUND)
-

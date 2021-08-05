@@ -1,7 +1,9 @@
+from django.db.transaction import atomic
 from django.shortcuts import get_list_or_404
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
+from core.handlers import ResponseException
 from files.models import File
 from files.serializers import TestBaseFileSerializer
 from files.serializers_admin import AdminFileSerializer
@@ -37,8 +39,8 @@ class AdminTableSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super(AdminTableSerializer, self).to_representation(instance)
         response['room'] = instance.room.id
-        response['room__title'] = instance.room.title
-        response['floor__title'] = instance.room.floor.title
+        response['room_title'] = instance.room.title
+        response['floor_title'] = instance.room.floor.title
         response['images'] = TestBaseFileSerializer(instance=instance.images, many=True).data
         response['rating'] = 0
         response['ratings'] = 0  # TODO: Looks like this is doesn't need
@@ -53,11 +55,23 @@ class AdminTableCreateUpdateSerializer(serializers.ModelSerializer):
         model = Table
         fields = '__all__'
 
+    @atomic()
+    def update(self, instance, validated_data):
+        if validated_data.get('room') and validated_data['room'] != instance.room:
+            instance.table_marker.delete()
+            instance.refresh_from_db()
+        for image in instance.images.all():
+            if str(image.id) not in validated_data.get('images'):
+                image.delete()
+
+        return super(AdminTableCreateUpdateSerializer, self).update(instance, validated_data)
+
     def to_representation(self, instance):
         return AdminTableSerializer(instance=instance).data
 
 
 class AdminTableMarkerSerializer(serializers.ModelSerializer):
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), source='table.room', required=False)
 
     class Meta:
         model = TableMarker
@@ -85,6 +99,13 @@ class AdminTableTagSerializer(serializers.ModelSerializer):
         response = super(AdminTableTagSerializer, self).to_representation(instance)
         response['icon'] = AdminFileSerializer(instance=instance.icon).data if instance.icon else None
         return response
+    
+    @atomic()
+    def update(self, instance, validated_data):
+        if instance.icon and validated_data.get('icon') != instance.icon:
+            instance.icon.delete()
+            
+        return super(AdminTableTagSerializer, self).update(instance=instance, validated_data=validated_data)
 
 
 class AdminTableTagCreateSerializer(serializers.ModelSerializer):
@@ -100,9 +121,16 @@ class AdminTableTagCreateSerializer(serializers.ModelSerializer):
         response['results'] = AdminTableTagSerializer(instance=instance, many=True).data
         return response
 
+    def validate(self, attrs):
+        if not self.instance:
+            if TableTag.objects.filter(office=attrs.get('office'), title__in=attrs.get('titles')).exists():
+                raise ResponseException(detail="TableTag already exists", status_code=status.HTTP_400_BAD_REQUEST)
+        return attrs
+
+    @atomic()
     def create(self, validated_data):
         tags_to_create = []
-        for tag_title in validated_data.get('titles'):
+        for tag_title in set(validated_data.get('titles')):
             tags_to_create.append(TableTag(title=tag_title, office=validated_data.get('office'),
                                            icon=validated_data.get('icon')))
         tags = TableTag.objects.bulk_create(tags_to_create)

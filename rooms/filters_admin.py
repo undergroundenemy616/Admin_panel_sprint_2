@@ -24,6 +24,7 @@ class AdminRoomFilter(django_filters.FilterSet):
     images = django_filters.BooleanFilter('images', lookup_expr='isnull', exclude=True)
     type = django_filters.CharFilter('type__title')
     free = django_filters.NumberFilter('free', lookup_expr='gte')
+    booked = django_filters.NumberFilter('occupied', lookup_expr='gte')
     range_from = django_filters.NumberFilter('free', lookup_expr='gte')
     range_to = django_filters.NumberFilter('free', lookup_expr='lte')
     tags = ListFilter('tables__tags__title', lookup_expr='in', label='tags')
@@ -32,4 +33,4 @@ class AdminRoomFilter(django_filters.FilterSet):
     class Meta:
         model = Room
         fields = ['office', 'floor', 'room_type', 'bookable', 'unified',
-                  'type', 'zone', 'floor', 'tags', 'office_panel']
+                  'type', 'zone', 'tags', 'office_panel', 'free']

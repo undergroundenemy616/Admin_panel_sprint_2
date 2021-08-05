@@ -9,9 +9,9 @@ https://docs.djangoproject.com/en/3.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
-from datetime import timedelta
-import os
 import logging
+import os
+from datetime import timedelta
 
 import orjson
 from dotenv import load_dotenv
@@ -27,15 +27,26 @@ APPEND_SLASH = False
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'yv18vx3=v*sm0)ma#j1)qubg$+lpeqg6vg9$cvcvm8vz2qazq$'
 
-LOCAL = True if os.getenv('LOCAL') == 'True' else False
+LOCAL = False if os.environ.get('LOCAL') else True
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False  # if os.environ.get('BRANCH') == 'prod_gpn' else True
 
-KEY_EXPIRATION = 60  # 3 minutes
+ADMIN_HOST = os.environ.get('ADMIN_HOST')
+EMAIL_FOR_DEMOS = os.environ.get('EMAIL_FOR_DEMOS')
+
+SMS_MOCK_CONFIRM = os.environ.get("SMS_MOCK_CONFIRM")
+
+KEY_EXPIRATION = 60  # seconds
+KEY_EXPIRATION_EMAIL = 60 * 15  # 15 min
+
+SESSION_COOKIE_AGE = 15 * 60
 
 BOOKING_PUSH_NOTIFY_UNTIL_MINS = 60
 BOOKING_TIMEDELTA_CHECK = 15
 PUSH_HOST = "https://push.liis.su"
+PUSH_USERNAME = "omniman"
+PUSH_PASSWORD = "slicing_unshipped_stopping_mystified"
+PUSH_TOKEN = ''
 
 SERVER_EMAIL = 'support@liis.su'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -53,6 +64,8 @@ ALLOWED_HOSTS = ['*']
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+
     'EXCEPTION_HANDLER': 'core.exception.detail_exception_handler',
 
     'DEFAULT_RENDERER_CLASSES': [
@@ -118,6 +131,7 @@ SIMPLE_JWT = {
 INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'groups.apps.GroupsConfig',
+    'group_bookings',
     'files',
     'floors',
     'licenses',
@@ -128,10 +142,13 @@ INSTALLED_APPS = [
     'reports',
     'bookings',
     'push_tokens',
+    'teams',
     'rest_framework',
     'drf_yasg',
+    'management',
     'mail',
     'django_apscheduler',
+    'django_filters',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.postgres',
@@ -179,7 +196,11 @@ CACHES = {
 
 ADMINS = [('Support', 'support@liis.su'), ]
 
-REQUEST_LOGGING_DATA_LOG_LEVEL = logging.WARNING
+DATA_UPLOAD_MAX_MEMORY_SIZE = 11534336
+
+REQUEST_LOGGING_DATA_LOG_LEVEL = logging.INFO
+
+REQUEST_LOGGING_MAX_BODY_LENGTH = 1000
 
 LOGGING = {
     'version': 1,
@@ -227,6 +248,11 @@ LOGGING = {
         },
     },
     'loggers': {
+        'bookings': {
+            'handlers': ['console', 'logfile'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'django.request': {
             'handlers': ['console', 'logfile'],
             'level': 'INFO',
@@ -237,7 +263,6 @@ LOGGING = {
 
 MIDDLEWARE = [
     'core.middlewares.CorsMiddleware',
-    'core.middlewares.RequestTimeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'core.middlewares.SimpleLogMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -250,6 +275,7 @@ MIDDLEWARE = [
 # 'django.contrib.messages.middleware.MessageMiddleware',
 if LOCAL:
     MIDDLEWARE += ['booking_api_django_new.debug.PrintSqlQuery']
+    MIDDLEWARE += ['core.middlewares.RequestTimeMiddleware']
 
 ROOT_URLCONF = 'booking_api_django_new.urls'
 
@@ -285,12 +311,6 @@ WSGI_APPLICATION = 'booking_api_django_new.wsgi.application'
 
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-print({
-    'NAME': os.environ.get('DB_NAME'),
-    'USER': os.environ.get('DB_USER'),
-    'PASSWORD': os.environ.get('DB_PASSWORD'),
-})
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -303,18 +323,18 @@ DATABASES = {
     }
 }
 
-SCHEDULER_CONFIG = {
-    "apscheduler.jobstores.default": {
-        "class": "django_apscheduler.jobstores:DjangoJobStore"
-    },
-    'apscheduler.executors.processpool': {
-        "type": "processpool",
-        "max_workers": "2"
-    },
-    'apscheduler.job_defaults.coalesce': 'false',
-    'apscheduler.job_defaults.max_instances': '2',
-}
-SCHEDULER_AUTOSTART = True
+# SCHEDULER_CONFIG = {
+#     "apscheduler.jobstores.default": {
+#         "class": "django_apscheduler.jobstores:DjangoJobStore"
+#     },
+#     'apscheduler.executors.processpool': {
+#         "type": "processpool",
+#         "max_workers": "2"
+#     },
+#     'apscheduler.job_defaults.coalesce': 'false',
+#     'apscheduler.job_defaults.max_instances': '2',
+# }
+# SCHEDULER_AUTOSTART = True
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -331,6 +351,30 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsDigitsValidator',
+        'OPTIONS': {
+            'min_digits': 1
+        }
+    },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsUppercaseValidator',
+        'OPTIONS': {
+            'min_uppercase': 1
+        }
+    },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsLowercaseValidator',
+        'OPTIONS': {
+            'min_lowercase': 1
+        }
+    },
+    {
+        'NAME': 'django-advanced_password_validation.advanced_password_validation.ContainsSpecialCharactersValidator',
+        'OPTIONS': {
+            'min_characters': 1
+        }
     },
 ]
 
@@ -366,9 +410,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload/')
 MEDIA_URL = '/media/'
-FILES_USERNAME = os.environ.get('FILES_USERNAME')
-FILES_PASSWORD = os.environ.get('FILES_PASSWORD')
-FILES_HOST = os.environ.get('FILES_HOST')
+FILES_USERNAME = os.environ.get('FILES_USERNAME').replace('"', '') if os.environ.get('FILES_USERNAME') else None
+FILES_PASSWORD = os.environ.get('FILES_PASSWORD').replace('"', '') if os.environ.get('FILES_PASSWORD') else None
+FILES_HOST = os.environ.get('FILES_HOST').replace('"', '') if os.environ.get('FILES_HOST') else None
 
 HARDCODED_PHONE_NUMBER = (
     "+13371337133"  # hardcoded phone number for passing AppStore and PlayMarket tests

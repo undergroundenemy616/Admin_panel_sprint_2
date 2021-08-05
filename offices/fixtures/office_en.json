@@ -1,0 +1,10 @@
+[
+  {
+    "office": {
+      "title": "Test BC",
+      "description": "BC for testing",
+      "working_hours": "Everyday from 10 to 20 ",
+      "service_email": "nap@liis.su"
+    }
+  }
+]

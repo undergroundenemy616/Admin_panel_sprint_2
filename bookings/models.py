@@ -1,12 +1,17 @@
 import os
 import uuid
+
+import pytz
+from django.core.cache import cache
+
+from booking_api_django_new.celery import app as celery_app
+from celery.app.control import Control
+import bookings.tasks as tasks
 import asyncio
 import orjson
 from datetime import datetime, timedelta, timezone
 
-import pytz
 import requests
-from asgiref.sync import async_to_sync, sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Min, Q
@@ -15,23 +20,26 @@ from django.utils.timezone import now
 from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
                                              BOOKING_TIMEDELTA_CHECK,
                                              PUSH_HOST)
-from core.scheduler import scheduler
 from groups.models import EMPLOYEE_ACCESS
 from tables.models import Table
 from users.models import Account, User, OfficePanelRelation
 
 from channels.layers import get_channel_layer
 
+from group_bookings.models import GroupBooking
+
+from offices.models import Office
+
 MINUTES_TO_ACTIVATE = 15
 BOOKING_STATUS_FOR_WS = ['new', 'over', 'canceled']
-global GLOBAL_DATE_FROM_WS
-global GLOBAL_DATETIME_FROM_WS
-global GLOBAL_DATETIME_TO_WS
+# global GLOBAL_DATE_FROM_WS
+# global GLOBAL_DATETIME_FROM_WS
+# global GLOBAL_DATETIME_TO_WS
 utc = pytz.UTC
-GLOBAL_DATE_FROM_WS = dict()
-GLOBAL_DATETIME_FROM_WS = dict()  # datetime.now().replace(tzinfo=utc)
-GLOBAL_DATETIME_TO_WS = dict()  # datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
-GLOBAL_TABLES_CHANNEL_NAMES = dict()
+# GLOBAL_DATE_FROM_WS = dict()
+# GLOBAL_DATETIME_FROM_WS = dict()  # datetime.now().replace(tzinfo=utc)
+# GLOBAL_DATETIME_TO_WS = dict()  # datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
+# GLOBAL_TABLES_CHANNEL_NAMES = dict()
 
 
 class BookingManager(models.Manager):
@@ -41,18 +49,25 @@ class BookingManager(models.Manager):
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
                     | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(
-            date_from__lt=date_to))
+            date_from__lt=date_to))  # | Q(date_to__gt=date_from, date_to__lt=date_to)
         if overflows:
             return True
         return False
 
     def is_overflowed_with_data(self, table, date_from, date_to):
         """Check for booking availability"""
-        overflows = self.model.objects.filter(table=table). \
+        overflows = self.model.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
-                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
-        return overflows
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).select_related(
+            'table')
+        # Q(date_from__gt=date_from, date_from__lt=date_to)
+        # | Q(date_from__lt=date_from, date_to__gt=date_to)
+        # | Q(date_from__gt=date_from, date_to__lt=date_to)
+        # | Q(date_to__gt=date_from, date_to__lt=date_to)
+        if overflows:
+            return overflows
+        return []
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
@@ -73,14 +88,15 @@ class BookingManager(models.Manager):
 
     def create(self, **kwargs):
         """Check for consecutive bookings and merge instead of create if exists"""
+        language = kwargs.pop('kwargs', None)
         obj = self.model(**kwargs)
         consecutive_booking = obj.get_consecutive_booking()
         if consecutive_booking:
             consecutive_booking.date_to = obj.date_to
-            consecutive_booking.save()
+            consecutive_booking.save(kwargs=language)
             return consecutive_booking
         else:
-            obj.save()
+            obj.save(kwargs=language)
             return obj
 
     def active_only(self):
@@ -105,14 +121,68 @@ class Booking(models.Model):
     table = models.ForeignKey(Table, related_name="existing_bookings", null=False, on_delete=models.CASCADE)
     theme = models.CharField(default="Без темы", max_length=200)
     status = models.CharField(choices=STATUS, null=False, max_length=20, default='waiting')
+    group_booking = models.ForeignKey(GroupBooking, on_delete=models.CASCADE,
+                                      null=True, default=None, related_name='bookings')
     objects = BookingManager()
 
     def save(self, *args, **kwargs):
-        self.date_activate_until = self.calculate_date_activate_until()
+        # office = Office.objects.get(id=self.table.room.floor.office_id)
+        # open_time, close_time = office.working_hours.split('-')
+        # open_time = datetime.strptime(open_time, '%H:%M')
+        # close_time = datetime.strptime(close_time, '%H:%M')
+        # time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
+        # date_from = self.date_from + time_zone # TODO: Uncomment for next release
+        # date_to = self.date_to + time_zone
+
+        # if not open_time.time() <= date_from.time() <= close_time.time() or not \
+        #         open_time.time() <= date_to.time() <= close_time.time():
+        #     raise ResponseException('The selected time does not fall into the office work schedule',
+        #                             status_code=status.HTTP_400_BAD_REQUEST)
+
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
-        self.job_create_change_states()
-        if self.table.room.type.unified:
-            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
+        self.date_activate_until = self.calculate_date_activate_until()
+        try:
+            language = kwargs.pop('kwargs')
+        except Exception as e:
+            language = 'ru'
+        if not JobStore.objects.filter(job_id__contains=str(self.id)):
+            JobStore.objects.create(job_id='check_booking_activate_' + str(self.id),
+                                    time_execute=self.date_activate_until,
+                                    parameters={'uuid': str(self.id)})
+            JobStore.objects.create(job_id='make_booking_over_' + str(self.id),
+                                    time_execute=self.date_to,
+                                    parameters={'uuid': str(self.id)})
+            JobStore.objects.create(job_id='notify_about_book_ending_' + str(self.id),
+                                    time_execute=self.date_to - timedelta(minutes=15),
+                                    parameters={'uuid': str(self.id),
+                                                'language': language})
+            if date_now + timedelta(minutes=BOOKING_TIMEDELTA_CHECK) > self.date_from:
+                JobStore.objects.create(job_id='notify_about_booking_activation_' + str(self.id),
+                                        time_execute=date_now + timedelta(minutes=1),
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
+                tasks.notify_about_booking_activation.apply_async(
+                    args=[self.id, language],
+                    eta=date_now + timedelta(minutes=1),
+                    task_id='notify_about_activation_booking_' + str(self.id))
+            else:
+                JobStore.objects.create(job_id='notify_about_booking_activation_' + str(self.id),
+                                        time_execute=self.date_from - timedelta(minutes=BOOKING_TIMEDELTA_CHECK),
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
+            if date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) < self.date_from:
+                JobStore.objects.create(job_id='notify_about_oncoming_booking_' + str(self.id),
+                                        time_execute=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
+                                        parameters={'uuid': str(self.id),
+                                                    'language': language})
+
+        if self.table.room.type.unified and self.table.room.office_panels.exists() and cache.get('dict_for_wc') and \
+                cache.get('dict_for_wc')['global_date_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_to_ws'].get(f'{self.table.id}'):
+            dict_for_wc = cache.get('dict_for_wc')
+
+            if dict_for_wc['global_date_from_ws'][f'{self.table.id}'] == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket()
                 try:
                     asyncio.run(self.websocket_notification_by_date(result_for_date))
@@ -120,10 +190,13 @@ class Booking(models.Model):
                     print('-----ERROR--CREATE--BY--DATE---', e)
             else:
                 pass
-            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
+            if ((dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to <=
+                 dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] <= self.date_from <
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] >= self.date_from >=
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    and (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to)):
                 result_for_datetime = self.create_response_for_datetime_websocket()
                 try:
                     asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
@@ -133,6 +206,9 @@ class Booking(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         self.set_booking_over()
+        if self.group_booking and ((self.user == self.group_booking.author and self.table.room.type.unified) or
+                                   self.group_booking.bookings.count() == 1):
+            self.group_booking.delete()
         super(self.__class__, self).delete(using, keep_parents)
 
     def set_booking_active(self, *args, **kwargs):
@@ -162,23 +238,32 @@ class Booking(models.Model):
                 instance.status = 'auto_canceled'
             elif kwargs['kwargs'].get('status') == 'over':
                 instance.status = 'over'
-                instance.date_to = now()
         else:
             instance.date_to = now()
             instance.status = 'canceled'
         instance.table.set_table_free()
-        # instance = super(self.__class__, self)
-        if scheduler.get_job(job_id="notify_about_oncoming_booking_" + str(self.id)):
-            scheduler.remove_job(job_id="notify_about_oncoming_booking_" + str(self.id))
-        if scheduler.get_job(job_id="notify_about_activation_booking_" + str(self.id)):
-            scheduler.remove_job(job_id="notify_about_activation_booking_" + str(self.id))
-        if scheduler.get_job(job_id="check_booking_activate_" + str(self.id)):
-            scheduler.remove_job(job_id="check_booking_activate_" + str(self.id))
-        if scheduler.get_job(job_id="set_booking_over_" + str(self.id)):
-            scheduler.remove_job(job_id="set_booking_over_" + str(self.id))
+
+        control = Control(app=celery_app)
+        if kwargs.get('kwargs'):
+            if kwargs['kwargs'].get('source') == 'check_activate':
+                control.revoke(task_id='make_booking_over_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
+            elif not kwargs['kwargs'].get('source'):
+                control.revoke(task_id='make_booking_over_' + str(self.id), terminate=True)
+                control.revoke(task_id='check_booking_activate_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_oncoming_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_activation_booking_' + str(self.id), terminate=True)
+                control.revoke(task_id='notify_about_book_ending_' + str(uuid), terminate=True)
+        tasks.all_job_delete(str(self.id))
+
         super(Booking, instance).save()
-        if self.table.room.type.unified:
-            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
+        if self.table.room.type.unified and self.table.room.office_panels.exists() and cache.get('dict_for_wc') and \
+                cache.get('dict_for_wc')['global_date_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_to_ws'].get(f'{self.table.id}'):
+            dict_for_wc = cache.get('dict_for_wc')
+
+            if dict_for_wc['global_date_from_ws'][f'{self.table.id}'] == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket(instance)
                 try:
                     asyncio.run(self.websocket_notification_by_date(result=result_for_date))
@@ -186,10 +271,14 @@ class Booking(models.Model):
                     print('-----ERROR--OVER--BY--DATE---', e)
             else:
                 pass
-            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
+
+            if ((dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to <=
+                 dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] <= self.date_from <
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] >= self.date_from >=
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    and (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to)):
                 result_for_datetime = self.create_response_for_datetime_websocket(instance)
                 try:
                     asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
@@ -269,6 +358,7 @@ class Booking(models.Model):
         """Send PUSH-notification about opening activation"""
         #  and (self.date_from - datetime.now()).total_seconds() / 60.0 <= BOOKING_TIMEDELTA_CHECK \
         push_group = os.environ.get("PUSH_GROUP")
+        date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if push_group and not self.is_over \
                 and self.user:
             expo_data = {
@@ -276,7 +366,7 @@ class Booking(models.Model):
                 "app": push_group,
                 "expo": {
                     "title": "Открыто подтверждение!",
-                    "body": f"Вы можете подтвердить бронирование QR-кодом в течение 30 минут.",
+                    "body": "Вы можете подтвердить бронирование QR-кодом в течение 30 минут.",
                     "data": {
                         "go_booking": True
                     }
@@ -293,44 +383,25 @@ class Booking(models.Model):
             # for token in [push_object.token for push_object in self.user.push_tokens.all()]:
             #     send_push_message(token, expo_data)
 
-    def job_create_oncoming_notification(self):
-        """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
-        date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
-        # if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
-        scheduler.add_job(
-            func=self.notify_about_oncoming_booking,
-            name="oncoming",
-            run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (
-                    date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
-                minutes=2),
-            misfire_grace_time=None,
-            id="notify_about_oncoming_booking_" + str(self.id),
-            replace_existing=True
-        )
-        scheduler.add_job(
-            func=self.notify_about_booking_activation,
-            name="activation",
-            run_date=self.date_from - timedelta(
-                minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
-            misfire_grace_time=None,
-            id="notify_about_activation_booking_" + str(self.id),
-            replace_existing=True
-        )
-
     @staticmethod
     async def websocket_notification_by_date(result=None):
+        dict_for_wc = cache.get('dict_for_wc')
+        if not dict_for_wc:
+            return
         json_format = {'type': 'send_json',
                        'text': {
-                        'type': 'timeline',
-                        'data': result
-                             }
+                           'type': 'timeline',
+                           'data': result
+                       }
                        }
         channel_layer = get_channel_layer()
         print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
+        # print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
+        print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
         print('Send info outside model')
-        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
+        # channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
+        channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
         if result[0].get('delete'):
             result = []
             json_format = {'type': 'send_json',
@@ -346,6 +417,9 @@ class Booking(models.Model):
 
     @staticmethod
     async def websocket_notification_by_datetime(result=None):
+        dict_for_wc = cache.get('dict_for_wc')
+        if not dict_for_wc:
+            return
         json_format = {
             'type': 'send_json',
             'text': {
@@ -355,9 +429,11 @@ class Booking(models.Model):
         }
         channel_layer = get_channel_layer()
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
+        # print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
+        print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
         print('Send info outside model')
-        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
+        # channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
+        channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
         print('channel is: ', channel)
         await channel_layer.send(str(channel), result_in_json)
 
@@ -449,21 +525,10 @@ class Booking(models.Model):
                            'delete': True})
         return result
 
-    def job_create_change_states(self):
-        """Add job for occupied/free states changing"""
-        scheduler.add_job(
-            self.make_booking_over,
-            "date",
-            run_date=self.date_to,
-            misfire_grace_time=10000,
-            id="set_booking_over_" + str(self.id),
-            replace_existing=True
-        )
-        # scheduler.add_job(
-        #     self.check_booking_activate,
-        #     "date",
-        #     run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
-        #     misfire_grace_time=10000,
-        #     id="check_booking_activate_" + str(self.id),
-        #     replace_existing=True
-        # )
+
+class JobStore(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    job_id = models.CharField(max_length=100)
+    time_execute = models.DateTimeField()
+    parameters = models.JSONField()
+    executed = models.BooleanField(default=False)

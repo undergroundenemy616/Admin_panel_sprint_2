@@ -3,6 +3,8 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from core.handlers import ResponseException
+
 ALLOWED_GROUPS = (
     ('guest', 'guest'),  # access 4
     ('employee', 'employee'),   # access 3
@@ -40,12 +42,12 @@ class Group(models.Model):
         if (self.title, self.title) in ALLOWED_GROUPS \
                 and self.access not in (OWNER_ACCESS, ADMIN_ACCESS, GUEST_ACCESS):
             msg = 'Access and title cannot be mapped!'
-            raise ValidationError(msg)
+            raise ResponseException(detail=msg)
 
     def delete(self, using=None, keep_parents=False):
         if not self.is_deletable:
             msg = f'This group {self.title} has non-deletable permissions.'
-            raise ValidationError(msg)
+            raise ResponseException(detail=msg)
         return super(Group, self).delete(using=None, keep_parents=False)
 
     @staticmethod

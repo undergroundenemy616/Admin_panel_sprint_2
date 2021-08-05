@@ -74,10 +74,9 @@ class PanelFloorSerializerWithMap(serializers.Serializer):
     def to_representation(self, instance):
         response = super(PanelFloorSerializerWithMap, self).to_representation(instance)
         response['rooms'] = TestRoomSerializer(
-            instance=instance.rooms.filter(type__unified=True).prefetch_related('tables', 'tables__tags',
-                                                                                'tables__images',
-                                                                                'tables__table_marker',
-                                                                                'type__icon', 'images').select_related(
+            instance=instance.rooms.filter(type__unified=True, type__bookable=True).prefetch_related(
+                'tables', 'tables__tags', 'tables__images',
+                'tables__table_marker', 'type__icon', 'images').select_related(
                 'room_marker', 'type', 'floor', 'zone'), many=True).data
         tables = Table.objects.filter(room__floor=instance)
         try:

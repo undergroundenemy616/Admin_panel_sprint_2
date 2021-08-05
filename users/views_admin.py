@@ -5,6 +5,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -19,9 +20,9 @@ from users.serializers_admin import (AdminCreateOperatorSerializer,
                                      AdminPasswordChangeSerializer,
                                      AdminPasswordResetSerializer,
                                      AdminServiceEmailViewValidatorSerializer,
-                                     AdminUserCreateSerializer,
                                      AdminUserSerializer, AdminLoginSerializer,
-                                     AdminPromotionDemotionSerializer)
+                                     AdminPromotionDemotionSerializer, AdminUserCreateUpdateSerializer,
+                                     AdminContactCheckSerializer)
 
 
 class AdminOfficePanelViewSet(viewsets.ModelViewSet):
@@ -63,12 +64,12 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             if self.request.query_params.get('group'):
                 self.queryset = Account.objects.all()
             self.queryset = self.queryset.select_related('user', 'photo').prefetch_related('groups')
-        return self.queryset.all()
-    
+        return self.queryset.all().order_by('id')
+
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         request.data['user'] = instance.user.id
-        if request.data['email'] == "":
+        if (request.data.get('email') and request.data['email'] == "") or not request.data.get('email'):
             request.data['email'] = None
         return super(AdminUserViewSet, self).update(request, *args, **kwargs)
 
@@ -78,8 +79,8 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "POST" and self.request.data.get('operator'):
             return AdminCreateOperatorSerializer
-        if self.request.method == "POST":
-            return AdminUserCreateSerializer
+        if self.request.method in ["POST", "PUT"]:
+            return AdminUserCreateUpdateSerializer
         return self.serializer_class
 
 
@@ -189,3 +190,23 @@ class AdminPromotionDemotionView(GenericAPIView):
         message = serializer.change_status()
 
         return Response({'message': message}, status=status.HTTP_200_OK)
+
+
+class AdminSelfView(GenericAPIView):
+    permission_classes = (IsAdmin, )
+    serializer_class = None
+
+    def get(self, request, *args, **kwargs):
+        return Response(AdminUserSerializer(instance=get_object_or_404(Account, user=request.user)).data,
+                        status=status.HTTP_200_OK)
+
+
+class AdminContactCheckView(GenericAPIView,
+                            CreateModelMixin):
+    serializer_class = AdminContactCheckSerializer
+    permission_classes = (IsAdmin, )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)

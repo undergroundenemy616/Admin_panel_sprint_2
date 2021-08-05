@@ -15,17 +15,14 @@ Including another URLconf
 """
 from typing import Any
 
-from django.conf import settings
 from django.conf.urls import url
-from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import include, path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from users import views
+
 from tables.views import TableSlotsView
+from users import views
 from users.views import custom404
 
 handler404 = custom404
@@ -102,6 +99,60 @@ urlpatterns = [
     path('send_', include('push_tokens.urls_send')),
     path('pass_change', views.PasswordChangeView.as_view()),
     path('pass_reset', views.PasswordResetView.as_view()),
+    path('mobile', include('booking_api_django_new.urls_mobile')),
+    path('admin', include('booking_api_django_new.urls_admin')),
     path('panel', include('booking_api_django_new.urls_panel')),
-    path('admin', include('booking_api_django_new.urls_admin'))
 ]
+
+'''
+__AUTH__
+[POST] /auth -> 
+[POST] /refresh
+[POST] /auth_employee
+[POST] /register_employee
+[POST] /register_user
+[POST] /register_guest
+[POST] /register_kiosk
+[PUT] /register_kiosk/<id>
+[POST] /auth_kiosk
+[GET] /account
+[GET] /accounts_list
+[PUT, DELETE] /accounts/<id>
+[POST] /account_confirm
+[GET, POST, PUT, DELETE] /groups
+[] /group/<id>
+[PUT] /groups/update
+[POST] /groups/import_single
+[] /groups/import_list
+[] /groups/import_titles
+[POST] /enter
+[POST] /service/email
+[POST] /pass_change
+[POST] /pass_reset
+[POST] /operator_promotion
+
+__BOOKINGS__
+[] /office
+[] /offices/<id>
+[] /zone
+[] /zones/<id>
+[] /floor
+[] /floor/<id>
+[] /room
+[] /rooms/<id>
+[] /table_tag
+[] /table_tags/<id>
+[] /table
+[] /tables/<id>
+[] /floor_map
+[] /floor_map/clear
+[] /room_map
+[] /table/rate
+[] /table/activate
+[] /table/receive
+[] /table_status_receive
+[] /feedback
+
+__FILE__
+[] /files
+'''

@@ -1,18 +1,18 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count
+from django.db.models import Count, Min
 from django.db.transaction import atomic
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from booking_api_django_new.validate_phone_number import validate_phone_number
 from core.handlers import ResponseException
-from groups.models import Group
+from groups.models import Group, ADMIN_ACCESS, GUEST_ACCESS
 from offices.models import Office, OfficeZone
 from users.models import Account, User
 
 
 def validate_csv_file_extension(file):
-    if '.csv' not in str(file):
+    if '.csv' not in str(file).lower():
         raise ValidationError('Unsupported file extension')
 
 
@@ -38,10 +38,6 @@ class AdminGroupSerializer(serializers.ModelSerializer):
         response = super(AdminGroupSerializer, self).to_representation(instance)
         response['pre_defined'] = not instance.is_deletable
         response['count'] = instance.count if hasattr(instance, 'count') else instance.accounts.count()
-        legacy_access = Group.to_legacy_access(access=instance.access)
-        if not legacy_access:
-            raise serializers.ValidationError('Invalid group access')
-        response.update(legacy_access)
         return response
 
 
@@ -60,21 +56,24 @@ class AdminUserForGroupSerializer(serializers.ModelSerializer):
 class AdminGroupCreateSerializer(serializers.ModelSerializer):
     users = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(),
                                                source='accounts', default=[], many=True)
-    global_can_manage = serializers.BooleanField(required=True, write_only=True)
-    global_can_write = serializers.BooleanField(required=True, write_only=True)
 
     class Meta:
         model = Group
-        fields = ['title', 'description', 'global_can_manage', 'global_can_write', 'users']
+        fields = ['title', 'description', 'access', 'users']
 
-    def validate(self, attrs):
-        attrs['access'] = Group.from_legacy_access(
-            w=attrs.pop('global_can_write'),
-            m=attrs.pop('global_can_manage'),
-            s=False
-        )
-        attrs['is_deletable'] = True
-        return attrs
+    @atomic()
+    def create(self, validated_data):
+        if validated_data['access'] == ADMIN_ACCESS:
+            for account in validated_data['accounts']:
+                account.user.is_staff = True
+                account.user.save()
+
+        for account in validated_data['accounts']:
+            if not account.user.is_active:
+                account.user.is_active = True
+                account.user.save()
+
+        return super(AdminGroupCreateSerializer, self).create(validated_data)
 
     def to_representation(self, instance):
         return AdminGroupSerializer(instance=instance).data
@@ -83,21 +82,13 @@ class AdminGroupCreateSerializer(serializers.ModelSerializer):
 class AdminGroupUpdateSerializer(serializers.ModelSerializer):
     users_add = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), default=[], many=True)
     users_remove = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), default=[], many=True)
-    global_can_manage = serializers.BooleanField(required=False, write_only=True)
-    global_can_write = serializers.BooleanField(required=False, write_only=True)
     title = serializers.CharField(required=False)
 
     class Meta:
         model = Group
-        fields = ['title', 'description', 'global_can_manage', 'global_can_write', 'users_add', 'users_remove']
+        fields = ['title', 'description', 'access', 'users_add', 'users_remove']
 
     def validate(self, attrs):
-        if attrs.get('global_can_write') and attrs.get('global_can_manage'):
-            attrs['access'] = Group.from_legacy_access(
-                w=attrs.pop('global_can_write'),
-                m=attrs.pop('global_can_manage'),
-                s=False
-            )
 
         attrs['users_add'] = set(attrs['users_add'])
         attrs['users_remove'] = set(attrs['users_remove'])
@@ -107,12 +98,45 @@ class AdminGroupUpdateSerializer(serializers.ModelSerializer):
             attrs['users_add'] = attrs['users_add'] - users_in_both
             attrs['users_remove'] = attrs['users_remove'] - users_in_both
 
+        if self.instance and attrs.get('title') and self.instance.title != attrs['title']:
+            if Group.objects.filter(title=attrs['title']).exists():
+                raise ResponseException(detail="Group with this name already exists",
+                                        status_code=status.HTTP_400_BAD_REQUEST)
+
         return attrs
 
     @atomic()
     def update(self, instance, validated_data):
         instance.accounts.add(*validated_data['users_add'])
         instance.accounts.remove(*validated_data['users_remove'])
+
+        for account in validated_data['users_add']:
+            account.user.is_active = True
+            if instance.access == ADMIN_ACCESS:
+                account.user.is_staff = True
+            account.user.save()
+
+        for account in validated_data['users_remove']:
+            access = account.groups.aggregate(Min('access'))['access__min']
+            # If group WAS admins and users was removed from there and user have no other admin groups he
+            # demoted to usual user
+            if instance.access == ADMIN_ACCESS and (not access or access > 2):
+                account.user.is_staff = False
+                account.user.save()
+            if not account.groups.all():
+                account.user.is_active = False
+                account.user.save()
+
+        if validated_data.get('access') and instance.access != validated_data['access']:
+            if validated_data['access'] == GUEST_ACCESS:
+                for account in instance.accounts.all():
+                    account.user.is_staff = False
+                    account.user.save()
+            elif validated_data['access'] == ADMIN_ACCESS:
+                for account in instance.accounts.all():
+                    account.user.is_staff = True
+                    account.user.save()
+
         return super(AdminGroupUpdateSerializer, self).update(instance, validated_data)
 
     def to_representation(self, instance):

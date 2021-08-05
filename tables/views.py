@@ -1,27 +1,30 @@
-import orjson, decimal
+import decimal
+from datetime import datetime
+
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from datetime import datetime
-from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin, Response,
                                    RetrieveModelMixin, UpdateModelMixin,
                                    status)
+from rest_framework.parsers import FormParser, MultiPartParser
 
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer, BookingSerializerForTableSlots
+from bookings.serializers import BookingSerializerForTableSlots
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticated
 from offices.models import Office
-from tables.models import Rating, Table, TableTag,  TableMarker
+from tables.models import Table, TableMarker, TableTag
 from tables.serializers import (BaseTableTagSerializer, CreateTableSerializer,
-                                TableMarkerSerializer, TableSlotsSerializer,
-                                SwaggerTableParameters, SwaggerTableTagParametrs,
-                                TableSerializer, TableTagSerializer,
-                                UpdateTableSerializer, UpdateTableTagSerializer,
-                                SwaggerTableSlotsParametrs, basic_table_serializer,
-                                TableSerializerCSV, TestTableSerializer)
+                                SwaggerTableParameters,
+                                SwaggerTableSlotsParametrs,
+                                SwaggerTableTagParametrs,
+                                TableMarkerSerializer, TableSerializer,
+                                TableSerializerCSV, TableSlotsSerializer,
+                                TableTagSerializer, TestTableSerializer,
+                                UpdateTableSerializer,
+                                UpdateTableTagSerializer)
 
 
 class TableView(ListModelMixin,
@@ -49,8 +52,6 @@ class TableView(ListModelMixin,
             elif int(request.query_params.get('free')) == 0:
                 tables = tables.filter(is_occupied=True)
 
-        # for table in tables:
-        #     response.append(basic_table_serializer(table=table))
         response = TestTableSerializer(instance=tables, many=True).data
 
         if request.query_params.getlist('tags'):
@@ -88,11 +89,9 @@ class DetailTableView(RetrieveModelMixin,
 
     def put(self, request, *args, **kwargs):
         self.serializer_class = UpdateTableSerializer
-        # return TableSerializer(instance=Table.objects.get(id=))
         return self.update(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        # self.permission_classes = (IsAuthenticated, )
         return self.retrieve(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):

@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from django.db.models import Count, Case, When, Q
+from django.db.models import Case, Count, Q, When
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from files.models import File
-from files.serializers import FileSerializer, image_serializer, TestBaseFileSerializer
+from files.serializers import (FileSerializer, TestBaseFileSerializer,
+                               image_serializer)
 from floors.models import Floor
 from floors.serializers import FloorSerializer
 from groups.models import Group
@@ -15,13 +16,11 @@ from licenses.models import License
 from licenses.serializers import LicenseSerializer, TestLicenseSerializer
 from offices.models import Office, OfficeZone
 from room_types.models import RoomType
-from rooms.serializers import RoomMarkerSerializer
 from tables.models import Table
 
 
 class SwaggerOfficeParametrs(serializers.Serializer):
     id = serializers.UUIDField(required=False)
-    # search = serializers.CharField(required=False, max_length=256)
     type = serializers.CharField(required=False, max_length=256)
 
 
@@ -84,52 +83,61 @@ class TestOfficeBaseSerializer(serializers.Serializer):
         return response
 
 
-def office_base_serializer(office: Office) -> Dict[str, Any]:
-    license = {
-        'id': str(office.license.id),
-        'forever': office.license.forever,
-        'issued_at': str(office.license.issued_at),
-        'tables_infinite': office.license.tables_infinite
-    }
-    if not office.license.forever:
-        license['expires_at'] = str(office.license.expires_at)
-        # if datetime.strptime(office.license.expires_at, '%Y-%m-%d') > datetime.now():
-        if office.license.expires_at > datetime.now().date():
-            license['expiry_status'] = "OK"
-        else:
-            license['expiry_status'] = "expired"
-    if not office.license.tables_infinite:
-        license['tables_available'] = int(office.license.tables_available)
-        try:
-            license['tables_remain'] = int(office.license.tables_available) - int(office.floors.tables.all().count())
-        except AttributeError:
-            license['tables_remain'] = 0
-        license['tables_status'] = "OK"  # TODO разобраться в логике этого поля
-    tables = Table.objects.filter(room__floor__office_id=office.id).select_related('room__floor__office_id')
-    capacity = tables.count()
-    occupied = tables.filter(is_occupied=True).count()
-    capacity_meeting = tables.filter(room__type__unified=True).count()
-    occupied_meeting = tables.filter(room__type__unified=True, is_occupied=True).count()
-    capacity_tables = tables.filter(room__type__unified=False).count()
-    occupied_tables = tables.filter(room__type__unified=False, is_occupied=True).count()
-    return {
-        'id': str(office.id),
-        'title': office.title,
-        'description': office.description,
-        'working_hours': office.working_hours,
-        'service_email': office.service_email,
-        'floors_number': office.floors.count(),
-        'occupied': occupied,
-        'capacity': capacity,
-        'occupied_tables': occupied_tables,
-        'capacity_tables': capacity_tables,
-        'occupied_meeting': occupied_meeting,
-        'capacity_meeting': capacity_meeting,
-        'zones': [base_zone_serializer(zone=zone) for zone in office.zones.all()],
-        'floors': [office_floor_serializer(floor=floor) for floor in office.floors.all()],
-        'images': [image_serializer(image=image) for image in office.images.all()],
-        'license': license
-    }
+class MobileSimpleOfficeBaseSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        license = {
+            'id': str(instance.license.id),
+            'forever': instance.license.forever,
+            'issued_at': str(instance.license.issued_at),
+            'tables_infinite': instance.license.tables_infinite
+        }
+        if not instance.license.forever:
+            license['expires_at'] = str(instance.license.expires_at)
+            # if datetime.strptime(office.license.expires_at, '%Y-%m-%d') > datetime.now():
+            if instance.license.expires_at > datetime.now().date():
+                license['expiry_status'] = "OK"
+            else:
+                license['expiry_status'] = "expired"
+        if not instance.license.tables_infinite:
+            license['tables_available'] = int(instance.license.tables_available)
+            try:
+                license['tables_remain'] = int(instance.license.tables_available) - \
+                                           int(instance.floors.tables.all().count())
+            except AttributeError:
+                license['tables_remain'] = 0
+            license['tables_status'] = "OK"  # TODO разобраться в логике этого поля
+        tables = Table.objects.filter(room__floor__office_id=instance.id).aggregate(
+            occupied=Count(Case(When(is_occupied=True, then=1))),
+            capacity=Count('*'),
+            capacity_meeting=Count(Case(When(room__type__unified=True, then=1))),
+            occupied_meeting=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=True), then=1))),
+            capacity_tables=Count(Case(When(room__type__unified=False, then=1))),
+            occupied_tables=Count(Case(When(Q(is_occupied=True) & Q(room__type__unified=False), then=1)))
+        )
+        capacity = tables['capacity']
+        occupied = tables['occupied']
+        capacity_meeting = tables['capacity_meeting']
+        occupied_meeting = tables['occupied_meeting']
+        capacity_tables = tables['capacity_tables']
+        occupied_tables = tables['occupied_tables']
+        return {
+            'id': str(instance.id),
+            'title': instance.title,
+            'description': instance.description,
+            'working_hours': instance.working_hours,
+            'service_email': instance.service_email,
+            'floors_number': instance.floors.count(),
+            'occupied': occupied,
+            'capacity': capacity,
+            'occupied_tables': occupied_tables,
+            'capacity_tables': capacity_tables,
+            'occupied_meeting': occupied_meeting,
+            'capacity_meeting': capacity_meeting,
+            'zones': [base_zone_serializer(zone=zone) for zone in instance.zones.all()],
+            'floors': [office_floor_serializer(floor=floor) for floor in instance.floors.all()],
+            'images': [image_serializer(image=image) for image in instance.images.all()],
+            'license': license
+        }
 
 
 def office_floor_serializer(floor: Floor) -> Dict[str, Any]:
@@ -351,7 +359,7 @@ class CreateOfficeSerializer(OfficeSerializer):
         response['floors'] = [floor_serializer_for_office(floor) for floor in instance.floors.all()]
         response['floors_number'] = len(response['floors'])
         response['images'] = [image_serializer(image) for image in instance.images.all()]
-        response['zones'] = [base_zone_serializer(zone) for zone in instance.zones.all()]
+        response['zones'] = [zone_serializer_for_office(zone) for zone in instance.zones.all()]
         response['working_hours'] = instance.working_hours
         response['license'] = LicenseSerializer(instance.license).data
         return response
@@ -400,9 +408,11 @@ class CreateOfficeSerializer(OfficeSerializer):
         validated_data.pop('license', None)
         return super(CreateOfficeSerializer, self).update(instance, validated_data)
 
+
 def floor_serializer_for_office(floor):
     return {'id': floor.id,
             'title': floor.title}
+
 
 def zone_serializer_for_office(zone):
     return {'id': zone.id,
