@@ -48,27 +48,21 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                            "global_date_from_ws": dict(),
                            "global_datetime_from_ws": dict(),
                            "global_datetime_to_ws": dict()}
-        print('try to find right method')
+        self.logger.warning(msg='try to find right method')
         res = dict()
         if content.get('event', None) == 'echo':
             res = content
         else:
-            # bookings.models.GLOBAL_TABLES_CHANNEL_NAMES[f'{content.get("table")}'] = self.channel_name
             dict_for_wc['global_tables_channel_names'][f'{content.get("table")}'] = self.channel_name
-            # if not bookings.models.GLOBAL_DATETIME_FROM_WS.get(f'{content.get("table")}'):
+
             if not dict_for_wc['global_date_from_ws'].get(f'{content.get("table")}'):
                 utc = pytz.UTC
 
-                # bookings.models.GLOBAL_DATE_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().date()
                 dict_for_wc['global_date_from_ws'][f'{content.get("table")}'] = datetime.datetime.now().date()
 
-                # bookings.models.GLOBAL_DATETIME_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().replace(
-                #     tzinfo=utc)
                 dict_for_wc['global_datetime_from_ws'][f'{content.get("table")}'] = datetime.datetime.now().replace(
                     tzinfo=utc)
 
-                # bookings.models.GLOBAL_DATETIME_TO_WS[f'{content.get("table")}'] = datetime.datetime.utcnow().replace(
-                #     tzinfo=utc) + datetime.timedelta(hours=1)
                 dict_for_wc['global_datetime_to_ws'][f'{content.get("table")}'] = datetime.datetime.utcnow().replace(
                     tzinfo=utc) + datetime.timedelta(hours=1)
 
@@ -84,26 +78,18 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                     }
                 }
             elif content.get('event', None) == 'hours_booking':
-                # if not bookings.models.GLOBAL_DATETIME_FROM_WS.get(f'{content.get("table")}'):
                 if not dict_for_wc['global_datetime_from_ws'].get(f'{content.get("table")}'):
                     utc = pytz.UTC
 
-                    # bookings.models.GLOBAL_DATE_FROM_WS[f'{content.get("table")}'] = datetime.datetime.now().date()
                     dict_for_wc['global_date_from_ws'][f'{content.get("table")}'] = datetime.datetime.now().date()
 
-                    # bookings.models.GLOBAL_DATETIME_FROM_WS[
-                    #     f'{content.get("table")}'] = datetime.datetime.now().replace(tzinfo=utc)
                     dict_for_wc['global_datetime_from_ws'][
                         f'{content.get("table")}'] = datetime.datetime.now().replace(tzinfo=utc)
 
-                    # bookings.models.GLOBAL_DATETIME_TO_WS[
-                    #     f'{content.get("table")}'] = datetime.datetime.utcnow().replace(
-                    #     tzinfo=utc) + datetime.timedelta(hours=1)
                     dict_for_wc['global_datetime_to_ws'][
                         f'{content.get("table")}'] = datetime.datetime.utcnow().replace(
                         tzinfo=utc) + datetime.timedelta(hours=1)
 
-                # bookings.models.GLOBAL_TABLES_CHANNEL_NAMES[f'{content.get("table")}'] = self.channel_name
                 dict_for_wc['global_tables_channel_names'][f'{content.get("table")}'] = self.channel_name
 
                 content = await self.check_db_for_datetime_booking(
@@ -136,7 +122,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         """
         Encode the given content as JSON and send it to the client.
         """
-        print('try send json to all')
+        self.logger.warning(msg='try send json to all')
         if content.get('text'):
             await super().send(text_data=await self.encode_json(content['text']), close=close)
         else:
@@ -161,7 +147,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
             await self.send_json({
                 "echo": "pong",
             })
-        print('sending response')
+        self.logger.warning(msg='sending response')
 
     async def disconnect(self, close_code):
         # Delete connection from group
@@ -184,7 +170,6 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         if not date:
             date = []
         date_from_str = datetime.datetime.strptime(date, '%Y-%m-%d').date()
-        # bookings.models.GLOBAL_DATE_FROM_WS[f'{table}'] = date_from_str
         dict_for_wc['global_date_from_ws'][f'{table}'] = date_from_str
         cache.set('dict_for_wc', dict_for_wc, 86400)
         existing_booking = Booking.objects.filter(table=table,
@@ -205,6 +190,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
     @staticmethod
     @async_wrap
     def check_db_for_datetime_booking(date_from_str=None, date_to_str=None, table=None):
+        logger = logging.getLogger('bookings')
         dict_for_wc = cache.get('dict_for_wc')
         if not dict_for_wc:
             dict_for_wc = {"global_tables_channel_names": dict(),
@@ -213,16 +199,14 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                            "global_datetime_to_ws": dict()}
         if not date_from_str:
             period = []
-        print('Check_hourly_booking')
+        logger.warning(msg='Check_hourly_booking')
         local_tz = pytz.timezone('Europe/Moscow')
         date_from = datetime.datetime.strptime(date_from_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(
             tzinfo=datetime.timezone.utc)
         date_to = datetime.datetime.strptime(date_to_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
 
-        # bookings.models.GLOBAL_DATETIME_FROM_WS[f'{table}'] = date_from
         dict_for_wc['global_datetime_from_ws'][f'{table}'] = date_from
 
-        # bookings.models.GLOBAL_DATETIME_TO_WS[f'{table}'] = date_to
         dict_for_wc['global_datetime_to_ws'][f'{table}'] = date_to
 
         overflows = Booking.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \

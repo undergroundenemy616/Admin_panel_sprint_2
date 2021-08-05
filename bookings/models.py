@@ -387,10 +387,8 @@ class Booking(models.Model):
         channel_layer = get_channel_layer()
         print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        # print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
         print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
         print('Send info outside model')
-        # channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
         channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
         if result[0].get('delete'):
             result = []
@@ -419,10 +417,8 @@ class Booking(models.Model):
         }
         channel_layer = get_channel_layer()
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        # print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
         print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
         print('Send info outside model')
-        # channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
         channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
         print('channel is: ', channel)
         await channel_layer.send(str(channel), result_in_json)
