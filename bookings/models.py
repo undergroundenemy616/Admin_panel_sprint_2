@@ -31,15 +31,6 @@ from group_bookings.models import GroupBooking
 from offices.models import Office
 
 MINUTES_TO_ACTIVATE = 15
-BOOKING_STATUS_FOR_WS = ['new', 'over', 'canceled']
-# global GLOBAL_DATE_FROM_WS
-# global GLOBAL_DATETIME_FROM_WS
-# global GLOBAL_DATETIME_TO_WS
-utc = pytz.UTC
-# GLOBAL_DATE_FROM_WS = dict()
-# GLOBAL_DATETIME_FROM_WS = dict()  # datetime.now().replace(tzinfo=utc)
-# GLOBAL_DATETIME_TO_WS = dict()  # datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
-# GLOBAL_TABLES_CHANNEL_NAMES = dict()
 
 
 class BookingManager(models.Manager):
@@ -71,8 +62,7 @@ class BookingManager(models.Manager):
 
     def is_user_overflowed(self, account, room_type, date_from, date_to):
         try:
-            access = account.groups.aggregate(Min('access')) if account.groups.exists() else {
-                'access__min': EMPLOYEE_ACCESS}
+            access = account.groups.aggregate(Min('access')) if account.groups.exists() else {'access__min': EMPLOYEE_ACCESS}
         except AttributeError:
             access = {'access__min': EMPLOYEE_ACCESS}
         if access['access__min'] < EMPLOYEE_ACCESS:
