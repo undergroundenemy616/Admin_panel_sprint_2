@@ -184,7 +184,7 @@ class AdminOfficeCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         instance = super(AdminOfficeCreateSerializer, self).create(validated_data)
         Floor.objects.create(office=instance, title='Default floor.')  # create floor
-        if self.context.get('Language') != 'ru':
+        if self.context['request'].headers.get('Language') != 'ru':
             room_types = [RoomType(office=instance,
                                    title='Workplace',
                                    bookable=True,
@@ -209,7 +209,7 @@ class AdminOfficeCreateSerializer(serializers.ModelSerializer):
                                    unified=True,
                                    is_deletable=False)]  # Create of two default room_type to office
         RoomType.objects.bulk_create(room_types)
-        if self.context.headers.get('Language') != 'ru':
+        if self.context['request'].headers.get('Language') != 'ru':
             office_zone = OfficeZone.objects.create(office=instance, is_deletable=False, title='Coworking zone')  # create zone
         else:
             office_zone = OfficeZone.objects.create(office=instance, is_deletable=False)  # create zone
