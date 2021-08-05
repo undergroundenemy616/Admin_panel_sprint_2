@@ -18,7 +18,7 @@ definitions:
           - export COMPOSE_HTTP_TIMEOUT=120
           - export BITBUCKET_PROJECT_KEY="${BITBUCKET_PROJECT_KEY,,}"
           - docker login $DOCKER_REG -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-          - docker build -t $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest .
+          - docker build -t $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest -f Dockerfile .
           - docker push $DOCKER_REG/$BITBUCKET_PROJECT_KEY/$BITBUCKET_BRANCH/$BITBUCKET_REPO_SLUG:latest
 
     - step: &Deploy
@@ -29,126 +29,15 @@ definitions:
               BITBUCKET_USERNAME: $BITBUCKET_USERNAME
               BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
               REPOSITORY: 'simpleoffice-deploy'
+              BRANCH_NAME: 'develop_instans'
               CUSTOM_PIPELINE_NAME: $DEPLOYMENT
               WAIT: 'true'
 
-    - step: &Compile
-      name: Compile
-      image: python:3.8
-      script:
-        - pip install --user -r requirements.txt
-        - pip install pyarmor
-        - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
-        - find . -name '*.py' -type f -delete
-        - cp -rf . /var/distribute
-        - tar -cvf api-test.tar /var/distribute
-        - pipe: atlassian/bitbucket-upload-file:0.1.2
-          variables:
-            BITBUCKET_USERNAME: $BITBUCKET_USERNAME
-            BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
-            FILENAME: "api-test.tar"
-
 pipelines:
   branches:
-    compile:
-      - step: *Compile
-
-    master:
-      - step:
-          <<: *Build
-      - step:
-          <<: *Deploy
-          deployment: pg-simple-office-liis-su
-
-    prod_gpn:
-      - step:
-          <<: *Build
-
     feature/so_lahta_panel:
       - step:
           <<: *Build
       - step:
           <<: *Deploy
           deployment: dev-simple-office-lahta
-
-    dev_simple_office:
-      - step:
-          <<: *Build
-      - step:
-          <<: *Deploy
-          deployment: dev-simple-office-liis-su
-
-    prod_simple_office:
-      - step:
-          <<: *Build
-
-  custom:
-    prod_simple-office/prod-deploy:
-      - step:
-          <<: *Deploy
-          deployment: simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: statio-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: nbcom-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: semrush-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: bplus-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: platformix-simple-office-liis
-      - step:
-          <<: *Deploy
-          deployment: designic-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: blacklight-simple-office-liis
-      - step:
-          <<: *Deploy
-          deployment: samokat-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: vtbcapital-simple-office
-      - step:
-          <<: *Deploy
-          deployment: alrosa-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: softmachine-simple-office
-      - step:
-          <<: *Deploy
-          deployment: dinord-simple-office
-      - step:
-          <<: *Deploy
-          deployment: ngenix-simple-office-liis-su
-      - step:
-          <<: *Deploy
-          deployment: knightfrank-simple-office
-
-    prod_gpn/gpn-deploy:
-      - step:
-          <<: *Deploy
-          deployment: table-informer-liis-su
-    
-    compile-for-avito:
-      - step: 
-          name: Compile for avito
-          image: python:3.8
-          script:
-            - pip install --user -r requirements.txt
-            - pip install pyarmor
-            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
-            - find . -name '*.py' -type f -delete
-            - cp -rf . /var/distribute
-            - tar -cvf api-avito-compile.tar /var/distribute
-            - pipe: atlassian/bitbucket-upload-file:0.1.2
-              variables:
-                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
-                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
-                FILENAME: "api-avito-compile.tar"
-
