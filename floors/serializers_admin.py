@@ -1,13 +1,10 @@
 from django.db.transaction import atomic
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
-from rest_framework.response import Response
 
 from core.handlers import ResponseException
 from files.models import File
 from floors.models import Floor, FloorMap
-from floors.serializers import FloorMapSerializer
-from offices.models import Office
 from room_types.models import RoomType
 
 
@@ -111,6 +108,14 @@ class AdminCreateUpdateFloorMapSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         return AdminFloorMapSerializer(instance=instance).data
+
+    @atomic()
+    def update(self, instance, validated_data):
+        if validated_data.get('image') != str(instance.image_id):
+            instance.image.delete()
+
+        return super(AdminCreateUpdateFloorMapSerializer, self).update(instance=instance,
+                                                                       validated_data=validated_data)
 
 
 class AdminFloorClearValidation(serializers.Serializer):

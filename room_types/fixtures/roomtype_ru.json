@@ -1,0 +1,21 @@
+[
+  {
+    "roomtype": {
+      "title": "Рабочее место",
+      "bookable": true
+    }
+  },
+  {
+    "roomtype": {
+      "title": "Переговорная",
+      "bookable": true,
+      "unified": true
+    }
+  },
+  {
+    "roomtype": {
+      "title": "Не бронируемая",
+      "bookable": false
+    }
+  }
+]

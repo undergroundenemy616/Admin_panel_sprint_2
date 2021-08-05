@@ -2,15 +2,22 @@ import os
 import random
 import time
 
+import phonenumbers
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import validate_email
 from django.db import IntegrityError
 from django.db.models import Q
 from django.db.transaction import atomic
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers
+from django.core.exceptions import ValidationError as ValErr
+from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
-from booking_api_django_new.settings import DEBUG
+from core.utils import get_localization
+from users.tasks import send_register_email
+
+from booking_api_django_new.settings import DEBUG, ADMIN_HOST, BASE_DIR
+from bookings.models import Booking
 from core.handlers import ResponseException
 from files.serializers_admin import AdminFileSerializer
 from floors.models import Floor
@@ -97,17 +104,47 @@ class AdminUserSerializer(serializers.ModelSerializer):
         if not response['email']:
             response['email'] = instance.user.email
         response['has_cp_access'] = True if instance.user.email else False
+        try:
+            if self.context['request'].query_params.get('date_from') and self.context['request'].query_params.get('date_to')\
+                    and self.context['request'].query_params.get('unified'):
+                if Booking.objects.is_user_overflowed(account=instance,
+                                                      date_from=self.context['request'].query_params.get('date_from'),
+                                                      date_to=self.context['request'].query_params.get('date_to'),
+                                                      room_type=self.context['request'].query_params.get('unified')=='true'):
+                    response['is_available'] = False
+                else:
+                    response['is_available'] = True
+        except KeyError:
+            pass
         return response
+    
+    @atomic()
+    def update(self, instance, validated_data):
+        if validated_data.get('photo') != str(instance.account.photo_id):
+            try:
+                instance.account.photo.delete()
+                instance.account.photo = None
+            except AttributeError:
+                pass
+        
+        return super(AdminUserSerializer, self).update(instance=instance, validated_data=validated_data)
 
 
 class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
+    email = serializers.EmailField(allow_blank=True, allow_null=True)
 
     class Meta:
         model = Account
         exclude = ['user']
 
     def validate(self, attrs):
+        if not attrs.get('email'):
+            attrs['email'] = None
+        try:
+            attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
+        except ValueError as e:
+            raise ResponseException(e)
         if not self.instance:
             if User.objects.filter(phone_number=attrs['phone_number']).exists():
                 raise ResponseException("User with this phone already exists")
@@ -125,6 +162,15 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         user = User.objects.create(phone_number=validated_data.pop('phone_number'), is_active=True,
                                    email=validated_data.pop('email'))
         validated_data['user'] = user
+        password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+
+        localization = get_localization(self.context['request'], 'users')
+
+        user.set_password(password)
+
+        send_register_email.delay(email=user.email, subject=localization['greetings'],
+                                  args={"username": user.email, "password": password},
+                                  template=localization['greetings_template'])
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
         try:
             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
@@ -156,14 +202,21 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
         model = Account
         fields = '__all__'
 
+    def validate(self, attrs):
+        if User.objects.filter(Q(phone_number=attrs['phone_number']) | Q(email=attrs['email'])):
+            raise ValidationError(detail={"message": 'User with this credentials already exists'}, code=400)
+        try:
+            attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
+        except ValueError as e:
+            raise ResponseException(e)
+        return attrs
+
     @atomic()
     def create(self, validated_data):
 
-        if User.objects.filter(Q(phone_number=validated_data['phone_number']) | Q(email=validated_data['email'])):
-            raise ValidationError(detail={"message": 'User with this credentials already exists'}, code=400)
-
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
-        user = User.objects.create(is_active=True, is_staff=True, email=validated_data['email'])
+        user = User.objects.create(is_active=True, is_staff=True, email=validated_data.pop('email'),
+                                   phone_number=validated_data.pop('phone_number'))
         user.set_password(password)
         user.save()
         validated_data['user'] = user
@@ -175,15 +228,14 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
         instance.groups.add(group)
 
         email = validated_data.get('email')
-        host_domain = os.environ.get('ADMIN_HOST')
-        if not host_domain:
+        if not ADMIN_HOST:
             raise ValidationError(detail={"message": "ADMIN_HOST not specified"}, code=400)
 
         send_html_email_message(
             to=email,
             subject="Добро пожаловать в Simple-Office!",
             template_args={
-                'host': host_domain,
+                'host': ADMIN_HOST,
                 'username': email,
                 'password': password
             }
@@ -238,6 +290,10 @@ class AdminPasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=512)
 
     def validate(self, attrs):
+
+        if attrs['old_password'] == attrs['new_password']:
+            raise ValidationError(detail="Old and new password can't match")
+
         if not self.context['request'].user.check_password(attrs['old_password']):
             raise ValidationError(detail="wrong password", code=400)
         if not DEBUG:
@@ -269,6 +325,7 @@ class AdminLoginSerializer(serializers.Serializer):
             return None, 'User is not a staff or has been blocked.'
 
         return user, None
+
 
 class AdminPromotionDemotionSerializer(serializers.Serializer):
     account = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
@@ -305,3 +362,36 @@ class AdminPromotionDemotionSerializer(serializers.Serializer):
         if not attrs['account'].email:
             raise ValidationError(detail='User has no email specified', code=400)
         return attrs
+
+
+class AdminContactCheckSerializer(serializers.Serializer):
+    guests = serializers.JSONField(required=True)
+
+    def to_representation(self, instance):
+        response = super(AdminContactCheckSerializer, self).to_representation(instance)
+        for guest in response.get('guests'):
+            try:
+                validate_email(response['guests'][guest])
+                response['guests'][guest] = "is_valid"
+            except ValErr:
+                try:
+                    try:
+                        phone_number = phonenumbers.parse(response['guests'][guest])
+                    except:
+                        try:
+                            if response['guests'][guest][0] == '8':
+                                response['guests'][guest] = response['guests'][guest].replace('8', '+7', 1)
+                            else:
+                                response['guests'][guest] = '+' + response['guests'][guest]
+                        except IndexError:
+                            response['guests'][guest] = "not_valid"
+                        phone_number = phonenumbers.parse(response['guests'][guest])
+                    if phonenumbers.is_valid_number(phone_number):
+                        response['guests'][guest] = "is_valid"
+                    else:
+                        response['guests'][guest] = "not_valid"
+                except AttributeError:
+                    response['guests'][guest] = "not_valid"
+                except phonenumbers.phonenumberutil.NumberParseException:
+                    response['guests'][guest] = "not_valid"
+        return response

@@ -2,12 +2,51 @@ from rest_framework import serializers
 
 from bookings.models import Booking
 from files.serializers_mobile import MobileBaseFileSerializer
+from rooms.models import RoomMarker, Room
 from tables.models import Table, TableTag, TableMarker
 
 
-class MobileTableSerializer(serializers.Serializer):
-    id = serializers.UUIDField()
-    title = serializers.CharField()
+class MobileBookingRoomMarkerSerializer(serializers.ModelSerializer):
+    room_marker_x = serializers.DecimalField(source='x', max_digits=4, decimal_places=2)
+    room_marker_y = serializers.DecimalField(source='y', max_digits=4, decimal_places=2)
+
+    class Meta:
+        model = RoomMarker
+        fields = ['id', 'room_marker_x', 'room_marker_y']
+
+
+class MobileBookingRoomSerializer(serializers.ModelSerializer):
+    marker = MobileBookingRoomMarkerSerializer(read_only=True, source='room_marker')
+    type = serializers.CharField(read_only=True, source='type.title')
+    room_type_color = serializers.CharField(required=False, read_only=True, source='type.color')
+
+    class Meta:
+        model = Room
+        fields = ['id', 'title', 'type', 'marker', 'room_type_color']
+
+    def to_representation(self, instance):
+        response = super(MobileBookingRoomSerializer, self).to_representation(instance)
+        if instance.type.icon:
+            response['room_type_thumb'] = instance.type.icon.thumb if instance.type.icon.thumb else instance.type.icon.path
+
+        return response
+
+
+class MobileBookingTableMarkerSerializer(serializers.ModelSerializer):
+    table_marker_x = serializers.DecimalField(source='x', max_digits=4, decimal_places=2)
+    table_marker_y = serializers.DecimalField(source='y', max_digits=4, decimal_places=2)
+
+    class Meta:
+        model = TableMarker
+        fields = ['id', 'table_marker_x', 'table_marker_y']
+
+
+class MobileTableSerializer(serializers.ModelSerializer):
+    marker = MobileBookingTableMarkerSerializer(read_only=True, required=False, source='table_marker')
+
+    class Meta:
+        model = Table
+        fields = ['id', 'title', 'marker']
 
 
 class MobileBaseTableTagSerializer(serializers.ModelSerializer):

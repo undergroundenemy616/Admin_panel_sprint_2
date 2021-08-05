@@ -94,8 +94,6 @@ class MobileSuitableFloorView(GenericAPIView):
             if room_type.unified:
                 tables_count = Table.objects.filter(Q(room__floor__in=self.queryset)
                                                     &
-                                                    Q(is_occupied=False)
-                                                    &
                                                     Q(room__type__title=room_type.title)
                                                     &
                                                     Q(room__room_marker__isnull=False)
@@ -109,8 +107,6 @@ class MobileSuitableFloorView(GenericAPIView):
                                                                                         'room').prefetch_related('tags')
             else:
                 tables_count = Table.objects.filter(Q(room__floor__in=self.queryset)
-                                                    &
-                                                    Q(is_occupied=False)
                                                     &
                                                     Q(room__type__title=room_type.title)
                                                     &
@@ -155,8 +151,6 @@ class MobileSuitableFloorView(GenericAPIView):
             else:
                 self.queryset = self.queryset.filter(office_id=request.query_params.get('office')).annotate(
                     suitable=Count('rooms__tables', filter=Q(rooms__type__title=room_type.title)
-                                                           &
-                                                           Q(rooms__tables__is_occupied=False)
                                                            &
                                                            Q(rooms__room_marker__isnull=False)
                                                            &
@@ -217,7 +211,9 @@ class MobileFloorMarkers(GenericAPIView):
                                                    type__unified=False,
                                                    type__is_deletable=True))
 
-        tables = Table.objects.filter(room__in=allowed_rooms, table_marker__isnull=False)
+        tables = Table.objects.filter(Q(room__in=allowed_rooms) & Q(Q(table_marker__isnull=False)
+                                                                    | Q(room__type__unified=True)))
+
         if tag:
             for t in tag:
                 tables = tables.filter(tags=t)
@@ -252,5 +248,9 @@ class MobileFloorMarkers(GenericAPIView):
                 for room_marker in markers['room_markers_bookable']:
                     if room_marker.get('table_id') and room_marker.get('table_id') in bookings:
                         room_marker['is_available'] = False
+                    else:
+                        for table in markers['table_markers']:
+                            if not table['is_available'] and table['room_id'] == room_marker['room_id']:
+                                room_marker['suitable_tables_count'] -= 1
 
         return Response(markers, status=status.HTTP_200_OK)
