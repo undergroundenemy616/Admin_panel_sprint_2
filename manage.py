@@ -3,9 +3,14 @@
 import os
 import sys
 
+ALLOW_TENANT = os.environ.get('ALLOW_TENANT')
+
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.non_tenant_settings')
+    if ALLOW_TENANT:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.tenant_settings')
+    else:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.non_tenant_settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

@@ -1,4 +1,4 @@
-from booking_api_django_new.settings.base import FILES_HOST
+from booking_api_django_new.settings.base import FILES_HOST, ALLOW_TENANT
 from calendar import monthrange
 from core.handlers import ResponseException
 from datetime import datetime, timedelta, date
@@ -48,7 +48,7 @@ class BookingStatisticsRoomTypes(GenericAPIView):
 
         file_name = "From_" + date_from + "_To_" + date_to + ".xlsx"
         secure_file_name = uuid.uuid4().hex + file_name
-        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else 'public'
+        schema = 'public' if not ALLOW_TENANT else request.tenant.schema_name
         query = f"""
         SELECT b.id, rtr.title, rtr.office_id, b.date_from, b.date_to, b.status
         FROM {schema}.bookings_booking b
@@ -195,7 +195,7 @@ class BookingEmployeeStatistics(GenericAPIView):
         file_name = month + '_' + str(year) + '.xlsx'
         secure_file_name = uuid.uuid4().hex + file_name
 
-        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else 'public'
+        schema = 'public' if not ALLOW_TENANT else request.tenant.schema_name
         query = f"""  
         
         SELECT b.id, tt.id as table_id, tt.title as table_title, b.date_from, b.date_to, oo.id as office_id,

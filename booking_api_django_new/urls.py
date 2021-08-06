@@ -53,7 +53,6 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Current urls
-    path('oleg', include('users.urls_mobile')),
     path('auth', views.LoginOrRegisterUserFromMobileView.as_view()),
     path('auth_employee', views.LoginStaff.as_view()),
     path('auth_kiosk', views.LoginOfficePanel.as_view()),

@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
-from booking_api_django_new.settings.base import PUSH_HOST, PUSH_USERNAME, PUSH_PASSWORD
+from booking_api_django_new.settings.base import PUSH_HOST, PUSH_USERNAME, PUSH_PASSWORD, ALLOW_TENANT
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
 from groups.models import Group
@@ -40,7 +40,7 @@ class AdminPushGroupView(GenericAPIView):
     permission_classes = (IsAdmin, )
 
     def get(self, request, *args, **kwargs):
-        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else request.get('X-WORKSPACE')
+        schema = request.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
         workspace = {'workspace': f"simpleoffice-{schema}"}
         if not workspace:
             return Response('Workspace not found', status=status.HTTP_404_NOT_FOUND)
@@ -80,7 +80,7 @@ class AdminPushUserView(GenericAPIView):
     permission_classes = (IsAdmin,)
 
     def get(self, request, *args, **kwargs):
-        schema = request.tenant.schema_name if os.environ.get('ALLOW_TENANT') else request.get('X-WORKSPACE')
+        schema = request.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
         workspace = {'workspace': f"simpleoffice-{schema}"}
         if not workspace:
             return Response('Workspace not found', status=status.HTTP_404_NOT_FOUND)
