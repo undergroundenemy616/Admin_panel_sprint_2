@@ -39,9 +39,9 @@ class SuitableRoomsMobileView(GenericAPIView):
                                                         is_deletable=False).values('title')
         language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
         if language == 'ru':
-            query_room_type = request.query_params.get('room_type')
+            query_room_type = request.query_params.get('type')
         else:
-            if request.query_params.get('room_type') == 'Рабочее место':
+            if request.query_params.get('type') == 'Рабочее место':
                 query_room_type = 'Workplace'
             else:
                 query_room_type = 'Meeting room'
