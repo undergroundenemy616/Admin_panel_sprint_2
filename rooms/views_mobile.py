@@ -35,7 +35,7 @@ class SuitableRoomsMobileView(GenericAPIView):
         quantity = serializer.data.get('quantity')
 
         """-------------------LOCALIZATION--------------------"""
-        predefined_room_types = RoomType.objects.filter(office_id=request.query_params.get('office'),
+        predefined_room_types = RoomType.objects.filter(office_id=office,
                                                         is_deletable=False).values('title')
         language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
         if language == 'ru':
