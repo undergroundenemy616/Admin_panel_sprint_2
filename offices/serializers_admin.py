@@ -184,19 +184,35 @@ class AdminOfficeCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         instance = super(AdminOfficeCreateSerializer, self).create(validated_data)
         Floor.objects.create(office=instance, title='Default floor.')  # create floor
-        room_types = [RoomType(office=instance,
-                               title='Рабочее место',
-                               bookable=True,
-                               work_interval_days=90,
-                               is_deletable=False),
-                      RoomType(office=instance,
-                               title='Переговорная',
-                               bookable=True,
-                               work_interval_hours=24,
-                               unified=True,
-                               is_deletable=False)]  # Create of two default room_type to office
+        if self.context['request'].headers.get('Language') != 'ru':
+            room_types = [RoomType(office=instance,
+                                   title='Workplace',
+                                   bookable=True,
+                                   work_interval_days=90,
+                                   is_deletable=False),
+                          RoomType(office=instance,
+                                   title='Meeting room',
+                                   bookable=True,
+                                   work_interval_hours=24,
+                                   unified=True,
+                                   is_deletable=False)]  # Create of two default room_type to office
+        else:
+            room_types = [RoomType(office=instance,
+                                   title='Рабочее место',
+                                   bookable=True,
+                                   work_interval_days=90,
+                                   is_deletable=False),
+                          RoomType(office=instance,
+                                   title='Переговорная',
+                                   bookable=True,
+                                   work_interval_hours=24,
+                                   unified=True,
+                                   is_deletable=False)]  # Create of two default room_type to office
         RoomType.objects.bulk_create(room_types)
-        office_zone = OfficeZone.objects.create(office=instance, is_deletable=False)  # create zone
+        if self.context['request'].headers.get('Language') != 'ru':
+            office_zone = OfficeZone.objects.create(office=instance, is_deletable=False, title='Coworking zone')  # create zone
+        else:
+            office_zone = OfficeZone.objects.create(office=instance, is_deletable=False)  # create zone
         groups = Group.objects.filter(is_deletable=False)
         if groups:
             office_zone.groups.add(*groups)  # add to group whitelist

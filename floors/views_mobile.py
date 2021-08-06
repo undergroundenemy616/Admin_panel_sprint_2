@@ -68,6 +68,17 @@ class MobileSuitableFloorView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         date_to = request.query_params.get('date_to')
         date_from = request.query_params.get('date_from')
+        predefined_room_types = RoomType.objects.filter(office_id=request.query_params.get('office'), is_deletable=False).values('title')
+        language = 'en' if predefined_room_types[0]['title'].find('abcdefghijklmnopqrstuvwxyz') else 'ru'
+        if language == 'ru':
+            query_room_type = request.query_params.get('room_type')
+        else:
+            if request.query_params.get('room_type') == 'Рабочее место':
+                query_room_type = 'Workplace'
+            else:
+                query_room_type = 'Meeting room'
+
+
         bookings = Booking.objects.filter(Q(status__in=['waiting', 'active'])
                                           &
                                           (Q(date_from__lt=date_to, date_to__gte=date_to) |
@@ -87,7 +98,7 @@ class MobileSuitableFloorView(GenericAPIView):
         if tag:
             try:
                 room_type = RoomType.objects.get(office_id=request.query_params.get('office'),
-                                                 title=request.query_params.get('room_type'))
+                                                 title=query_room_type)
             except RoomType.DoesNotExist:
                 raise ResponseException("Room Type not found", status_code=status.HTTP_404_NOT_FOUND)
 
@@ -132,7 +143,7 @@ class MobileSuitableFloorView(GenericAPIView):
         else:
             try:
                 room_type = RoomType.objects.get(office_id=request.query_params.get('office'),
-                                                 title=request.query_params.get('room_type'))
+                                                 title=query_room_type)
             except RoomType.DoesNotExist:
                 raise ResponseException("Room Type not found", status_code=status.HTTP_404_NOT_FOUND)
 
