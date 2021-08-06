@@ -33,7 +33,20 @@ class SuitableRoomsMobileView(GenericAPIView):
         date_from = serializer.data.get('date_from')
         date_to = serializer.data.get('date_to')
         quantity = serializer.data.get('quantity')
-        room_type_title = serializer.data.get('type')
+
+        """-------------------LOCALIZATION--------------------"""
+        predefined_room_types = RoomType.objects.filter(office_id=office,
+                                                        is_deletable=False).values('title')
+        language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
+        if language == 'ru':
+            query_room_type = request.query_params.get('type')
+        else:
+            if request.query_params.get('type') == 'Рабочее место':
+                query_room_type = 'Workplace'
+            else:
+                query_room_type = 'Meeting room'
+        """-------------------LOCALIZATION-----END--------------------"""
+        room_type_title = query_room_type
 
         try:
             room_type = RoomType.objects.get(title=room_type_title, office_id=office, bookable=True)
