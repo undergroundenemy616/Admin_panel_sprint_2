@@ -68,6 +68,8 @@ class MobileSuitableFloorView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         date_to = request.query_params.get('date_to')
         date_from = request.query_params.get('date_from')
+
+        """-------------------LOCALIZATION--------------------"""
         predefined_room_types = RoomType.objects.filter(office_id=request.query_params.get('office'), is_deletable=False).values('title')
         language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
         if language == 'ru':
@@ -77,8 +79,8 @@ class MobileSuitableFloorView(GenericAPIView):
                 query_room_type = 'Workplace'
             else:
                 query_room_type = 'Meeting room'
+        """-------------------LOCALIZATION-----END--------------------"""
 
-        print('ok')
         bookings = Booking.objects.filter(Q(status__in=['waiting', 'active'])
                                           &
                                           (Q(date_from__lt=date_to, date_to__gte=date_to) |
@@ -207,11 +209,25 @@ class MobileFloorMarkers(GenericAPIView):
         allowed_rooms = Room.objects.is_allowed(user_id=request.user.id).filter(floor__id=pk).\
             select_related("room_marker", "type", "type__icon").prefetch_related("tables", "tables__table_marker")
 
+        """-------------------LOCALIZATION--------------------"""
         self.queryset = self.queryset.filter(pk=pk)
+
+        predefined_room_types = RoomType.objects.filter(office__floors__id=pk,
+                                                        is_deletable=False).values('title')
+        language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
+        if language == 'ru':
+            query_room_type = request.query_params.get('room_type')
+        else:
+            if request.query_params.get('room_type') == 'Рабочее место':
+                query_room_type = 'Workplace'
+            else:
+                query_room_type = 'Meeting room'
+        """-------------------LOCALIZATION-----END--------------------"""
+
         if self.queryset.count() == 0:
             raise ResponseException("Floor not found", status_code=404)
         if serializer.data.get('room_type'):
-            room_type = RoomType.objects.get(title=serializer.data.get('room_type'),
+            room_type = RoomType.objects.get(title=query_room_type,
                                              office__floors__id=pk)
 
             allowed_rooms = allowed_rooms.filter(Q(type__bookable=room_type.bookable,
