@@ -1,0 +1,23 @@
+[
+  {
+    "room": {
+      "title": "Room №1",
+      "type": "Workplace",
+      "zone": "All access"
+    }
+  },
+  {
+    "room": {
+      "title": "Meeting room №1",
+      "type": "Meeting room",
+      "zone": "All access"
+    }
+  },
+    {
+    "room": {
+      "title": "Service room",
+      "type": "Unbookable",
+      "zone": "Only for admins"
+    }
+  }
+]

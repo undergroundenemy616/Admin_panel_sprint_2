@@ -47,7 +47,7 @@ class MobileBookingListPersonalView(GenericAPIView, ListModelMixin):
     queryset = Booking.objects.all().select_related('table', 'user', 'table__room__floor__office',
                                                     'table__room__type', 'table__room__zone',
                                                     'table__table_marker', 'group_booking',
-                                                    'group_booking__author', 'table__room__floor').\
+                                                    'group_booking__author', 'table__room__floor'). \
         prefetch_related('table__tags', 'table__images').order_by('-date_from', 'id')
     permission_classes = (IsAuthenticated,)
     filter_backends = [SearchFilter, ]
@@ -111,7 +111,7 @@ class MobileActionActivateBookingsView(GenericAPIView):
 class MobileActionCancelBookingsView(GenericAPIView):
     queryset = Booking.objects.all().select_related('table', 'user')
     serializer_class = MobileBookingDeactivateActionSerializer
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def delete(self, request, pk=None, *args, **kwargs):
         existing_booking = get_object_or_404(Booking, pk=pk)
@@ -134,7 +134,7 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         if self.request.method == "GET":
             self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=True,
                                                    bookings__table__room__type__bookable=True,
-                                                   bookings__table__room__type__is_deletable=False)).\
+                                                   bookings__table__room__type__is_deletable=False)). \
                 prefetch_related('bookings', 'bookings__table',
                                  'bookings__table__room', 'bookings__table__room__room_marker',
                                  'bookings__table__room__type', 'bookings__table__room__floor',
@@ -182,7 +182,7 @@ class MobileGroupWorkplaceBookingViewSet(viewsets.ModelViewSet):
         if self.request.method == "GET":
             self.queryset = self.queryset.filter(Q(bookings__table__room__type__unified=False,
                                                    bookings__table__room__type__bookable=True,
-                                                   bookings__table__room__type__is_deletable=False)).\
+                                                   bookings__table__room__type__is_deletable=False)). \
                 prefetch_related('bookings', 'bookings__table',
                                  'bookings__table__room', 'bookings__table__room__room_marker',
                                  'bookings__table__room__type', 'bookings__table__room__floor',

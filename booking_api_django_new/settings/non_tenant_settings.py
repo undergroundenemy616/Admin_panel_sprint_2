@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'bookings',
     'push_tokens',
     'teams',
+    'management',
     'rest_framework',
     'drf_yasg',
     'mail',

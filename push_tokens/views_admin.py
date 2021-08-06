@@ -7,30 +7,15 @@ import requests
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-
 from booking_api_django_new.settings.base import PUSH_HOST, PUSH_USERNAME, PUSH_PASSWORD, ALLOW_TENANT
+
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin
 from groups.models import Group
-from push_tokens.serializers_admin import AdminGroupForPushSerializer, AdminAccountForPushSerializer, \
-    AdminSendPushSerializer
+from push_tokens.serializers_admin import (AdminGroupForPushSerializer,
+                                           AdminAccountForPushSerializer,
+                                           AdminSendPushSerializer)
 from users.models import Account
-
-
-def check_token():
-    try:
-        url = PUSH_HOST + "/login"
-        token = requests.post(
-            url=url,
-            json={
-                'username': PUSH_USERNAME,
-                'password': PUSH_PASSWORD
-            }
-        )
-        token = orjson.loads(token.text)
-        os.environ['PUSH_TOKEN'] = str(token.get('access_token'))
-    except requests.exceptions.RequestException:
-        return {"message": "Failed to get access to push service"}, 401
 
 
 class AdminPushGroupView(GenericAPIView):

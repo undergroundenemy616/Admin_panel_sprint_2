@@ -3,26 +3,11 @@ import os
 import orjson
 import requests
 from rest_framework import serializers, status
-
 from booking_api_django_new.settings.base import (FILES_HOST, FILES_PASSWORD,
                                                   FILES_USERNAME)
+from booking_api_django_new.filestorage_auth import check_token
 from core.handlers import ResponseException
 from files.models import File
-
-
-def check_token():
-    try:
-        token = requests.post(
-            url=FILES_HOST + "/auth",
-            json={
-                'username': FILES_USERNAME,
-                'password': FILES_PASSWORD
-            }
-        )
-        token = orjson.loads(token.text)
-        os.environ['FILES_TOKEN'] = str(token.get('access_token'))
-    except requests.exceptions.RequestException:
-        return {"message": "Failed to get access to file storage"}, 401
 
 
 def image_serializer(image: File):

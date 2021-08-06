@@ -3,7 +3,7 @@
 import os
 import sys
 
-ALLOW_TENANT = os.environ.get('ALLOW_TENANT')
+from booking_api_django_new.settings.base import ALLOW_TENANT
 
 
 def main():

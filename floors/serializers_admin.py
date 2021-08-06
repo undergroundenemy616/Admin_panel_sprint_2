@@ -109,6 +109,14 @@ class AdminCreateUpdateFloorMapSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return AdminFloorMapSerializer(instance=instance).data
 
+    @atomic()
+    def update(self, instance, validated_data):
+        if validated_data.get('image') != str(instance.image_id):
+            instance.image.delete()
+
+        return super(AdminCreateUpdateFloorMapSerializer, self).update(instance=instance,
+                                                                       validated_data=validated_data)
+
 
 class AdminFloorClearValidation(serializers.Serializer):
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())

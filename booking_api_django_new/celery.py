@@ -10,8 +10,6 @@ from booking_api_django_new.settings.base import ALLOW_TENANT
 # set the default Django settings module for the 'celery' app.
 from booking_api_django_new.settings import non_tenant_settings as settings
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.non_tenant_settings')
-
 # you change change the name here
 app = TenantAwareCeleryApp("booking_api_django_new") if ALLOW_TENANT else Celery("booking_api_django_new")
 
@@ -36,4 +34,8 @@ app.conf.beat_schedule = {
         'task': 'bookings.tasks.delete_task_from_db_in_all_schemas',
         'schedule': crontab('1', '0', '*', '*', '*'),
     },
+    'delete_old_statistics': {
+        'task': 'files.tasks.delete_old_statistics_in_all_schemas',
+        'schedule': crontab('0', '0', day_of_month='1'),
+    }
 }

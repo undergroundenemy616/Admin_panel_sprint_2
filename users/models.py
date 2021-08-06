@@ -61,6 +61,9 @@ class User(AbstractBaseUser):
     EMAIL_FIELD = 'email'
     USERNAME_FIELD = 'id'
 
+    def __str__(self):
+        return str(self.id)
+
     @classmethod
     def normalize_phone(cls, phone_number):
         if not cls.check_phone_len(phone_number):

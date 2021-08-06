@@ -17,11 +17,12 @@ from bookings.serializers_admin import (AdminBookingCreateFastSerializer,
                                         AdminSwaggerBookingEmployee, AdminSwaggerBookingFuture,
                                         AdminBookingFutureStatisticsSerializer, AdminSwaggerRoomType,
                                         AdminBookingRoomTypeSerializer, AdminMeetingGroupBookingSerializer,
-                                        AdminWorkplaceGroupBookingSerializer)
+                                        AdminWorkplaceGroupBookingSerializer, AdminBookingDynamicsOfVisitsSerializer)
 from core.handlers import ResponseException
 from core.pagination import LimitStartPagination
 from core.permissions import IsAdmin
 from files.serializers_admin import AdminFileSerializer
+from group_bookings.filters_admin import AdminGroupBookingMeetingFilter
 from group_bookings.models import GroupBooking
 from group_bookings.serializers_admin import (AdminGroupBookingSerializer,
                                               AdminGroupWorkspaceSerializer,
@@ -116,11 +117,27 @@ class AdminBookingRoomTypeStatisticsView(GenericAPIView):
         return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
 
 
+class AdminBookingDynamicsOfVisitsView(GenericAPIView):
+    queryset = Booking.objects.all()
+    serializer_class = AdminBookingDynamicsOfVisitsSerializer
+    permission_classes = (IsAdmin,)
+
+    @swagger_auto_schema(query_serializer=AdminSwaggerRoomType)
+    def get(self, request, *args, **kwargs):
+        serializer = AdminBookingDynamicsOfVisitsSerializer(data=request.query_params, context=request)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.get_statistic()
+
+        return Response(data=AdminFileSerializer(instance=response).data, status=status.HTTP_200_OK)
+
+
+
 class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     queryset = GroupBooking.objects.all()
     permission_classes = (IsAdmin,)
     pagination_class = LimitStartPagination
     serializer_class = AdminGroupBookingSerializer
+    filterset_class = AdminGroupBookingMeetingFilter
 
     def get_queryset(self):
         if self.request.method == "GET":

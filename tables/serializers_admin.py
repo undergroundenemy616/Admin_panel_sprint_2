@@ -60,6 +60,10 @@ class AdminTableCreateUpdateSerializer(serializers.ModelSerializer):
         if validated_data.get('room') and validated_data['room'] != instance.room:
             instance.table_marker.delete()
             instance.refresh_from_db()
+        for image in instance.images.all():
+            if str(image.id) not in validated_data.get('images'):
+                image.delete()
+
         return super(AdminTableCreateUpdateSerializer, self).update(instance, validated_data)
 
     def to_representation(self, instance):
@@ -95,6 +99,13 @@ class AdminTableTagSerializer(serializers.ModelSerializer):
         response = super(AdminTableTagSerializer, self).to_representation(instance)
         response['icon'] = AdminFileSerializer(instance=instance.icon).data if instance.icon else None
         return response
+    
+    @atomic()
+    def update(self, instance, validated_data):
+        if instance.icon and validated_data.get('icon') != instance.icon:
+            instance.icon.delete()
+            
+        return super(AdminTableTagSerializer, self).update(instance=instance, validated_data=validated_data)
 
 
 class AdminTableTagCreateSerializer(serializers.ModelSerializer):

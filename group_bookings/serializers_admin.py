@@ -83,6 +83,10 @@ class AdminGroupBookingSerializer(serializers.ModelSerializer):
         for booking in booking_info:
             booking.pop('user')
             response['unified'] = booking.pop('unified')
+        if instance.bookings.all().count() == instance.bookings.filter(is_over=True).count():
+            response['is_over'] = True
+        else:
+            response['is_over'] = False
         response.update(booking_info[0])
 
         return response

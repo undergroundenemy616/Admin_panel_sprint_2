@@ -10,8 +10,7 @@ https://docs.djangoproject.com/en/3.0/howto/deployment/wsgi/
 import os
 
 from django.core.wsgi import get_wsgi_application
-
-ALLOW_TENANT = os.environ.get('ALLOW_TENANT')
+from booking_api_django_new.settings.base import ALLOW_TENANT
 
 if ALLOW_TENANT:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.tenant_settings')

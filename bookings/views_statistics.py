@@ -1,4 +1,5 @@
 from booking_api_django_new.settings.base import FILES_HOST, ALLOW_TENANT
+from booking_api_django_new.filestorage_auth import check_token
 from calendar import monthrange
 from core.handlers import ResponseException
 from datetime import datetime, timedelta, date
