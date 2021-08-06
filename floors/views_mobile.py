@@ -69,6 +69,7 @@ class MobileSuitableFloorView(GenericAPIView):
         date_to = request.query_params.get('date_to')
         date_from = request.query_params.get('date_from')
 
+        """-------------------LOCALIZATION--------------------"""
         predefined_room_types = RoomType.objects.filter(office_id=request.query_params.get('office'), is_deletable=False).values('title')
         language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
         if language == 'ru':
@@ -78,6 +79,7 @@ class MobileSuitableFloorView(GenericAPIView):
                 query_room_type = 'Workplace'
             else:
                 query_room_type = 'Meeting room'
+        """-------------------LOCALIZATION-----END--------------------"""
 
         bookings = Booking.objects.filter(Q(status__in=['waiting', 'active'])
                                           &
