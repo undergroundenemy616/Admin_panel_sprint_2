@@ -156,6 +156,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django-advanced_password_validation',
+    'channels',
 ]
 # 'django.contrib.admin',
 #REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
@@ -247,6 +248,11 @@ LOGGING = {
         },
     },
     'loggers': {
+        'bookings': {
+            'handlers': ['console', 'logfile'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'django.request': {
             'handlers': ['console', 'logfile'],
             'level': 'INFO',
@@ -289,7 +295,17 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = 'booking_api_django_new.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            'hosts': [REDIS_URL]
+        },
+    },
+}
 WSGI_APPLICATION = 'booking_api_django_new.wsgi.application'
+
 
 # Database
 

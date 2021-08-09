@@ -16,7 +16,8 @@ from floors.models import Floor
 from groups.models import Group
 from mail import send_html_email_message
 from offices.models import Office, OfficeZone
-from users.models import Account, AppEntrances, OfficePanelRelation, User
+from rooms.models import Room
+from users.models import Account, User, AppEntrances, OfficePanelRelation
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -373,6 +374,7 @@ class OfficePanelSerializer(serializers.Serializer):
     firstname = serializers.CharField(max_length=64)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), allow_null=True)
 
     @atomic()
     def create(self, validated_data):
@@ -411,5 +413,7 @@ class OfficePanelSerializer(serializers.Serializer):
         response = TestAccountSerializer(instance.account).data
         response['office'] = {"id": instance.office.id, "title": instance.office.title}
         response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}
+        if instance.room:
+            response['room'] = {"id": instance.room.id, "title": instance.room.title}
         response['access_code'] = instance.access_code
         return response
