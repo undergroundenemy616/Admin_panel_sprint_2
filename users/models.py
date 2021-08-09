@@ -66,6 +66,9 @@ class User(AbstractBaseUser):
 
     @classmethod
     def normalize_phone(cls, phone_number):
+        characters_to_remove = ['-', ' ', '.', '*', '(', ')', '/']
+        for character in characters_to_remove:
+            phone_number = phone_number.replace(character, '')
         if not cls.check_phone_len(phone_number):
             msg = 'Phone number must be greater or equal than 11 characters and less or equal than 16 for normalize it!'
             raise ValueError(msg)

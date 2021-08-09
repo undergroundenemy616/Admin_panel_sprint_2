@@ -26,6 +26,10 @@ class MobileBookingRoomSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super(MobileBookingRoomSerializer, self).to_representation(instance)
+        if response['type'] == 'Workplace':
+            response['type'] = 'Рабочее место'
+        elif response['type'] == 'Meeting room':
+            response['type'] = 'Переговорная'
         if instance.type.icon:
             response['room_type_thumb'] = instance.type.icon.thumb if instance.type.icon.thumb else instance.type.icon.path
 
