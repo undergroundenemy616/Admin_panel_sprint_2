@@ -45,6 +45,8 @@ class AdminOfficePanelSerializer(serializers.ModelSerializer):
             "title": instance.office_panels.floor.title
         }
         response['access_code'] = instance.office_panels.access_code
+        response['room'] = {'id': instance.office_panels.room_id,
+                            'title': instance.office_panels.room.title} if instance.office_panels.room else None
         return response
 
 
