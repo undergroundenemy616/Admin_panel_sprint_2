@@ -14,6 +14,7 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from core.utils import get_localization
+from rooms.models import Room
 from users.tasks import send_register_email
 
 from booking_api_django_new.settings import DEBUG, ADMIN_HOST, BASE_DIR
@@ -54,6 +55,7 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
     firstname = serializers.CharField(max_length=64)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
 
     @atomic()
     def create(self, validated_data):
@@ -71,6 +73,7 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
             account.groups.add(group)
         instance = OfficePanelRelation.objects.create(account=account, office=validated_data.get('office'),
                                                       floor=validated_data.get('floor'),
+                                                      room_id=validated_data.get('room'),
                                                       access_code=int(time.time()))
         return instance
 
@@ -81,6 +84,7 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
         instance.save()
         office_panel.office = validated_data.get('office')
         office_panel.floor = validated_data.get('floor')
+        office_panel.room_id = validated_data.get('room')
         office_panel.save()
         return office_panel
 
