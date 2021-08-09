@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from celery import shared_task
 
 from files.models import File
