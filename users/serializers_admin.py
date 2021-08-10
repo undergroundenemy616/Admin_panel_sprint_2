@@ -100,7 +100,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
             response['phone_number'] = instance.user.phone_number
         if not response['email']:
             response['email'] = instance.user.email
-        response['has_cp_access'] = True if instance.user.is_staff else False
+        response['has_cp_access'] = True if instance.user.email else False
         try:
             if self.context['request'].query_params.get('date_from') and self.context['request'].query_params.get('date_to')\
                     and self.context['request'].query_params.get('unified'):
@@ -238,7 +238,7 @@ class AdminPasswordResetSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         account = attrs.get('user')
-        if not account.email:
+        if not account.email and not account.user.email:
             raise ValidationError(detail="User has no email specified", code=400)
         return attrs
 
