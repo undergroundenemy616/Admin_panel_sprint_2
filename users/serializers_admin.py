@@ -264,7 +264,7 @@ class AdminPasswordResetSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         account = attrs.get('user')
-        if not account.email:
+        if not account.email and account.user.email:
             raise ValidationError(detail="User has no email specified", code=400)
         return attrs
 
