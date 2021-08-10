@@ -263,20 +263,35 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 contact_data = guest[guest_name]
                 try:
                     validate_email(contact_data)
-                    message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
-                              f"которая пройдёт в {attrs['room'].floor.office.title}, " \
-                              f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                              f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
-                              f"{datetime.strftime(message_date_to, '%H:%M')}"
-                    send_email.delay(email=contact_data, subject="Встреча", message=message)
-                except ValErr:
-                    try:
-                        contact_data = User.normalize_phone(contact_data)
+                    if self.context.headers.get('Language', None) == 'ru':
                         message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
                                   f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
                                   f"{datetime.strftime(message_date_to, '%H:%M')}"
+                        send_email.delay(email=contact_data, subject="Встреча", message=message)
+                    else:
+                        message = f"Hello, {guest_name}. You invited to meeting, " \
+                                  f"that take place at {attrs['room'].floor.office.title}, " \
+                                  f"floor {attrs['room'].floor.title}, room {attrs['room'].title}. " \
+                                  f"Meeting date and time {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                  f"{datetime.strftime(message_date_to, '%H:%M')}"
+                        send_email.delay(email=contact_data, subject="Meeting", message=message)
+                except ValErr:
+                    try:
+                        contact_data = User.normalize_phone(contact_data)
+                        if self.context.headers.get('Language', None) == 'ru':
+                            message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
+                                      f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                                      f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                                      f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                      f"{datetime.strftime(message_date_to, '%H:%M')}"
+                        else:
+                            message = f"Hello, {guest_name}. You invited to meeting, " \
+                                      f"that take place at {attrs['room'].floor.office.title}, " \
+                                      f"floor {attrs['room'].floor.title}, room {attrs['room'].title}. " \
+                                      f"Meeting date and time {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                      f"{datetime.strftime(message_date_to, '%H:%M')}"
                         send_sms.delay(phone_number=contact_data, message=message)
                     except ValueError:
                         raise ResponseException("Wrong format of email or phone",
@@ -298,7 +313,8 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking)
+                        group_booking=group_booking,
+                        kwargs=self.context.headers.get('Language', None))
             b.save()
             if user == author:
                 my_booking_id = str(b.id)
@@ -359,7 +375,8 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking)
+                        group_booking=group_booking,
+                        kwargs=self.context.headers.get('Language', None))
             b.save()
             if self.validated_data['users'][i] == author:
                 my_booking_id = str(b.id)
