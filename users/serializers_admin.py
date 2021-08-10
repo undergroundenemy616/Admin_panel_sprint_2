@@ -100,7 +100,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
             response['phone_number'] = instance.user.phone_number
         if not response['email']:
             response['email'] = instance.user.email
-        response['has_cp_access'] = True if instance.user.email else False
+        response['has_cp_access'] = True if instance.user.is_staff else False
         try:
             if self.context['request'].query_params.get('date_from') and self.context['request'].query_params.get('date_to')\
                     and self.context['request'].query_params.get('unified'):
@@ -148,6 +148,10 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         user = User.objects.create(phone_number=validated_data.pop('phone_number'), is_active=True,
                                    email=validated_data.pop('email'))
         validated_data['user'] = user
+        password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+
+        user.set_password(password)
+        user.save()
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
         try:
             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
