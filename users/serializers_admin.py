@@ -271,11 +271,18 @@ class AdminPasswordResetSerializer(serializers.Serializer):
     @atomic()
     def save(self, **kwargs):
         account = Account.objects.get(pk=self.data['user'])
-        if not account.user.email:
-            account.user.email = account.email
-            subject = "Добро пожаловать в Simple-Office!"
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            if not account.user.email:
+                account.user.email = account.email
+                subject = "Добро пожаловать в Simple-Office!"
+            else:
+                subject = "Ваш пароль был успешно сброшен!"
         else:
-            subject = "Ваш пароль был успешно сброшен!"
+            if not account.user.email:
+                account.user.email = account.email
+                subject = "Welcome to Simple-Office!"
+            else:
+                subject = "Your password was successfully reset"
 
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
         account.user.set_password(password)
