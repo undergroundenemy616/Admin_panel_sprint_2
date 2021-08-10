@@ -1132,9 +1132,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking,
-                        kwargs=self.context['request'].headers.get('Language', None))
-            b.save()
+                        group_booking=group_booking)
+            b.save(kwargs=self.context['request'].headers.get('Language', None))
 
         return AdminGroupBookingSerializer(instance=group_booking).data
 
@@ -1181,8 +1180,7 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking,
-                        kwargs=self.context['request'].headers.get('Language', None))
-            b.save()
+                        group_booking=group_booking)
+            b.save(kwargs=self.context['request'].headers.get('Language', None))
 
         return AdminGroupWorkspaceSerializer(instance=group_booking).data

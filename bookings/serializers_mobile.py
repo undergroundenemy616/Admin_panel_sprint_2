@@ -313,9 +313,8 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking,
-                        kwargs=self.context['request'].headers.get('Language', None))
-            b.save()
+                        group_booking=group_booking)
+            b.save(kwargs=self.context['request'].headers.get('Language', None))
             if user == author:
                 my_booking_id = str(b.id)
         response = MobileGroupBookingSerializer(instance=group_booking).data
@@ -375,9 +374,8 @@ class MobileWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking,
-                        kwargs=self.context['request'].headers.get('Language', None))
-            b.save()
+                        group_booking=group_booking)
+            b.save(kwargs=self.context['request'].headers.get('Language', None))
             if self.validated_data['users'][i] == author:
                 my_booking_id = str(b.id)
         response = MobileGroupBookingSerializer(instance=group_booking).data
