@@ -163,7 +163,7 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
                 raise ResponseException("User with this phone already exists")
         return attrs
 
-    # @atomic()
+    @atomic()
     def create(self, validated_data):
         user = User.objects.create(phone_number=validated_data.pop('phone_number'), is_active=True,
                                    email=validated_data.pop('email'))
