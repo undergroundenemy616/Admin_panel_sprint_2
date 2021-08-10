@@ -1090,7 +1090,7 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 contact_data = guest[guest_name]
                 try:
                     validate_email(contact_data)
-                    if self.context.headers.get('Language', None) == 'ru':
+                    if self.context['request'].headers.get('Language', None) == 'ru':
                         message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
@@ -1107,7 +1107,7 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 except ValErr:
                     try:
                         contact_data = User.normalize_phone(contact_data)
-                        if self.context.headers.get('Language', None) == 'ru':
+                        if self.context['request'].headers.get('Language', None) == 'ru':
                             message = f"Hello, {guest_name}. You invited to meeting, " \
                                       f"that take place at {attrs['room'].floor.office.title}, " \
                                       f"floor {attrs['room'].floor.title}, room {attrs['room'].title}. " \
@@ -1133,7 +1133,7 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
                         group_booking=group_booking,
-                        kwargs=self.context.headers.get('Language', None))
+                        kwargs=self.context['request'].headers.get('Language', None))
             b.save()
 
         return AdminGroupBookingSerializer(instance=group_booking).data
@@ -1182,7 +1182,7 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
                         group_booking=group_booking,
-                        kwargs=self.context.headers.get('Language', None))
+                        kwargs=self.context['request'].headers.get('Language', None))
             b.save()
 
         return AdminGroupWorkspaceSerializer(instance=group_booking).data
