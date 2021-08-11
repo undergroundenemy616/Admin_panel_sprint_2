@@ -222,6 +222,7 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
 
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+        email = validated_data.get('email')
         user = User.objects.create(is_active=True, is_staff=True, email=validated_data.pop('email'),
                                    phone_number=validated_data.pop('phone_number'))
         user.set_password(password)
@@ -231,22 +232,36 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
 
         group = Group.objects.filter(title='Администратор', is_deletable=False).first()
         if not group:
-            raise ValidationError(detail={"message": 'Unable to find admin group'}, code=400)
+            group = Group.objects.filter(title='Administrator', is_deletable=False).first()
+            if not group:
+                raise ValidationError(detail={"message": 'Unable to find admin group'}, code=400)
         instance.groups.add(group)
 
-        email = validated_data.get('email')
         if not ADMIN_HOST:
             raise ValidationError(detail={"message": "ADMIN_HOST not specified"}, code=400)
 
-        send_html_email_message(
-            to=email,
-            subject="Добро пожаловать в Simple-Office!",
-            template_args={
-                'host': ADMIN_HOST,
-                'username': email,
-                'password': password
-            }
-        )
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            send_html_email_message(
+                to=email,
+                subject="Добро пожаловать в Simple-Office!",
+                template_args={
+                    'host': ADMIN_HOST,
+                    'username': email,
+                    'password': password
+                },
+                language='ru'
+            )
+        else:
+            send_html_email_message(
+                to=email,
+                subject="Welcome to Simple-Office!",
+                template_args={
+                    'host': ADMIN_HOST,
+                    'username': email,
+                    'password': password
+                },
+                language='en'
+            )
         return instance
 
     def to_representation(self, instance):
