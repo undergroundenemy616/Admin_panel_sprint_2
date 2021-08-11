@@ -222,6 +222,7 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
 
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+        email = validated_data.get('email')
         user = User.objects.create(is_active=True, is_staff=True, email=validated_data.pop('email'),
                                    phone_number=validated_data.pop('phone_number'))
         user.set_password(password)
@@ -234,7 +235,6 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
             raise ValidationError(detail={"message": 'Unable to find admin group'}, code=400)
         instance.groups.add(group)
 
-        email = validated_data.get('email')
         if not ADMIN_HOST:
             raise ValidationError(detail={"message": "ADMIN_HOST not specified"}, code=400)
 
