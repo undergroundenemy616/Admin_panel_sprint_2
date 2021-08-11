@@ -4,14 +4,32 @@ from django.template.loader import render_to_string
 from booking_api_django_new.settings import EMAIL_HOST_USER
 
 
-def send_html_email_message(to: str, subject: str, template_args: dict):
-    send_mail(
-        recipient_list=[to],
-        from_email=EMAIL_HOST_USER,
-        subject=subject,
-        message='\n'.join([f"{key}: {val}" for key, val in template_args.items()]),
-        html_message=render_to_string("mail.html", template_args)
-    )
+def send_html_email_message(to: str, subject: str, template_args: dict, language: str = 'ru'):
+    try:
+        if language == 'ru':
+            send_mail(
+                recipient_list=[to],
+                from_email=EMAIL_HOST_USER,
+                subject=subject,
+                message='\n'.join([f"{key}: {val}" for key, val in template_args.items()]),
+                html_message=render_to_string("mail.html", template_args)
+            )
+        else:
+            send_mail(
+                recipient_list=[to],
+                from_email=EMAIL_HOST_USER,
+                subject=subject,
+                message='\n'.join([f"{key}: {val}" for key, val in template_args.items()]),
+                html_message=render_to_string("mail_en.html", template_args)
+            )
+    except Exception as e:
+        send_mail(
+            recipient_list=[to],
+            from_email=EMAIL_HOST_USER,
+            subject=subject,
+            message='\n'.join([f"{key}: {val}" for key, val in template_args.items()]),
+            html_message=render_to_string("mail_en.html", template_args)
+        )
 
 
 def send_html_email(to: str, subject: str, message: str):

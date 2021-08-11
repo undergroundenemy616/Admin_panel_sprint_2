@@ -2,11 +2,13 @@ import os
 import uuid
 
 import pytz
-from rest_framework import status
+from django.core.cache import cache
 
 from booking_api_django_new.celery import app as celery_app
 from celery.app.control import Control
 import bookings.tasks as tasks
+import asyncio
+import orjson
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -18,14 +20,15 @@ from django.utils.timezone import now
 from booking_api_django_new.settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
                                              BOOKING_TIMEDELTA_CHECK,
                                              PUSH_HOST)
-from core.handlers import ResponseException
+from groups.models import EMPLOYEE_ACCESS
+from tables.models import Table
+from users.models import Account, User, OfficePanelRelation
+
+from channels.layers import get_channel_layer
+
 from group_bookings.models import GroupBooking
 
-from groups.models import EMPLOYEE_ACCESS
 from offices.models import Office
-from push_tokens.send_interface import send_push_message
-from tables.models import Table
-from users.models import Account, User
 
 MINUTES_TO_ACTIVATE = 15
 
@@ -125,6 +128,7 @@ class Booking(models.Model):
         #         open_time.time() <= date_to.time() <= close_time.time():
         #     raise ResponseException('The selected time does not fall into the office work schedule',
         #                             status_code=status.HTTP_400_BAD_REQUEST)
+
         date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.date_activate_until = self.calculate_date_activate_until()
         try:
@@ -132,18 +136,18 @@ class Booking(models.Model):
         except Exception as e:
             language = 'ru'
         if not JobStore.objects.filter(job_id__contains=str(self.id)):
-            JobStore.objects.create(job_id='check_booking_activate_'+str(self.id),
+            JobStore.objects.create(job_id='check_booking_activate_' + str(self.id),
                                     time_execute=self.date_activate_until,
                                     parameters={'uuid': str(self.id)})
-            JobStore.objects.create(job_id='make_booking_over_'+str(self.id),
+            JobStore.objects.create(job_id='make_booking_over_' + str(self.id),
                                     time_execute=self.date_to,
                                     parameters={'uuid': str(self.id)})
-            JobStore.objects.create(job_id='notify_about_book_ending_'+str(self.id),
+            JobStore.objects.create(job_id='notify_about_book_ending_' + str(self.id),
                                     time_execute=self.date_to - timedelta(minutes=15),
                                     parameters={'uuid': str(self.id),
                                                 'language': language})
             if date_now + timedelta(minutes=BOOKING_TIMEDELTA_CHECK) > self.date_from:
-                JobStore.objects.create(job_id='notify_about_booking_activation_'+str(self.id),
+                JobStore.objects.create(job_id='notify_about_booking_activation_' + str(self.id),
                                         time_execute=date_now + timedelta(minutes=1),
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
@@ -157,11 +161,37 @@ class Booking(models.Model):
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
             if date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) < self.date_from:
-                JobStore.objects.create(job_id='notify_about_oncoming_booking_'+str(self.id),
+                JobStore.objects.create(job_id='notify_about_oncoming_booking_' + str(self.id),
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
 
+        if self.table.room.type.unified and self.table.room.office_panels.exists() and cache.get('dict_for_wc') and \
+                cache.get('dict_for_wc')['global_date_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_to_ws'].get(f'{self.table.id}'):
+            dict_for_wc = cache.get('dict_for_wc')
+
+            if dict_for_wc['global_date_from_ws'][f'{self.table.id}'] == self.date_from.date():
+                result_for_date = self.create_response_for_date_websocket()
+                try:
+                    asyncio.run(self.websocket_notification_by_date(result_for_date))
+                except Exception as e:
+                    print('-----ERROR--CREATE--BY--DATE---', e)
+            else:
+                pass
+            if ((dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to <=
+                 dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] <= self.date_from <
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] >= self.date_from >=
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    and (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to)):
+                result_for_datetime = self.create_response_for_datetime_websocket()
+                try:
+                    asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                except Exception as e:
+                    print('-----ERROR--CREATE--BY--DATETIME---', e)
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
@@ -217,6 +247,33 @@ class Booking(models.Model):
         tasks.all_job_delete(str(self.id))
 
         super(Booking, instance).save()
+        if self.table.room.type.unified and self.table.room.office_panels.exists() and cache.get('dict_for_wc') and \
+                cache.get('dict_for_wc')['global_date_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_from_ws'].get(f'{self.table.id}') and \
+                cache.get('dict_for_wc')['global_datetime_to_ws'].get(f'{self.table.id}'):
+            dict_for_wc = cache.get('dict_for_wc')
+
+            if dict_for_wc['global_date_from_ws'][f'{self.table.id}'] == self.date_from.date():
+                result_for_date = self.create_response_for_date_websocket(instance)
+                try:
+                    asyncio.run(self.websocket_notification_by_date(result=result_for_date))
+                except Exception as e:
+                    print('-----ERROR--OVER--BY--DATE---', e)
+            else:
+                pass
+
+            if ((dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to <=
+                 dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] <= self.date_from <
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] >= self.date_from >=
+                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
+                    and (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to)):
+                result_for_datetime = self.create_response_for_datetime_websocket(instance)
+                try:
+                    asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                except Exception as e:
+                    print('-----ERROR--OVER--BY--DATETIME---', e)
 
     def check_booking_activate(self, *args, **kwargs):
         try:
@@ -316,56 +373,143 @@ class Booking(models.Model):
             # for token in [push_object.token for push_object in self.user.push_tokens.all()]:
             #     send_push_message(token, expo_data)
 
-    # def job_create_oncoming_notification(self):
-    #     """Add job in apscheduler to notify user about oncoming booking via PUSH-notification"""
-    #     date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
-    #     # if (self.date_from - date_now).total_seconds() / 60.0 > BOOKING_PUSH_NOTIFY_UNTIL_MINS:
-    #     scheduler.add_job(
-    #         func=self.notify_about_oncoming_booking,
-    #         name="oncoming",
-    #         run_date=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS) if self.date_from > (
-    #                 date_now + timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS)) else date_now + timedelta(
-    #             minutes=2),
-    #         misfire_grace_time=None,
-    #         id="notify_about_oncoming_booking_" + str(self.id),
-    #         replace_existing=True
-    #     )
-    #     scheduler.add_job(
-    #         func=self.notify_about_booking_activation,
-    #         name="activation",
-    #         run_date=self.date_from - timedelta(
-    #             minutes=BOOKING_TIMEDELTA_CHECK) if self.date_from > date_now else date_now + timedelta(minutes=3),
-    #         misfire_grace_time=None,
-    #         id="notify_about_activation_booking_" + str(self.id),
-    #         replace_existing=True
-    #     )
+    @staticmethod
+    async def websocket_notification_by_date(result=None):
+        dict_for_wc = cache.get('dict_for_wc')
+        if not dict_for_wc:
+            return
+        json_format = {'type': 'send_json',
+                       'text': {
+                           'type': 'timeline',
+                           'data': result
+                       }
+                       }
+        channel_layer = get_channel_layer()
+        print("existing_booking", json_format)
+        result_in_json = orjson.loads(orjson.dumps(json_format))
+        print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
+        print('Send info outside model')
+        channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
+        if result[0].get('delete'):
+            result = []
+            json_format = {'type': 'send_json',
+                           'text': {
+                               'type': 'timeline',
+                               'data': result
+                           }
+                           }
+            result_in_json = orjson.loads(orjson.dumps(json_format))
+        print('channel is: ', channel)
+        print('Send info outside model')
+        await channel_layer.send(str(channel), result_in_json)
 
-    # def job_create_change_states(self):
-    #     """Add job for occupied/free states changing"""
-    #     # scheduler.add_job(
-    #     #     self.set_booking_active,
-    #     #     "date",
-    #     #     run_date=self.date_from,
-    #     #     misfire_grace_time=900,
-    #     #     id="set_booking_active_" + str(self.id)
-    #     # )  # Why we need THIS? Activation is starting when qr code was scanned and then front send request for backend
-    #     # date_now = datetime.utcnow().replace(tzinfo=timezone.utc)
-    #     scheduler.add_job(
-    #         self.make_booking_over,
-    #         "date",
-    #         run_date=self.date_to,
-    #         misfire_grace_time=None,
-    #         id="set_booking_over_" + str(self.id),
-    #         replace_existing=True
-    #     )
-    #     scheduler.add_job(
-    #         self.check_booking_activate,
-    #         "date",
-    #         run_date=self.date_activate_until,  # date_now + timedelta(minutes=2)
-    #         misfire_grace_time=None,
-    #         id="check_booking_activate_" + str(self.id),
-    #         replace_existing=True
-    #     )
+    @staticmethod
+    async def websocket_notification_by_datetime(result=None):
+        dict_for_wc = cache.get('dict_for_wc')
+        if not dict_for_wc:
+            return
+        json_format = {
+            'type': 'send_json',
+            'text': {
+                'type': 'meeting_block',
+                'data': result
+            }
+        }
+        channel_layer = get_channel_layer()
+        result_in_json = orjson.loads(orjson.dumps(json_format))
+        print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
+        print('Send info outside model')
+        channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
+        print('channel is: ', channel)
+        await channel_layer.send(str(channel), result_in_json)
+
+    def create_response_for_datetime_websocket(self, instance=None):
+        local_tz = pytz.timezone('Europe/Moscow')
+        result = []
+        if self.status == 'active' and not instance:
+            result.append({
+                'status': 'occupied',
+                'id': str(self.id),
+                'table_id': str(self.table.id),
+                'title': str(self.table.room.title),
+                'date_from': str(self.date_from.astimezone(local_tz))[:16],
+                'date_to': str(self.date_to.astimezone(local_tz))[:16],
+                'user': {
+                    'id': str(self.user.id),
+                    'phone': str(self.user.user.phone_number),
+                    'firstname': str(self.user.first_name),
+                    'lastname': str(self.user.last_name),
+                    'middlename': str(self.user.middle_name),
+                },
+                'theme': str(self.theme)
+            })
+        elif instance:
+            image = self.table.images.first()
+            if image:
+                result.append({
+                    'id': str(self.table.room.id),
+                    'title': str(self.table.room.title),
+                    'table_id': str(self.table.id),
+                    'tables': [
+                        {'id': str(self.table.id),
+                         'title': str(self.table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [{
+                        'id': str(image.id) if image else None,
+                        'title': str(image.title) if image else None,
+                        'path': str(image.path) if image else None,
+                        'thumb': str(image.thumb) if image else None
+                    }],
+                    'status': 'not occupied'
+                })
+            else:
+                result.append({
+                    'id': str(self.table.room.id),
+                    'title': str(self.table.room.title),
+                    'table_id': str(self.table.id),
+                    'tables': [
+                        {'id': str(self.table.id),
+                         'title': str(self.table.title),
+                         'is_occupied': str(False)}
+                    ],
+                    'images': [],
+                    'status': 'not occupied'
+                })
+        return result
+
+    def create_response_for_date_websocket(self, instance=None):
+        try:
+            panel = OfficePanelRelation.objects.get(room_id=self.table.room_id)
+        except OfficePanelRelation.DoesNotExist:
+            return
+        existing_booking = Booking.objects.filter(table=self.table_id,
+                                                  status__in=['waiting', 'active'],
+                                                  date_from__year=str(self.date_from.year),
+                                                  date_from__month=str(self.date_from.month),
+                                                  date_from__day=str(self.date_from.day))
+        result = []
+        local_tz = pytz.timezone('Europe/Moscow')
+        for booking in existing_booking:
+            if instance and instance.id == booking.id:
+                continue
+            result.append({
+                'id': str(booking.id),
+                'table_id': str(booking.table.id),
+                'date_from': str(booking.date_from.astimezone(local_tz))[0:16],
+                'date_to': str(booking.date_to.astimezone(local_tz))[0:16]
+            })
+        if not instance:
+            result.append({
+                'id': str(self.id),
+                'table_id': str(self.table.id),
+                'date_from': str(self.date_from.astimezone(local_tz))[0:16],
+                'date_to': str(self.date_to.astimezone(local_tz))[0:16]
+            })
+        if len(result) == 0:
+            result.append({'table_id': str(self.table.id),
+                           'delete': True})
+        return result
 
 
 class JobStore(models.Model):

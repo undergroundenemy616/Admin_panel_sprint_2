@@ -99,9 +99,9 @@ urlpatterns = [
     path('send_', include('push_tokens.urls_send')),
     path('pass_change', views.PasswordChangeView.as_view()),
     path('pass_reset', views.PasswordResetView.as_view()),
-    path('panel', include('booking_api_django_new.urls_panel')),
     path('mobile', include('booking_api_django_new.urls_mobile')),
-    path('admin', include('booking_api_django_new.urls_admin'))
+    path('admin', include('booking_api_django_new.urls_admin')),
+    path('panel', include('booking_api_django_new.urls_panel')),
 ]
 
 '''

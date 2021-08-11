@@ -5,7 +5,8 @@ from rest_framework import filters
 from rooms.models import Room
 from core.permissions import IsAdmin
 from rooms.serializers import TestRoomSerializer, RoomSerializer
-from rooms.serializers_panel import PanelRoomGetSerializer
+from rooms.serializers_panel import PanelRoomGetSerializer, PanelSingleRoomSerializer
+from users.models import OfficePanelRelation
 
 
 class PanelRoomsView(GenericAPIView, ListModelMixin):
@@ -51,4 +52,23 @@ class PanelRoomsView(GenericAPIView, ListModelMixin):
             'suitable_tables': suitable_tables
         }
         return Response(response_dict, status=status.HTTP_200_OK)
+
+
+class PanelSingleRoomView(GenericAPIView):
+    queryset = Room.objects.all()
+    permission_classes = (IsAdmin,)
+    serializer_class = RoomSerializer
+
+    def get(self, request, *args, **kwargs):
+        try:
+            panel = OfficePanelRelation.objects.get(account=request.user.account.id)
+        except OfficePanelRelation.DoesNotExist:
+            return Response('Panel not found', status=status.HTTP_404_NOT_FOUND)
+        # TODO: Not sure in panel.room maybe need query in db
+        if panel.room:
+            context = {'date_from': request.query_params.get('date_from', None),
+                       'date_to': request.query_params.get('date_to', None)}
+            room = Room.objects.get(id=panel.room.id)
+            return Response(PanelSingleRoomSerializer(instance=room, context=context).data, status=status.HTTP_200_OK)
+        return Response('Panel has no room', status=status.HTTP_404_NOT_FOUND)
 

@@ -48,7 +48,24 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
             request.data['phone'] = request.data.get('phone_number')
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        account = serializer.save()
+        phone_number = serializer.data.get('phone_number', None)
+        if request.user.account.account_type == 'kiosk':
+            try:
+                find_user = User.objects.get(phone_number=phone_number)
+            except User.DoesNotExist:
+                return Response("No user found", status=status.HTTP_400_BAD_REQUEST)
+        user, created = User.objects.get_or_create(phone_number=phone_number)
+        # Fix if we have user we dont need any actions
+
+        account, account_created = Account.objects.get_or_create(user=user)
+        if account_created:
+            user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+            account.groups.add(user_group)
+        if request.data.get('description'):
+            account.description = request.data.get('description')
+            account.save()
+        user.is_active = True
+        user.save()
         response = AccountSerializer(instance=account).data
         return Response(response, status=status.HTTP_201_CREATED)
 
@@ -179,6 +196,7 @@ class LoginOfficePanel(GenericAPIView):
         data["access_token"] = str(token.access_token)
         data["office"] = str(office_panel_info.office.id)
         data["floor"] = str(office_panel_info.floor.id)
+        data["room"] = str(office_panel_info.room.id) if office_panel_info.room is not None else None
 
         return Response(data, status=status.HTTP_200_OK)
 
@@ -277,8 +295,9 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             if serializer.data.get('account_type') == 'kiosk':
                 self.serializer_class = OfficePanelSerializer
                 self.queryset = OfficePanelRelation.objects.all().select_related(
-                    'floor', 'office', 'account','account__photo', 'account__user').prefetch_related('account__groups')
+                    'floor', 'office', 'account', 'account__photo', 'account__user').prefetch_related('account__groups')
                 return self.list(self, request, *args, **kwargs)
+            self.queryset = self.queryset.filter(account_type='user')
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
@@ -290,6 +309,8 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             serializer.is_valid(raise_exception=True)
             if serializer.data.get('account_type') == 'kiosk':
                 self.queryset = self.queryset.filter(account_type=serializer.data.get('account_type'))
+            else:
+                self.queryset = self.queryset.filter(account_type='user')
             if serializer.data.get('include_not_activated') == 'false':
                 self.queryset = self.queryset.filter(user__is_active=True)
             if serializer.data.get('access_group'):
@@ -297,6 +318,7 @@ class AccountListView(GenericAPIView, mixins.ListModelMixin):
             return self.list(self, request, *args, **kwargs)
         else:
             self.pagination_class = None
+            self.queryset = self.queryset.filter(account_type='user')
             all_accounts = self.list(self, request, *args, **kwargs)
             response = dict()
             response['results'] = all_accounts.data
@@ -492,3 +514,63 @@ class OfficePanelUpdate(GenericAPIView, mixins.UpdateModelMixin):
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
+
+
+class LoginOrRegisterUserFromPanelView(GenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = LoginOrRegisterSerializer
+    authentication_classes = []
+
+    def post(self, request):
+        """Register or login view"""
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        phone_number = serializer.data.get('phone', None)
+        sms_code = serializer.data.pop('code', None)
+
+        user, created = User.objects.get_or_create(phone_number=phone_number)
+        account, account_created = Account.objects.get_or_create(user=user)
+        try:
+            data = {}
+            if not sms_code:  # Register or login user
+                if not os.getenv('SMS_MOCK_CONFIRM'):
+                    send_code(user, created)
+                else:
+                    print('SMS service is off, any code is acceptable')
+                # Creating data for response
+                data = {
+                    'message': "OK",
+                    'new_code_in': 60,
+                    'expires_in': 60,
+                }
+            elif sms_code:  # Confirm code  and user.is_active
+                if not os.getenv('SMS_MOCK_CONFIRM'):
+                    # Confirmation code
+                    if phone_number == HARDCODED_PHONE_NUMBER and sms_code == HARDCODED_SMS_CODE:
+                        pass
+                    else:
+                        confirm_code(phone_number, sms_code)
+                        if not user.is_active:
+                            user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+                            account.groups.add(user_group)
+                            user.is_active = True
+                            user.save()
+                else:
+                    print('SMS service is off, any code is acceptable')
+
+                user_logged_in.send(sender=user.__class__, user=user, request=request)
+
+                # Creating data for response
+                serializer = TokenObtainPairSerializer()
+                token = serializer.get_token(user=user)
+                data = dict()
+                data["refresh_token"] = str(token)
+                data["access_token"] = str(token.access_token)
+                data["account"] = account.id
+                data["activated"] = account.user.is_active
+            else:
+                raise ValueError('Invalid data!')
+        except ValueError as error:
+            return Response({'detail': str(error), 'message': 'ERROR'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data, status=status.HTTP_200_OK)
