@@ -597,10 +597,16 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
         for row in list_rows:
             row['places'] = most_frequent(row['places'])
 
-        for table in sql_results:
-            for row in list_rows:
-                if table['table_id'] == row['places']:
-                    row['table'] = "Место: " + table['table_title'] + ", этаж: " + table['floor_title']
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            for table in sql_results:
+                for row in list_rows:
+                    if table['table_id'] == row['places']:
+                        row['table'] = "Место: " + table['table_title'] + ", этаж: " + table['floor_title']
+        else:
+            for table in sql_results:
+                for row in list_rows:
+                    if table['table_id'] == row['places']:
+                        row['table'] = "Place: " + table['table_title'] + ", floor: " + table['floor_title']
 
         workbook = xlsxwriter.Workbook(secure_file_name)
 
