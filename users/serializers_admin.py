@@ -238,15 +238,28 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
         if not ADMIN_HOST:
             raise ValidationError(detail={"message": "ADMIN_HOST not specified"}, code=400)
 
-        send_html_email_message(
-            to=email,
-            subject="Добро пожаловать в Simple-Office!",
-            template_args={
-                'host': ADMIN_HOST,
-                'username': email,
-                'password': password
-            }
-        )
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            send_html_email_message(
+                to=email,
+                subject="Добро пожаловать в Simple-Office!",
+                template_args={
+                    'host': ADMIN_HOST,
+                    'username': email,
+                    'password': password
+                },
+                language='ru'
+            )
+        else:
+            send_html_email_message(
+                to=email,
+                subject="Welcome to Simple-Office!",
+                template_args={
+                    'host': ADMIN_HOST,
+                    'username': email,
+                    'password': password
+                },
+                language='en'
+            )
         return instance
 
     def to_representation(self, instance):
