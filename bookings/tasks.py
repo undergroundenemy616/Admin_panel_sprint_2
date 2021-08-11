@@ -1,7 +1,12 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+import pytz
 from celery import shared_task
+from django.db.models import Q
 from django.utils.timezone import now
+from exchangelib import Account as Ac, Credentials, Configuration, DELEGATE
+from exchangelib.services import GetRooms
+
 import bookings.models as bookings
 import os
 import requests
@@ -11,6 +16,10 @@ from celery.app.control import Control
 import logging
 from booking_api_django_new.celery import app as celery_app
 from django.core.mail import mail_admins
+
+from group_bookings.models import GroupBooking
+from tables.models import Table
+from users.models import Account
 
 
 def all_job_delete(uuid):
@@ -290,3 +299,77 @@ def delete_task_from_db():
     job_to_delete = bookings.JobStore.objects.filter(executed=True)
     for job in job_to_delete:
         job.delete()
+
+
+@shared_task()
+def create_bookings_from_exchange():
+    queryset = Account.objects.all().select_related('user')
+    credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+    config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+    account = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config, autodiscover=False,
+                 access_type=DELEGATE)
+    start = datetime(datetime.now().year, 1, 1, 0, 0, tzinfo=account.default_timezone)
+    end = datetime(datetime.now().year, 12, 31, 23, 59, tzinfo=account.default_timezone)
+    rooms_data = []
+    room_lists = account.protocol.get_roomlists()
+    for room_list in room_lists:
+        rooms = GetRooms(protocol=account.protocol).call(roomlist=room_list)
+        for room in rooms:
+            rooms_data.append({
+                "title": room.name,
+                "email": room.email_address
+            })
+    for f in account.calendar.view(start=start, end=end):
+        if f.is_meeting:
+            author_email = f.organizer.email_address
+            date_from = f.start
+            date_to = f.end
+            room_title = f.location
+            room_email = None
+            users = [{
+                "email": f.organizer.email_address,
+                "name": f.organizer.name
+            }]
+            user_emails = [f.organizer.email_address]
+            guests = []
+            if f.required_attendees:
+                for attendee in f.required_attendees:
+                    if Account.objects.filter(Q(email=attendee.mailbox.email_address)
+                                              |
+                                              Q(user__email=attendee.mailbox.email_address)).exists():
+                        users.append({
+                            "email": attendee.mailbox.email_address,
+                            "name": attendee.mailbox.name
+                        })
+                        user_emails.append(attendee.mailbox.email_address)
+                    else:
+                        guests.append({
+                            attendee.mailbox.name: attendee.mailbox.email_address,
+                        })
+            for room in rooms_data:
+                if room['title'] in room_title:
+                    room_email = room['email']
+            users = {user['email']: user for user in users}.values()
+            try:
+                table = Table.objects.get(room__exchange_email=room_email)
+                date_to = pytz.UTC.localize(datetime.strptime(str(date_to).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+                date_from = pytz.UTC.localize(datetime.strptime(str(date_from).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+                if not bookings.Booking.objects.is_overflowed(table, date_to=date_to, date_from=date_from):
+                    author = queryset.get(Q(email=author_email)
+                                          |
+                                          Q(user__email=author_email))
+                    group_booking = GroupBooking.objects.create(author=author, guests=guests)
+                    users_objects = queryset.filter(Q(email__in=list(set(user_emails)))
+                                                    |
+                                                    Q(user__email__in=user_emails))
+                    for i in range(len(users)):
+                        booking = bookings.Booking(
+                            date_to=date_to,
+                            date_from=date_from,
+                            table=table,
+                            user=users_objects.all()[i],
+                            group_booking=group_booking
+                        )
+                        booking.save()
+            except (Table.DoesNotExist, Account.DoesNotExist):
+                pass

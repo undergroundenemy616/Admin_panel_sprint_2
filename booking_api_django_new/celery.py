@@ -36,5 +36,9 @@ app.conf.beat_schedule = {
     'delete_old_statistics': {
         'task': 'files.tasks.delete_old_statistics',
         'schedule': crontab('0', '0', day_of_month='1'),
+    },
+    'create_bookings_from_exchange': {
+        'task': 'bookings.tasks.create_bookings_from_exchange',
+        'schedule': crontab(minute='*/1')
     }
 }
