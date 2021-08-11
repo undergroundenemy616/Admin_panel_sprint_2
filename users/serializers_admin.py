@@ -232,7 +232,9 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
 
         group = Group.objects.filter(title='Администратор', is_deletable=False).first()
         if not group:
-            raise ValidationError(detail={"message": 'Unable to find admin group'}, code=400)
+            group = Group.objects.filter(title='Administrator', is_deletable=False).first()
+            if not group:
+                raise ValidationError(detail={"message": 'Unable to find admin group'}, code=400)
         instance.groups.add(group)
 
         if not ADMIN_HOST:
