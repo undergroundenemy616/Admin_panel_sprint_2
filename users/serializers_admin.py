@@ -294,7 +294,8 @@ class AdminPasswordResetSerializer(serializers.Serializer):
                 'host': os.environ.get('ADMIN_HOST'),
                 'username': account.user.email,
                 'password': password
-            }
+            },
+            language=self.context['request'].headers.get('Language', 'ru')
         )
         account.user.save()
 
