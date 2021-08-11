@@ -288,7 +288,7 @@ class AdminPasswordResetSerializer(serializers.Serializer):
         account.user.set_password(password)
 
         send_html_email_message(
-            to=account.email,
+            to=account.user.email,
             subject=subject,
             template_args={
                 'host': os.environ.get('ADMIN_HOST'),
