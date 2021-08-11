@@ -2,6 +2,8 @@ from datetime import timedelta, datetime
 
 import pytz
 from celery import shared_task
+from django.core.exceptions import ValidationError as ValErr
+from django.core.validators import validate_email
 from django.db.models import Q
 from django.utils.timezone import now
 from exchangelib import Account as Ac, Credentials, Configuration, DELEGATE
@@ -20,6 +22,7 @@ from django.core.mail import mail_admins
 from group_bookings.models import GroupBooking
 from tables.models import Table
 from users.models import Account
+from users.tasks import send_email
 
 
 def all_job_delete(uuid):
@@ -322,8 +325,11 @@ def create_bookings_from_exchange():
     for f in account.calendar.view(start=start, end=end):
         if f.is_meeting:
             author_email = f.organizer.email_address
-            date_from = f.start
-            date_to = f.end
+            date_to = pytz.UTC.localize(datetime.strptime(str(f.end).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+            date_from = pytz.UTC.localize(datetime.strptime(str(f.start).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+            timezone = pytz.timezone(str(f._start_timezone))
+            message_date_from = timezone.localize(datetime.strptime(str(f.end).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+            message_date_to = timezone.localize(datetime.strptime(str(f.start).split('+')[0], "%Y-%m-%d %H:%M:%S"))
             room_title = f.location
             room_email = None
             users = [{
@@ -346,14 +352,21 @@ def create_bookings_from_exchange():
                         guests.append({
                             attendee.mailbox.name: attendee.mailbox.email_address,
                         })
+                        try:
+                            validate_email(attendee.mailbox.email_address)
+                            message = f"Здравствуйте, {attendee.mailbox.name}. Вы были приглашены на встречу, " \
+                                      f"которая пройдёт в {f.location}. " \
+                                      f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                      f"{datetime.strftime(message_date_to, '%H:%M')}"
+                            send_email.delay(email=attendee.mailbox.email_address, subject="Встреча", message=message)
+                        except ValErr:
+                            pass
             for room in rooms_data:
                 if room['title'] in room_title:
                     room_email = room['email']
             users = {user['email']: user for user in users}.values()
             try:
                 table = Table.objects.get(room__exchange_email=room_email)
-                date_to = pytz.UTC.localize(datetime.strptime(str(date_to).split('+')[0], "%Y-%m-%d %H:%M:%S"))
-                date_from = pytz.UTC.localize(datetime.strptime(str(date_from).split('+')[0], "%Y-%m-%d %H:%M:%S"))
                 if not bookings.Booking.objects.is_overflowed(table, date_to=date_to, date_from=date_from):
                     author = queryset.get(Q(email=author_email)
                                           |
