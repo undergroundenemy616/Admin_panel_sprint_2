@@ -29,25 +29,48 @@ definitions:
               BITBUCKET_USERNAME: $BITBUCKET_USERNAME
               BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
               REPOSITORY: 'simpleoffice-deploy'
-              BRANCH_NAME: 'develop_instans'
+              BRANCH_NAME: 'production_instans'
               CUSTOM_PIPELINE_NAME: $DEPLOYMENT
               WAIT: 'true'
 
+    - step: &obfuscate_and_deploy_code_to_repo
+          name: Compile for avito TEST
+          image: python:3.8
+          script:
+            - pip install --user -r requirements.txt
+            - pip install pyarmor
+            - echo $PYARMOR_KEY > pyarmor_key.txt
+            - pyarmor register pyarmor_key.txt
+            - pyarmor obfuscate --src="." -r --output=/var/distribute manage.py
+            - pyarmor obfuscate --no-runtime --output=/var/distribute/booking_api_django_new --exact booking_api_django_new/__init__.py
+            - sed -i "s|.pytransform|pytransform|g" /var/distribute/booking_api_django_new/__init__.py
+            - find . -name '*.py' -type f -delete
+            - rm -f booking_api_django_new/environments/*
+            - rm -f bitbucket-pipelines.yml
+            - cp -rf . /var/distribute
+            - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/${REPO_NAME}.git
+            - git config --global user.email "you@example.com"
+            - git config --global user.name "avito_update"
+            - cd ${REPO_NAME}
+            - rm -rf ./*
+            - mv /var/distribute/* ./
+            - git add . && git commit -m 'Update' && git push
+
     - step: &Compile
-      name: Compile
-      image: python:3.8
-      script:
-        - pip install --user -r requirements.txt
-        - pip install pyarmor
-        - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
-        - find . -name '*.py' -type f -delete
-        - cp -rf . /var/distribute
-        - tar -cvf api-test.tar /var/distribute
-        - pipe: atlassian/bitbucket-upload-file:0.1.2
-          variables:
-            BITBUCKET_USERNAME: $BITBUCKET_USERNAME
-            BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
-            FILENAME: "api-test.tar"
+          name: Compile
+          image: python:3.8
+          script:
+            - pip install --user -r requirements.txt
+            - pip install pyarmor
+            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
+            - find . -name '*.py' -type f -delete
+            - cp -rf . /var/distribute
+            - tar -cvf api-test.tar /var/distribute
+            - pipe: atlassian/bitbucket-upload-file:0.1.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: "api-test.tar"
 
 pipelines:
   branches:
@@ -69,24 +92,9 @@ pipelines:
       - step:
           <<: *Deploy
           deployment: dev-simple-office-liis-su
+
   custom:
     AVITO-obfuscate_and_deploy_code_to_Avito_repo:
       - step:
-          name: Compile for avito TEST
-          image: python:3.8
+          <<: *obfuscate_and_deploy_code_to_repo
           deployment: Avito
-          script:
-            - pip install --user -r requirements.txt
-            - pip install pyarmor
-            - pyarmor obfuscate --src="." --exclude venv -r --output=/var/distribute manage.py
-            - find . -name '*.py' -type f -delete
-            - rm -f booking-api-django/booking_api_django_new/environments/*
-            - rm -f bitbucket-pipelines.yml
-            - cp -rf . /var/distribute
-            - git clone https://${BITBUCKET_USERNAME}:${APP_SECRET}@bitbucket.org/liis_software/so-avito-api.git
-            - git config --global user.email "you@example.com"
-            - git config --global user.name "avito_update"
-            - cd so-avito-api
-            - rm -rf ./*
-            - mv /var/distribute/* ./
-            - git add . && git commit -m 'Update' && git push
