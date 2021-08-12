@@ -74,6 +74,8 @@ class RoomsView(ListModelMixin,
             return queryset.all()
         else:
             visitor_group = Group.objects.filter(title='Посетитель', is_deletable=False)
+            if not visitor_group:
+                visitor_group = Group.objects.filter(title='Guests', is_deletable=False)
             account_groups = list(account_groups.values_list('id', flat=True)) + list(
                 visitor_group.values_list('id', flat=True))
             zones = OfficeZone.objects.filter(groups__id__in=account_groups)

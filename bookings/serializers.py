@@ -80,7 +80,7 @@ class BookingSerializer(serializers.ModelSerializer):
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
     table = serializers.PrimaryKeyRelatedField(queryset=Table.objects.all(), required=True)
-    theme = serializers.CharField(max_length=200, default="Без темы")
+    theme = serializers.CharField(max_length=200, default="Без темы", allow_blank=True, allow_null=True)
     user = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=True)
 
     class Meta:

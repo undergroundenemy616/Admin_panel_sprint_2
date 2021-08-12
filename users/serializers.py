@@ -164,6 +164,8 @@ class RegisterUserFromAPSerializer(serializers.Serializer):
                                          gender=self.data.get('gender'), last_name=self.data.get('lastname'),
                                          middle_name=self.data.get('middlename'))
         user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        if not user_group:
+            user_group = Group.objects.get(access=4, is_deletable=False, title='Guests')
         user.is_active = True
         user.save(update_fields=['is_active'])
         account.groups.add(user_group)
@@ -203,6 +205,8 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         validated_data.setdefault('is_staff', True)
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
         group = Group.objects.filter(title='Администратор', is_deletable=False).first()
+        if not group:
+            group = Group.objects.filter(title='Administrator', is_deletable=False).first()
         if not group:
             raise ValidationError('Unable to find admin group')
         email = validated_data.get('email')
