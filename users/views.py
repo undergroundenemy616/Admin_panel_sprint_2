@@ -60,6 +60,8 @@ class RegisterUserFromAdminPanelView(GenericAPIView):
         account, account_created = Account.objects.get_or_create(user=user)
         if account_created:
             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+            if not user_group:
+                user_group = Group.objects.get(access=4, is_deletable=False, title='Guests')
             account.groups.add(user_group)
         if request.data.get('description'):
             account.description = request.data.get('description')
@@ -553,6 +555,8 @@ class LoginOrRegisterUserFromPanelView(GenericAPIView):
                         confirm_code(phone_number, sms_code)
                         if not user.is_active:
                             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+                            if not user_group:
+                                user_group = Group.objects.get(access=4, is_deletable=False, title='Guests')
                             account.groups.add(user_group)
                             user.is_active = True
                             user.save()

@@ -61,6 +61,8 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
     def create(self, validated_data):
         user = User.objects.create_user(is_active=True, is_staff=True)
         group = Group.objects.filter(title='Информационная панель', is_deletable=False).first()
+        if not group:
+            group = Group.objects.filter(title='Info panel', is_deletable=False).first()
         account = Account.objects.create(user=user, first_name=validated_data.get('firstname'), account_type='kiosk')
         if group:
             account.groups.add(group)
@@ -181,8 +183,12 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
         try:
             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+            if not user_group:
+                user_group = Group.objects.get(access=4, is_deletable=False, title='Guests')
         except IntegrityError:
             raise ResponseException("Problem's with groups. Contact administrator")
+        except Exception as e:
+            user_group = Group.objects.get(access=4, is_deletable=False)
         instance.groups.add(user_group)
         return instance
 

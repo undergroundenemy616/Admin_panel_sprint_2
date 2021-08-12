@@ -98,6 +98,8 @@ class DestroyRoomTypeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         rooms_with_type = Room.objects.filter(type=instance.id)
         default_room_type = RoomType.objects.filter(office=instance.office.id, title='Рабочее место').first()
+        if not default_room_type:
+            default_room_type = RoomType.objects.filter(office=instance.office.id, title='Workplace').first()
         for room in rooms_with_type:
             room.type = default_room_type
             room.save()
