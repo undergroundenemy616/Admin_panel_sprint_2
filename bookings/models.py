@@ -2,7 +2,6 @@ import os
 import uuid
 
 import pytz
-from django.core.cache import cache
 
 from booking_api_django_new.celery import app as celery_app
 from celery.app.control import Control
@@ -31,6 +30,14 @@ from group_bookings.models import GroupBooking
 from offices.models import Office
 
 MINUTES_TO_ACTIVATE = 15
+global GLOBAL_DATE_FROM_WS
+global GLOBAL_DATETIME_FROM_WS
+global GLOBAL_DATETIME_TO_WS
+utc = pytz.UTC
+GLOBAL_DATE_FROM_WS = dict()
+GLOBAL_DATETIME_FROM_WS = dict()  # datetime.now().replace(tzinfo=utc)
+GLOBAL_DATETIME_TO_WS = dict()  # datetime.utcnow().replace(tzinfo=utc) + timedelta(hours=1)
+GLOBAL_TABLES_CHANNEL_NAMES = dict()
 
 
 class BookingManager(models.Manager):
@@ -166,13 +173,8 @@ class Booking(models.Model):
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
 
-        if self.table.room.type.unified and self.table.room.office_panels.exists() and cache.get('dict_for_wc') and \
-                cache.get('dict_for_wc')['global_date_from_ws'].get(f'{self.table.id}') and \
-                cache.get('dict_for_wc')['global_datetime_from_ws'].get(f'{self.table.id}') and \
-                cache.get('dict_for_wc')['global_datetime_to_ws'].get(f'{self.table.id}'):
-            dict_for_wc = cache.get('dict_for_wc')
-
-            if dict_for_wc['global_date_from_ws'][f'{self.table.id}'] == self.date_from.date():
+        if self.table.room.type.unified and self.table.room.office_panels.exists():
+            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket()
                 try:
                     asyncio.run(self.websocket_notification_by_date(result_for_date))
@@ -180,13 +182,10 @@ class Booking(models.Model):
                     print('-----ERROR--CREATE--BY--DATE---', e)
             else:
                 pass
-            if ((dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to <=
-                 dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
-                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] <= self.date_from <
-                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
-                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] >= self.date_from >=
-                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
-                    and (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to)):
+            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                 result_for_datetime = self.create_response_for_datetime_websocket()
                 try:
                     asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
@@ -247,13 +246,8 @@ class Booking(models.Model):
         tasks.all_job_delete(str(self.id))
 
         super(Booking, instance).save()
-        if self.table.room.type.unified and self.table.room.office_panels.exists() and cache.get('dict_for_wc') and \
-                cache.get('dict_for_wc')['global_date_from_ws'].get(f'{self.table.id}') and \
-                cache.get('dict_for_wc')['global_datetime_from_ws'].get(f'{self.table.id}') and \
-                cache.get('dict_for_wc')['global_datetime_to_ws'].get(f'{self.table.id}'):
-            dict_for_wc = cache.get('dict_for_wc')
-
-            if dict_for_wc['global_date_from_ws'][f'{self.table.id}'] == self.date_from.date():
+        if self.table.room.type.unified and self.table.room.office_panels.exists():
+            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
                 result_for_date = self.create_response_for_date_websocket(instance)
                 try:
                     asyncio.run(self.websocket_notification_by_date(result=result_for_date))
@@ -261,14 +255,10 @@ class Booking(models.Model):
                     print('-----ERROR--OVER--BY--DATE---', e)
             else:
                 pass
-
-            if ((dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to <=
-                 dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
-                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] <= self.date_from <
-                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
-                    or (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] >= self.date_from >=
-                        dict_for_wc['global_datetime_to_ws'][f'{self.table.id}'])
-                    and (dict_for_wc['global_datetime_from_ws'][f'{self.table.id}'] < self.date_to)):
+            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                 result_for_datetime = self.create_response_for_datetime_websocket(instance)
                 try:
                     asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
@@ -375,9 +365,6 @@ class Booking(models.Model):
 
     @staticmethod
     async def websocket_notification_by_date(result=None):
-        dict_for_wc = cache.get('dict_for_wc')
-        if not dict_for_wc:
-            return
         json_format = {'type': 'send_json',
                        'text': {
                            'type': 'timeline',
@@ -387,9 +374,9 @@ class Booking(models.Model):
         channel_layer = get_channel_layer()
         print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
+        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
         print('Send info outside model')
-        channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
+        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
         if result[0].get('delete'):
             result = []
             json_format = {'type': 'send_json',
@@ -405,9 +392,6 @@ class Booking(models.Model):
 
     @staticmethod
     async def websocket_notification_by_datetime(result=None):
-        dict_for_wc = cache.get('dict_for_wc')
-        if not dict_for_wc:
-            return
         json_format = {
             'type': 'send_json',
             'text': {
@@ -417,9 +401,9 @@ class Booking(models.Model):
         }
         channel_layer = get_channel_layer()
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', dict_for_wc['global_tables_channel_names'])
+        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
         print('Send info outside model')
-        channel = dict_for_wc['global_tables_channel_names'][f"{result[0]['table_id']}"]
+        channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
         print('channel is: ', channel)
         await channel_layer.send(str(channel), result_in_json)
 
