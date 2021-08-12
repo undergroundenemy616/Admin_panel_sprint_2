@@ -200,7 +200,7 @@ class MobileFloorMarkers(GenericAPIView):
     @swagger_auto_schema(query_serializer=MobileFloorMarkerParameters)
     def get(self, request, pk=None, *args, **kwargs):
         serializer = MobileFloorMarkerParameters(data=request.query_params)
-        # serializer.is_valid(raise_exception=True)
+        serializer.is_valid(raise_exception=True)
 
         date_from = serializer.data.get('date_from')
         date_to = serializer.data.get('date_to')
@@ -214,7 +214,10 @@ class MobileFloorMarkers(GenericAPIView):
 
         predefined_room_types = RoomType.objects.filter(office__floors__id=pk,
                                                         is_deletable=False).values('title')
-        language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
+        try:
+            language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
+        except IndexError:
+            return ResponseException("Room Type not found", status_code=404)
         if language == 'ru':
             query_room_type = request.query_params.get('room_type')
         else:
