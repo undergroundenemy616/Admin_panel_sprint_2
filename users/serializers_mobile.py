@@ -32,9 +32,9 @@ def send_conformation_code(recipient: str, subject="", ttl=60, key=None, phone=F
     cache.set(key, conformation_code, ttl)
     if not phone:
         send_email.delay(email=recipient, subject=subject,
-                         message="Код подтверждения: " + conformation_code)
+                         message="Confirmation code: " + conformation_code)
     else:
-        send_sms.delay(phone_number=recipient, message="Код подтверждения: " + conformation_code)
+        send_sms.delay(phone_number=recipient, message="Confirmation code: " + conformation_code)
 
 
 def confirm_code(key, code) -> bool:
@@ -183,9 +183,16 @@ class MobileUserRegisterSerializer(serializers.Serializer):
                 return {'message': 'email confirm'}
             else:
                 raise ResponseException("Wrong or expired code")
-
-        send_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты",
-                               ttl=KEY_EXPIRATION_EMAIL)
+        try:
+            if self.context['request'].headers.get('Language', None) == 'ru':
+                send_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты",
+                                       ttl=KEY_EXPIRATION_EMAIL)
+            else:
+                send_conformation_code(recipient=self.validated_data.get('email'), subject="Email confirmation",
+                                       ttl=KEY_EXPIRATION_EMAIL)
+        except Exception as e:
+            send_conformation_code(recipient=self.validated_data.get('email'), subject="Email confirmation",
+                                   ttl=KEY_EXPIRATION_EMAIL)
 
         return {'message': 'email with conformation code sent'}
 
@@ -314,9 +321,18 @@ class MobilePasswordResetSetializer(serializers.Serializer):
             del self.context['request'].session['confirm']
             cache.delete(self.validated_data.get('email'))
             return response
-
-        send_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты для сброса пароля",
-                               ttl=KEY_EXPIRATION_EMAIL)
+        try:
+            if self.context['request'].headers.get('Language', None) == 'ru':
+                send_conformation_code(recipient=self.validated_data.get('email'), subject="Подтверждение почты для сброса пароля",
+                                       ttl=KEY_EXPIRATION_EMAIL)
+            else:
+                send_conformation_code(recipient=self.validated_data.get('email'),
+                                       subject="Email confirmation for password reset",
+                                       ttl=KEY_EXPIRATION_EMAIL)
+        except Exception as e:
+            send_conformation_code(recipient=self.validated_data.get('email'),
+                                   subject="Email confirmation for password reset",
+                                   ttl=KEY_EXPIRATION_EMAIL)
 
         return {'message': 'email with conformation code sent'}
 
