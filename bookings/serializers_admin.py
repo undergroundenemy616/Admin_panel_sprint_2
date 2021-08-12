@@ -18,6 +18,7 @@ from django.db.transaction import atomic
 import pdfkit
 from exchangelib import CalendarItem, Account as Ac, Credentials, Configuration, DELEGATE
 from exchangelib.items import SEND_TO_ALL_AND_SAVE_COPY
+from exchangelib.services import GetRooms
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from workalendar.europe import Russia
@@ -1135,8 +1136,9 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
     @atomic()
     def group_create_meeting(self, context):
+        guests = self.validated_data.get('guests') if self.validated_data.get('guests') else []
         group_booking = GroupBooking.objects.create(author=self.validated_data['author'],
-                                                    guests=self.validated_data.get('guests'))
+                                                    guests=guests)
 
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
@@ -1149,7 +1151,7 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                         group_booking=group_booking)
             b.save(kwargs=self.context['request'].headers.get('Language', None))
         if self.validated_data['room'].exchange_email:
-            required_attendees = []
+            required_attendees = [self.validated_data['room'].exchange_email]
             for user in self.validated_data['users']:
                 required_attendees.append(user.email if user.email else user.user.email)
             credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
@@ -1179,7 +1181,8 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 subject=message_title,
                 body=message_body,
                 required_attendees=required_attendees,
-                location=self.validated_data['room'].exchange_email
+                location=self.validated_data['room'].exchange_email,
+                is_meeting=True
             )
             exchange_event.save(send_meeting_invitations=SEND_TO_ALL_AND_SAVE_COPY)
 

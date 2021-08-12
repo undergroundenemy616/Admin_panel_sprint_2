@@ -1,7 +1,14 @@
+import os
+from datetime import datetime
+
 import orjson
+import pytz
 from django.db.models import Q
 from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
+from exchangelib import Credentials, Configuration, DELEGATE, Account as Ac
+from exchangelib.items import MeetingCancellation
+from exchangelib.services import GetRooms
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import get_object_or_404, GenericAPIView
@@ -28,6 +35,7 @@ from group_bookings.serializers_admin import (AdminGroupBookingSerializer,
                                               AdminGroupWorkspaceSerializer,
                                               AdminGroupCombinedSerializer)
 from group_bookings.serializers_mobile import MobileGroupBookingSerializer
+from offices.models import Office
 from users.models import Account
 from users.serializers_admin import AdminUserSerializer
 
@@ -177,7 +185,24 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        if request.query_params.get('user_id') == instance.author_id:
+        if request.query_params.get('user_id') == str(instance.author_id):
+            if instance.bookings.all()[0].table.room.exchange_email:
+                credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+                config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+                account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                                      autodiscover=False, access_type=DELEGATE)
+                date_from = instance.bookings.all()[0].date_from
+                date_to = instance.bookings.all()[0].date_to
+                start = datetime(date_from.year, date_from.month,
+                                 date_from.day, date_from.hour,
+                                 date_from.minute, tzinfo=pytz.UTC)
+                end = datetime(date_to.year, date_to.month,
+                               date_to.day, date_to.hour,
+                               date_to.minute, tzinfo=pytz.UTC)
+                for calendar_item in account_exchange.calendar.filter(start=start, end=end):
+                    if calendar_item.organizer.email_address == account_exchange.primary_smtp_address and \
+                            instance.bookings.all()[0].table.room.exchange_email == calendar_item.location:
+                        calendar_item.cancel()
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
@@ -260,3 +285,34 @@ class AdminGroupCombinedBookingSerializer(GenericAPIView,
         serializer = AdminGroupCombinedSerializer(instance=queryset, data=request.query_params, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class AdminTest(GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+        config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+        account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                              autodiscover=False, access_type=DELEGATE)
+
+        calendar_item = None
+        print("Бабабабаба", account_exchange.outbox.all())
+        for item in account_exchange.outbox.all():
+            print("Отправленные", item)
+            if isinstance(item, MeetingCancellation):
+                if item.associated_calendar_item_id:
+                    calendar_item = account_exchange.outbox.get(
+                        id=item.associated_calendar_item_id.id,
+                        changekey=item.associated_calendar_item_id.changekey
+                    )
+                    print(calendar_item)
+        for item in account_exchange.inbox.all():
+            print("Входящие", item)
+            if isinstance(item, MeetingCancellation):
+                if item.associated_calendar_item_id:
+                    calendar_item = account_exchange.inbox.get(
+                        id=item.associated_calendar_item_id.id,
+                        changekey=item.associated_calendar_item_id.changekey
+                    )
+                    print(calendar_item)
+        if not calendar_item:
+            calendar_item = "Биба"
+        return Response({"You": calendar_item}, status=status.HTTP_200_OK)

@@ -304,8 +304,8 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
     @atomic()
     def group_create_meeting(self, context):
         author = context['request'].user.account
-
-        group_booking = GroupBooking.objects.create(author=author, guests=self.validated_data.get('guests'))
+        guests = self.validated_data.get('guests') if self.validated_data.get('guests') else []
+        group_booking = GroupBooking.objects.create(author=author, guests=guests)
 
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
@@ -323,7 +323,7 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
         response = MobileGroupBookingSerializer(instance=group_booking).data
         response['id'] = my_booking_id
         if self.validated_data['room'].exchange_email:
-            required_attendees = []
+            required_attendees = [self.validated_data['room'].exchange_email]
             for user in self.validated_data['users']:
                 required_attendees.append(user.email if user.email else user.user.email)
             credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
@@ -353,7 +353,8 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 subject=message_title,
                 body=message_body,
                 required_attendees=required_attendees,
-                location=self.validated_data['room'].exchange_email
+                location=self.validated_data['room'].exchange_email,
+                is_meeting=True
             )
             exchange_event.save(send_meeting_invitations=SEND_TO_ALL_AND_SAVE_COPY)
         return response
