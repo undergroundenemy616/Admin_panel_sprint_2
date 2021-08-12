@@ -285,34 +285,3 @@ class AdminGroupCombinedBookingSerializer(GenericAPIView,
         serializer = AdminGroupCombinedSerializer(instance=queryset, data=request.query_params, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-class AdminTest(GenericAPIView):
-    def get(self, request, *args, **kwargs):
-        credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
-        config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
-        account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
-                              autodiscover=False, access_type=DELEGATE)
-
-        calendar_item = None
-        print("Бабабабаба", account_exchange.outbox.all())
-        for item in account_exchange.outbox.all():
-            print("Отправленные", item)
-            if isinstance(item, MeetingCancellation):
-                if item.associated_calendar_item_id:
-                    calendar_item = account_exchange.outbox.get(
-                        id=item.associated_calendar_item_id.id,
-                        changekey=item.associated_calendar_item_id.changekey
-                    )
-                    print(calendar_item)
-        for item in account_exchange.inbox.all():
-            print("Входящие", item)
-            if isinstance(item, MeetingCancellation):
-                if item.associated_calendar_item_id:
-                    calendar_item = account_exchange.inbox.get(
-                        id=item.associated_calendar_item_id.id,
-                        changekey=item.associated_calendar_item_id.changekey
-                    )
-                    print(calendar_item)
-        if not calendar_item:
-            calendar_item = "Биба"
-        return Response({"You": calendar_item}, status=status.HTTP_200_OK)
