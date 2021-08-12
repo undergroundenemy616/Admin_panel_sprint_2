@@ -2,20 +2,23 @@
   {
     "roomtype": {
       "title": "Workplace",
-      "bookable": true
+      "bookable": true,
+      "is_deletable": false
     }
   },
   {
     "roomtype": {
       "title": "Meeting room",
       "bookable": true,
-      "unified": true
+      "unified": true,
+      "is_deletable": false
     }
   },
   {
     "roomtype": {
       "title": "Unbookable",
-      "bookable": false
+      "bookable": false,
+      "is_deletable": false
     }
   }
 ]

@@ -200,7 +200,7 @@ class MobileFloorMarkers(GenericAPIView):
     @swagger_auto_schema(query_serializer=MobileFloorMarkerParameters)
     def get(self, request, pk=None, *args, **kwargs):
         serializer = MobileFloorMarkerParameters(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
+        # serializer.is_valid(raise_exception=True)
 
         date_from = serializer.data.get('date_from')
         date_to = serializer.data.get('date_to')
