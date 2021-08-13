@@ -178,6 +178,8 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if request.query_params.get('user_id') == instance.author_id:
+            for booking in instance.bookings.all():
+                booking.make_booking_over()
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
