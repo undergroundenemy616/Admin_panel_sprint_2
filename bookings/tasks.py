@@ -415,4 +415,6 @@ def delete_group_bookings_that_not_in_calendar():
                                                      &
                                                      Q(bookings__table__room__exchange_email__isnull=False)). \
             distinct()
-        group_bookings.delete()
+
+        if group_bookings:
+            group_bookings.delete()
