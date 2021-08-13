@@ -1,26 +1,19 @@
-import os
-from datetime import datetime
-from http import HTTPStatus
-
-import pytz
 from django.db.models import Q
 from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
-from exchangelib import Credentials, Configuration, DELEGATE, Account as Ac
-from exchangelib.services import GetRooms
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 
+from bookings.exchange_booking_cancel import exchange_booking_cancel
 from bookings.models import Booking
 from bookings.serializers import BookingPersonalSerializer
 from bookings.serializers_mobile import (
     MobileBookingActivateActionSerializer,
     MobileBookingDeactivateActionSerializer, MobileBookingSerializer, MobileMeetingGroupBookingSerializer,
     MobileWorkplaceGroupBookingSerializer)
-from core.handlers import ResponseException
 from core.pagination import DefaultPagination, LimitStartPagination
 from core.permissions import IsAuthenticated
 from group_bookings.models import GroupBooking
@@ -166,23 +159,7 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                 for booking in instance.bookings.all():
                     booking.make_booking_over()
                 return Response(status=status.HTTP_200_OK)
-            if instance.bookings.all()[0].table.room.exchange_email:
-                credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
-                config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
-                account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
-                                      autodiscover=False, access_type=DELEGATE)
-                date_from = instance.bookings.all()[0].date_from
-                date_to = instance.bookings.all()[0].date_to
-                start = datetime(date_from.year, date_from.month,
-                                 date_from.day, date_from.hour,
-                                 date_from.minute, tzinfo=pytz.UTC)
-                end = datetime(date_to.year, date_to.month,
-                               date_to.day, date_to.hour,
-                               date_to.minute, tzinfo=pytz.UTC)
-                for calendar_item in account_exchange.calendar.filter(start=start, end=end):
-                    if calendar_item.organizer.email_address == account_exchange.primary_smtp_address and \
-                            instance.bookings.all()[0].table.room.exchange_email == calendar_item.location:
-                        calendar_item.cancel()
+            exchange_booking_cancel(instance)
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:

@@ -31,7 +31,7 @@ class Room(models.Model):
     floor = models.ForeignKey(Floor, related_name='rooms', null=True, blank=True, on_delete=models.CASCADE)
     seats_amount = models.IntegerField(default=1, null=False, blank=False)
     # is_bookable = models.BooleanField(default=True, null=False, blank=False)
-    exchange_email = models.EmailField(unique=True, default=None, max_length=128, null=True, blank=True)
+    exchange_email = models.EmailField(unique=True, default=None, max_length=128, null=True)
     objects = RoomManager()
 
     class Meta:
