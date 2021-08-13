@@ -40,5 +40,9 @@ app.conf.beat_schedule = {
     'create_bookings_from_exchange': {
         'task': 'bookings.tasks.create_bookings_from_exchange',
         'schedule': crontab(minute='*/1')
+    },
+    'delete_group_bookings_that_not_in_calendar': {
+        'task': 'bookings.tasks.delete_group_bookings_that_not_in_calendar',
+        'schedule': crontab(minute='*/1')
     }
 }

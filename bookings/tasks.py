@@ -386,3 +386,33 @@ def create_bookings_from_exchange():
                         booking.save()
             except (Table.DoesNotExist, Account.DoesNotExist):
                 pass
+
+
+@shared_task()
+def delete_group_bookings_that_not_in_calendar():
+    credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+    config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+    account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                          autodiscover=False, access_type=DELEGATE)
+
+    start = datetime(datetime.now().year, datetime.now().month, datetime.now().day, tzinfo=pytz.UTC)
+    end = datetime(datetime.now().year, datetime.now().month, datetime.now().day, 23, 59, tzinfo=pytz.UTC)
+
+    bookings_to_check = bookings.Booking.objects.filter(Q(date_from__date=start.date())
+                                                        &
+                                                        Q(date_to__date=end.date())
+                                                        &
+                                                        Q(table__room__exchange_email__isnull=False))
+
+    bookings_in_exchange = []
+    for booking in bookings_to_check:
+        for calendar_item in account_exchange.calendar.filter(start__range=(start, end)):
+            if booking.table.room.exchange_email == calendar_item.location and \
+                    booking.date_from == calendar_item.start and booking.date_to == calendar_item.end:
+                bookings_in_exchange.append(booking.id)
+
+        group_bookings = GroupBooking.objects.filter(~Q(bookings__id__in=bookings_in_exchange)
+                                                     &
+                                                     Q(bookings__table__room__exchange_email__isnull=False)). \
+            distinct()
+        group_bookings.delete()
