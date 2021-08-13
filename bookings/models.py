@@ -173,6 +173,9 @@ class Booking(models.Model):
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
         try:
+            print('------------INITIAL---DATE----WS-------', GLOBAL_DATE_FROM_WS)
+            print('------------INITIAL---DATETIME_FROM------WS', GLOBAL_DATETIME_FROM_WS)
+            print('------------INITIAL---DATETIME_TO------WS', GLOBAL_DATETIME_TO_WS)
             if self.table.room.type.unified and self.table.room.office_panels.exists():
                 if GLOBAL_DATE_FROM_WS.get(f'{self.table.id}') == self.date_from.date():
                     result_for_date = self.create_response_for_date_websocket()
