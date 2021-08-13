@@ -178,7 +178,7 @@ class Booking(models.Model):
                     result_for_date = self.create_response_for_date_websocket()
                     try:
                         asyncio.run(self.websocket_notification_by_date(result_for_date))
-                        print('Sending timeline block')
+                        print('Sending create timeline block')
                     except Exception as e:
                         print('-----ERROR--CREATE--BY--DATE---', e)
                 else:
@@ -190,7 +190,7 @@ class Booking(models.Model):
                     result_for_datetime = self.create_response_for_datetime_websocket()
                     try:
                         asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
-                        print('Sending meeting block')
+                        print('Sending create meeting block')
                     except Exception as e:
                         print('-----ERROR--CREATE--BY--DATETIME---', e)
         except Exception as e:
@@ -256,6 +256,7 @@ class Booking(models.Model):
                     result_for_date = self.create_response_for_date_websocket(instance)
                     try:
                         asyncio.run(self.websocket_notification_by_date(result=result_for_date))
+                        print('Sending delete timeline block')
                     except Exception as e:
                         print('-----ERROR--OVER--BY--DATE---', e)
                 else:
@@ -267,6 +268,7 @@ class Booking(models.Model):
                     result_for_datetime = self.create_response_for_datetime_websocket(instance)
                     try:
                         asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                        print('Sending delete meeting block')
                     except Exception as e:
                         print('-----ERROR--OVER--BY--DATETIME---', e)
         except Exception as e:
