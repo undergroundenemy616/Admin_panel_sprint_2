@@ -381,7 +381,8 @@ def create_bookings_from_exchange():
                             date_from=date_from,
                             table=table,
                             user=users_objects.all()[i],
-                            group_booking=group_booking
+                            group_booking=group_booking,
+                            theme=f.subject
                         )
                         booking.save()
             except (Table.DoesNotExist, Account.DoesNotExist):
