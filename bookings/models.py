@@ -188,7 +188,6 @@ class Booking(models.Model):
                         or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
                         and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                     result_for_datetime = self.create_response_for_datetime_websocket()
-                    print('RESULT--------FOR-DATETIME', result_for_datetime)
                     try:
                         asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
                         print('Sending meeting block')
@@ -200,7 +199,6 @@ class Booking(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         self.set_booking_over()
-        print('------------GROUP-----BOOKING------DELETE-----WS')
         if self.group_booking and ((self.user == self.group_booking.author and self.table.room.type.unified) or
                                    self.group_booking.bookings.count() == 1):
             self.group_booking.delete()
@@ -267,7 +265,6 @@ class Booking(models.Model):
                         or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
                         and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                     result_for_datetime = self.create_response_for_datetime_websocket(instance)
-                    print('RESULT--------FOR-DATETIME', result_for_datetime)
                     try:
                         asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
                     except Exception as e:
