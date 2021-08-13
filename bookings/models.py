@@ -200,6 +200,7 @@ class Booking(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         self.set_booking_over()
+        print('------------GROUP-----BOOKING------DELETE-----WS')
         if self.group_booking and ((self.user == self.group_booking.author and self.table.room.type.unified) or
                                    self.group_booking.bookings.count() == 1):
             self.group_booking.delete()
@@ -381,10 +382,7 @@ class Booking(models.Model):
                        }
                        }
         channel_layer = get_channel_layer()
-        print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
-        print('Send info outside model')
         channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
         if result[0].get('delete'):
             result = []
@@ -395,8 +393,7 @@ class Booking(models.Model):
                            }
                            }
             result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('channel is: ', channel)
-        print('Send info outside model')
+        print('Send notification by date outside model')
         await channel_layer.send(str(channel), result_in_json)
 
     @staticmethod
@@ -410,10 +407,8 @@ class Booking(models.Model):
         }
         channel_layer = get_channel_layer()
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
-        print('Send info outside model')
         channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
-        print('channel is: ', channel)
+        print('Send datetime outside model')
         await channel_layer.send(str(channel), result_in_json)
 
     def create_response_for_datetime_websocket(self, instance=None):
