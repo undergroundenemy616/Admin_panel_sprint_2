@@ -597,7 +597,7 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
         for row in list_rows:
             row['places'] = most_frequent(row['places'])
 
-        if self.context['request'].headers.get('Language', None) == 'ru':
+        if self.context.headers.get('Language', None) == 'ru':
             for table in sql_results:
                 for row in list_rows:
                     if table['table_id'] == row['places']:
