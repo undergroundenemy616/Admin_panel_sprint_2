@@ -172,25 +172,27 @@ class Booking(models.Model):
                                         time_execute=self.date_from - timedelta(minutes=BOOKING_PUSH_NOTIFY_UNTIL_MINS),
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
-
-        if self.table.room.type.unified and self.table.room.office_panels.exists():
-            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
-                result_for_date = self.create_response_for_date_websocket()
-                try:
-                    asyncio.run(self.websocket_notification_by_date(result_for_date))
-                except Exception as e:
-                    print('-----ERROR--CREATE--BY--DATE---', e)
-            else:
-                pass
-            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
-                result_for_datetime = self.create_response_for_datetime_websocket()
-                try:
-                    asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
-                except Exception as e:
-                    print('-----ERROR--CREATE--BY--DATETIME---', e)
+        try:
+            if self.table.room.type.unified and self.table.room.office_panels.exists():
+                if GLOBAL_DATE_FROM_WS.get(f'{self.table.id}') == self.date_from.date():
+                    result_for_date = self.create_response_for_date_websocket()
+                    try:
+                        asyncio.run(self.websocket_notification_by_date(result_for_date))
+                    except Exception as e:
+                        print('-----ERROR--CREATE--BY--DATE---', e)
+                else:
+                    pass
+                if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                        or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                        or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                        and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
+                    result_for_datetime = self.create_response_for_datetime_websocket()
+                    try:
+                        asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                    except Exception as e:
+                        print('-----ERROR--CREATE--BY--DATETIME---', e)
+        except Exception as e:
+            print('------------ERROR-----WITH-----WS----LOGIC-------', e)
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
