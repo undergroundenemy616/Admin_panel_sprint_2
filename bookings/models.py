@@ -419,7 +419,7 @@ class Booking(models.Model):
     def create_response_for_datetime_websocket(self, instance=None):
         local_tz = pytz.timezone('Europe/Moscow')
         result = []
-        if self.status == 'active' and not instance:
+        if (self.status == 'active' or self.status == 'waiting') and not instance:
             result.append({
                 'status': 'occupied',
                 'id': str(self.id),
