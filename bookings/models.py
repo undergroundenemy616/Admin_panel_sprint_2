@@ -173,15 +173,12 @@ class Booking(models.Model):
                                         parameters={'uuid': str(self.id),
                                                     'language': language})
         try:
-            print('------------INITIAL---DATE----WS-------', GLOBAL_DATE_FROM_WS)
-            print('------------INITIAL---DATETIME_FROM------WS', GLOBAL_DATETIME_FROM_WS)
-            print('------------INITIAL---DATETIME_TO------WS', GLOBAL_DATETIME_TO_WS)
             if self.table.room.type.unified and self.table.room.office_panels.exists():
                 if GLOBAL_DATE_FROM_WS.get(f'{self.table.id}') == self.date_from.date():
                     result_for_date = self.create_response_for_date_websocket()
                     try:
-                        print('Sending timeline block')
                         asyncio.run(self.websocket_notification_by_date(result_for_date))
+                        print('Sending timeline block')
                     except Exception as e:
                         print('-----ERROR--CREATE--BY--DATE---', e)
                 else:
@@ -191,9 +188,10 @@ class Booking(models.Model):
                         or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
                         and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                     result_for_datetime = self.create_response_for_datetime_websocket()
+                    print('RESULT--------FOR-DATETIME', result_for_datetime)
                     try:
-                        print('Sending meeting block')
                         asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                        print('Sending meeting block')
                     except Exception as e:
                         print('-----ERROR--CREATE--BY--DATETIME---', e)
         except Exception as e:
@@ -254,9 +252,6 @@ class Booking(models.Model):
 
         super(Booking, instance).save()
         try:
-            print('------------INITIAL---DATE----WS-------', GLOBAL_DATE_FROM_WS)
-            print('------------INITIAL---DATETIME_FROM------WS', GLOBAL_DATETIME_FROM_WS)
-            print('------------INITIAL---DATETIME_TO------WS', GLOBAL_DATETIME_TO_WS)
             if self.table.room.type.unified and self.table.room.office_panels.exists():
                 if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
                     result_for_date = self.create_response_for_date_websocket(instance)
@@ -271,6 +266,7 @@ class Booking(models.Model):
                         or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
                         and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
                     result_for_datetime = self.create_response_for_datetime_websocket(instance)
+                    print('RESULT--------FOR-DATETIME', result_for_datetime)
                     try:
                         asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
                     except Exception as e:
