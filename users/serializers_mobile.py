@@ -368,10 +368,22 @@ class MobileConformationSerializer(serializers.Serializer):
 
     def send_code(self):
         key = self.validated_data.get('user_identification') + '_' + str(self.context['request'].user.id)
-        sent_to = 'почты.' if self.validated_data.get('email') else 'телефона.'
-        send_conformation_code(recipient=self.validated_data.get('user_identification'),
-                               subject="Подтверждение "+sent_to, ttl=KEY_EXPIRATION_EMAIL,
-                               key=key, phone=not self.validated_data.get('email'))
+        try:
+            if self.context['request'].headers.get('Language', None) == 'ru':
+                sent_to = 'почты.' if self.validated_data.get('email') else 'телефона.'
+                send_conformation_code(recipient=self.validated_data.get('user_identification'),
+                                       subject="Подтверждение "+sent_to, ttl=KEY_EXPIRATION_EMAIL,
+                                       key=key, phone=not self.validated_data.get('email'))
+            else:
+                sent_to = 'email.' if self.validated_data.get('email') else 'phone.'
+                send_conformation_code(recipient=self.validated_data.get('user_identification'),
+                                       subject="Confirmation of " + sent_to, ttl=KEY_EXPIRATION_EMAIL,
+                                       key=key, phone=not self.validated_data.get('email'))
+        except Exception as e:
+            sent_to = 'email.' if self.validated_data.get('email') else 'phone.'
+            send_conformation_code(recipient=self.validated_data.get('user_identification'),
+                                   subject="Confirmation of " + sent_to, ttl=KEY_EXPIRATION_EMAIL,
+                                   key=key, phone=not self.validated_data.get('email'))
         return {"detail": "Conformation code was sent"}
 
     def confirm(self):
