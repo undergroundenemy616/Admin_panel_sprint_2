@@ -173,14 +173,24 @@ class AdminBookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
-        return self.Meta.model.objects.create(
-            date_to=validated_data['date_to'],
-            date_from=validated_data['date_from'],
-            table=validated_data['table'],
-            user=validated_data['user'],
-            theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
-            kwargs=self.context['request'].headers.get('Language', None)
-        )
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            return self.Meta.model.objects.create(
+                date_to=validated_data['date_to'],
+                date_from=validated_data['date_from'],
+                table=validated_data['table'],
+                user=validated_data['user'],
+                theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
+                kwargs=self.context['request'].headers.get('Language', None)
+            )
+        else:
+            return self.Meta.model.objects.create(
+                date_to=validated_data['date_to'],
+                date_from=validated_data['date_from'],
+                table=validated_data['table'],
+                user=validated_data['user'],
+                theme=validated_data['theme'] if 'theme' in validated_data else "No theme",
+                kwargs=self.context['request'].headers.get('Language', None)
+            )
 
     @atomic()
     def to_representation(self, instance):
@@ -214,6 +224,7 @@ class AdminBookingCreateFastSerializer(AdminBookingSerializer):
                     date_from=date_from,
                     table=table,
                     user=validated_data['user'],
+                    theme='Без темы' if self.context['request'].headers.get('Language', None) == 'ru' else 'No theme',
                     kwargs=self.context['request'].headers.get('Language', None)
                 )
         raise serializers.ValidationError('No table found for fast booking')
@@ -1132,13 +1143,15 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
+        language = self.context['request'].headers.get('Language', None)
         for user in self.validated_data['users']:
             b = Booking(user=user,
                         table=self.validated_data['room'].tables.all()[0],
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking)
+                        group_booking=group_booking,
+                        theme='Без темы' if language == 'ru' else 'No theme')
             b.save(kwargs=self.context['request'].headers.get('Language', None))
 
         return AdminGroupBookingSerializer(instance=group_booking).data

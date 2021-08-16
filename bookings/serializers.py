@@ -132,25 +132,49 @@ class BookingSerializer(serializers.ModelSerializer):
         if validated_data['table'].room.type.unified:
             for_panel = OfficePanelRelation.objects.get(room_id=validated_data['table'].room_id)
             if self.context.get('device', None) == 'panel':
-                return self.Meta.model.objects.create(
-                    date_to=validated_data['date_to'],
-                    date_from=validated_data['date_from'],
-                    table=validated_data['table'],
-                    user=validated_data['user'],
-                    theme=validated_data['theme'] if validated_data['theme'] else 'Без темы',
-                    is_active=True,
-                    status='active'
-                )
+                if language == 'ru':
+                    return self.Meta.model.objects.create(
+                        date_to=validated_data['date_to'],
+                        date_from=validated_data['date_from'],
+                        table=validated_data['table'],
+                        user=validated_data['user'],
+                        theme=validated_data['theme'] if validated_data['theme'] else 'Без темы',
+                        is_active=True,
+                        status='active'
+                    )
+                else:
+                    return self.Meta.model.objects.create(
+                        date_to=validated_data['date_to'],
+                        date_from=validated_data['date_from'],
+                        table=validated_data['table'],
+                        user=validated_data['user'],
+                        theme=validated_data['theme'] if validated_data['theme'] else 'No theme',
+                        is_active=True,
+                        status='active',
+                        kwargs=language
+                    )
             elif for_panel:
-                return self.Meta.model.objects.create(
-                    date_to=validated_data['date_to'],
-                    date_from=validated_data['date_from'],
-                    table=validated_data['table'],
-                    user=validated_data['user'],
-                    theme=validated_data['theme'] if validated_data['theme'] else 'Без темы',
-                    is_active=True,
-                    status='active'
-                )
+                if language == 'ru':
+                    return self.Meta.model.objects.create(
+                        date_to=validated_data['date_to'],
+                        date_from=validated_data['date_from'],
+                        table=validated_data['table'],
+                        user=validated_data['user'],
+                        theme=validated_data['theme'] if validated_data['theme'] else 'Без темы',
+                        is_active=True,
+                        status='active'
+                    )
+                else:
+                    return self.Meta.model.objects.create(
+                        date_to=validated_data['date_to'],
+                        date_from=validated_data['date_from'],
+                        table=validated_data['table'],
+                        user=validated_data['user'],
+                        theme=validated_data['theme'] if validated_data['theme'] else 'No theme',
+                        is_active=True,
+                        status='active',
+                        kwargs=language
+                    )
             return self.Meta.model.objects.create(
                 date_to=validated_data['date_to'],
                 date_from=validated_data['date_from'],
