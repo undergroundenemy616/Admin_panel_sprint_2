@@ -180,6 +180,8 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         if request.query_params.get('user_id') == str(instance.author_id):
             exchange_booking_cancel(instance)
+            for booking in instance.bookings.all():
+                booking.make_booking_over()
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:

@@ -178,6 +178,7 @@ class Booking(models.Model):
                     result_for_date = self.create_response_for_date_websocket()
                     try:
                         asyncio.run(self.websocket_notification_by_date(result_for_date))
+                        print('Sending create timeline block')
                     except Exception as e:
                         print('-----ERROR--CREATE--BY--DATE---', e)
                 else:
@@ -189,10 +190,11 @@ class Booking(models.Model):
                     result_for_datetime = self.create_response_for_datetime_websocket()
                     try:
                         asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                        print('Sending create meeting block')
                     except Exception as e:
                         print('-----ERROR--CREATE--BY--DATETIME---', e)
         except Exception as e:
-            print('------------ERROR-----WITH-----WS----LOGIC-------', e)
+            print('------------ERROR--CREATE---WITH-----WS----LOGIC-------', e)
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
@@ -248,24 +250,29 @@ class Booking(models.Model):
         tasks.all_job_delete(str(self.id))
 
         super(Booking, instance).save()
-        if self.table.room.type.unified and self.table.room.office_panels.exists():
-            if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
-                result_for_date = self.create_response_for_date_websocket(instance)
-                try:
-                    asyncio.run(self.websocket_notification_by_date(result=result_for_date))
-                except Exception as e:
-                    print('-----ERROR--OVER--BY--DATE---', e)
-            else:
-                pass
-            if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
-                    and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
-                result_for_datetime = self.create_response_for_datetime_websocket(instance)
-                try:
-                    asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
-                except Exception as e:
-                    print('-----ERROR--OVER--BY--DATETIME---', e)
+        try:
+            if self.table.room.type.unified and self.table.room.office_panels.exists():
+                if GLOBAL_DATE_FROM_WS[f'{self.table.id}'] == self.date_from.date():
+                    result_for_date = self.create_response_for_date_websocket(instance)
+                    try:
+                        asyncio.run(self.websocket_notification_by_date(result=result_for_date))
+                        print('Sending delete timeline block')
+                    except Exception as e:
+                        print('-----ERROR--OVER--BY--DATE---', e)
+                else:
+                    pass
+                if ((GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to <= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                        or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] <= self.date_from < GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                        or (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] >= self.date_from >= GLOBAL_DATETIME_TO_WS[f'{self.table.id}'])
+                        and (GLOBAL_DATETIME_FROM_WS[f'{self.table.id}'] < self.date_to)):
+                    result_for_datetime = self.create_response_for_datetime_websocket(instance)
+                    try:
+                        asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
+                        print('Sending delete meeting block')
+                    except Exception as e:
+                        print('-----ERROR--OVER--BY--DATETIME---', e)
+        except Exception as e:
+            print('-----ERROR--OVER--WS--LOGIC---', e)
 
     def check_booking_activate(self, *args, **kwargs):
         try:
@@ -374,10 +381,7 @@ class Booking(models.Model):
                        }
                        }
         channel_layer = get_channel_layer()
-        print("existing_booking", json_format)
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
-        print('Send info outside model')
         channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
         if result[0].get('delete'):
             result = []
@@ -388,8 +392,7 @@ class Booking(models.Model):
                            }
                            }
             result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('channel is: ', channel)
-        print('Send info outside model')
+        print('Send notification by date outside model')
         await channel_layer.send(str(channel), result_in_json)
 
     @staticmethod
@@ -403,16 +406,14 @@ class Booking(models.Model):
         }
         channel_layer = get_channel_layer()
         result_in_json = orjson.loads(orjson.dumps(json_format))
-        print('GLOBAL_TABLES', GLOBAL_TABLES_CHANNEL_NAMES)
-        print('Send info outside model')
         channel = GLOBAL_TABLES_CHANNEL_NAMES[f"{result[0]['table_id']}"]
-        print('channel is: ', channel)
+        print('Send datetime outside model')
         await channel_layer.send(str(channel), result_in_json)
 
     def create_response_for_datetime_websocket(self, instance=None):
         local_tz = pytz.timezone('Europe/Moscow')
         result = []
-        if self.status == 'active' and not instance:
+        if (self.status == 'active' or self.status == 'waiting') and not instance:
             result.append({
                 'status': 'occupied',
                 'id': str(self.id),

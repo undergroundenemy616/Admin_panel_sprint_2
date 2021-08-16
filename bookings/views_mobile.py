@@ -160,6 +160,8 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                     booking.make_booking_over()
                 return Response(status=status.HTTP_200_OK)
             exchange_booking_cancel(instance)
+            for booking in instance.bookings.all():
+                booking.make_booking_over()
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:
