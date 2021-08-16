@@ -52,9 +52,18 @@ class MobileRequestDemoSerializer(serializers.Serializer):
             raise ResponseException("Too many emails sent")
         else:
             self.context['request'].session['count_emails'] = 1
-        message = f"Имя: {self.validated_data['name']} \nТелефон: {self.validated_data['phone_number']}"
-        if self.validated_data.get('email'):
-            message = message + f"\nПочта: {self.validated_data['email']}"
-        if self.validated_data.get('company'):
-            message = message + f"\nКомпания: {self.validated_data['company']}"
-        send_email.delay(email=EMAIL_FOR_DEMOS, subject='Запрос на демо версию из приложения', message=message)
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            message = f"Имя: {self.validated_data['name']} \nТелефон: {self.validated_data['phone_number']}"
+            subject = 'Запрос на демо версию из приложения'
+            if self.validated_data.get('email'):
+                message = message + f"\nПочта: {self.validated_data['email']}"
+            if self.validated_data.get('company'):
+                message = message + f"\nКомпания: {self.validated_data['company']}"
+        else:
+            message = f"Name: {self.validated_data['name']} \nPhone number: {self.validated_data['phone_number']}"
+            subject = 'Request for a demo version from the application'
+            if self.validated_data.get('email'):
+                message = message + f"\nEmail: {self.validated_data['email']}"
+            if self.validated_data.get('company'):
+                message = message + f"\nCompany: {self.validated_data['company']}"
+        send_email.delay(email=EMAIL_FOR_DEMOS, subject=subject, message=message)
