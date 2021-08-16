@@ -157,11 +157,21 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         if account == instance.author:
             if instance.bookings.filter(user=instance.author)[0].status != 'waiting':
                 for booking in instance.bookings.all():
-                    booking.make_booking_over()
+                    if booking.user.id == account.id:
+                        pass
+                    else:
+                        booking.make_booking_over()
+                last_author_booking = instance.bookings.filter(user=account.id)
+                last_author_booking.make_booking_over()
                 return Response(status=status.HTTP_200_OK)
             exchange_booking_cancel(instance)
             for booking in instance.bookings.all():
-                booking.make_booking_over()
+                if booking.user.id == account.id:
+                    pass
+                else:
+                    booking.make_booking_over()
+            last_author_booking = instance.bookings.filter(user=account.id)
+            last_author_booking.make_booking_over()
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:
