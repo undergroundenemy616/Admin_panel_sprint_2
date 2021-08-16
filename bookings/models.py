@@ -202,7 +202,7 @@ class Booking(models.Model):
                             print('Sending create meeting block')
                         except Exception as e:
                             print('-----ERROR--CREATE--BY--DATETIME---', e)
-                    elif str(self.group_booking.author) == str(self.user.id):
+                    elif str(self.group_booking.author.id) == str(self.user.id):
                         result_for_datetime = self.create_response_for_datetime_websocket()
                         try:
                             asyncio.run(self.websocket_notification_by_datetime(result_for_datetime))
