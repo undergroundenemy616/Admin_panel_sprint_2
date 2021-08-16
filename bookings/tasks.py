@@ -422,7 +422,9 @@ def delete_group_bookings_that_not_in_calendar():
         for booking in bookings_to_check:
             for calendar_item in account_exchange.calendar.filter(start__range=(start, end)):
                 if booking.table.room.exchange_email == calendar_item.location and \
-                        booking.date_from == calendar_item.start and booking.date_to == calendar_item.end:
+                        booking.date_from == calendar_item.start and booking.date_to == calendar_item.end and \
+                        (booking.user.email in str(calendar_item.required_attendees) or
+                         booking.user.user.email in str(calendar_item.required_attendees)):
                     bookings_in_exchange.append(booking.id)
 
             group_bookings = GroupBooking.objects.filter(~Q(bookings__id__in=bookings_in_exchange)
