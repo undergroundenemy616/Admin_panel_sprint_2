@@ -164,7 +164,8 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                     else:
                         booking.make_booking_over()
                 last_author_booking = instance.bookings.filter(user=account.id)
-                last_author_booking.make_booking_over()
+                for last_booking in last_author_booking:
+                    last_booking.make_booking_over()
                 return Response(status=status.HTTP_200_OK)
             for booking in instance.bookings.all():
                 if booking.user.id == account.id:
@@ -172,7 +173,8 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                 else:
                     booking.make_booking_over()
             last_author_booking = instance.bookings.filter(user=account.id)
-            last_author_booking.make_booking_over()
+            for last_booking in last_author_booking:
+                last_booking.make_booking_over()
             self.perform_destroy(instance)
             return HttpResponse(status=204)
         else:
