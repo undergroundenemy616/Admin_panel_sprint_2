@@ -310,13 +310,15 @@ class MobileMeetingGroupBookingSerializer(serializers.ModelSerializer):
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
         my_booking_id = None
+        language = self.context['request'].headers.get('Language', None)
         for user in self.validated_data['users']:
             b = Booking(user=user,
                         table=self.validated_data['room'].tables.all()[0],
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking)
+                        group_booking=group_booking,
+                        theme='Без темы' if language == 'ru' else 'No theme')
             b.save(kwargs=self.context['request'].headers.get('Language', None))
             if user == author:
                 my_booking_id = str(b.id)

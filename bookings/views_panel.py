@@ -32,7 +32,8 @@ class PanelSingleBookingView(GenericAPIView):
         return Response(BookingSerializer(instance=existing_booking, many=True).data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        context_data = {'device': 'panel'}
+        context_data = {'device': 'panel',
+                        'language': request.headers.get('Language', None)}
         serializer = self.serializer_class(data=request.data, context=context_data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
