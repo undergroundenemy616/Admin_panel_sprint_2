@@ -179,7 +179,13 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         if request.query_params.get('user_id') == instance.author_id:
             for booking in instance.bookings.all():
-                booking.make_booking_over()
+                if request.query_params.get('user_id') == instance.author.id:
+                    pass
+                else:
+                    booking.make_booking_over()
+            last_author_booking = instance.bookings.filter(user=instance.author.id)
+            for last_booking in last_author_booking:
+                last_booking.make_booking_over()
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
