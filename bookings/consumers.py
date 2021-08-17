@@ -84,6 +84,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                         'data': content
                     }
                 }
+        self.logger.warning(msg=f'{res}')
         await self.channel_layer.send(f'{self.channel_name}', res)
 
     @classmethod
