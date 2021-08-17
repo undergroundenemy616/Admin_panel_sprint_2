@@ -24,7 +24,7 @@ definitions:
     - step: &Deploy
         name: Restart compose network
         script:
-          - pipe: atlassian/trigger-pipeline:4.2.1
+          - pipe: atlassian/trigger-pipeline:4.2.0
             variables:
               BITBUCKET_USERNAME: $BITBUCKET_USERNAME
               BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
