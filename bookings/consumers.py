@@ -189,7 +189,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                         'phone': str(booking.user.user.phone_number),
                         'firstname': str(booking.user.first_name),
                         'lastname': str(booking.user.last_name),
-                        'middlename': str(booking.user.middle_name),
+                        'middlename': str(booking.user.middle_name) if booking.user.middle_name is not None else None,
                     },
                     'theme': str(booking.theme)
                 })
