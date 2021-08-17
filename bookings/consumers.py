@@ -175,7 +175,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         overflows = Booking.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
-                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).order_by('-date_from')
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).order_by('date_from')
         if overflows:
             result = []
             for booking in overflows:
