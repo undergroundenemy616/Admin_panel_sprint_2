@@ -84,6 +84,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                         'data': content
                     }
                 }
+        self.logger.warning(msg=f'{res}')
         await self.channel_layer.send(f'{self.channel_name}', res)
 
     @classmethod
@@ -174,7 +175,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
         overflows = Booking.objects.filter(table=table, is_over=False, status__in=['waiting', 'active']). \
             filter((Q(date_from__lt=date_to, date_to__gte=date_to)
                     | Q(date_from__lte=date_from, date_to__gt=date_from)
-                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to)).order_by('date_from')
         if overflows:
             result = []
             for booking in overflows:
@@ -189,7 +190,7 @@ class BookingConsumer(AsyncJsonWebsocketConsumer):
                         'phone': str(booking.user.user.phone_number),
                         'firstname': str(booking.user.first_name),
                         'lastname': str(booking.user.last_name),
-                        'middlename': str(booking.user.middle_name),
+                        'middlename': str(booking.user.middle_name) if booking.user.middle_name is not None else None,
                     },
                     'theme': str(booking.theme)
                 })
