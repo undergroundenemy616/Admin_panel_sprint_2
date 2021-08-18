@@ -458,7 +458,7 @@ class Booking(models.Model):
                     'phone': str(self.user.user.phone_number),
                     'firstname': str(self.user.first_name),
                     'lastname': str(self.user.last_name),
-                    'middlename': str(self.user.middle_name),
+                    'middlename': str(self.user.middle_name) if self.user.middle_name is not None else None,
                 },
                 'theme': str(self.theme)
             })
