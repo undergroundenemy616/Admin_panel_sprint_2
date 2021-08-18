@@ -318,6 +318,7 @@ def create_bookings_from_exchange():
         end = datetime(datetime.now().year, 12, 31, 23, 59, tzinfo=account.default_timezone)
         rooms_data = []
         room_lists = account.protocol.get_roomlists()
+        calendar_view = list(account.calendar.view(start=start, end=end))
         for room_list in room_lists:
             rooms = GetRooms(protocol=account.protocol).call(roomlist=room_list)
             for room in rooms:
@@ -325,7 +326,10 @@ def create_bookings_from_exchange():
                     "title": room.name,
                     "email": room.email_address
                 })
-        for f in account.calendar.view(start=start, end=end):
+                room_account = Ac(primary_smtp_address=room.email_address, config=config, autodiscover=False,
+                                  access_type=DELEGATE)
+                calendar_view = calendar_view + list(room_account.calendar.view(start=start, end=end))
+        for f in calendar_view:
             if f.is_meeting:
                 author_email = f.organizer.email_address
                 date_to = pytz.UTC.localize(datetime.strptime(str(f.end).split('+')[0], "%Y-%m-%d %H:%M:%S"))
@@ -419,8 +423,16 @@ def delete_group_bookings_that_not_in_calendar():
                                                             Q(table__room__exchange_email__isnull=False))
 
         bookings_in_exchange = []
+        calendar_items = list(account_exchange.calendar.filter(start__range=(start, end)))
+        room_lists = account_exchange.protocol.get_roomlists()
+        for room_list in room_lists:
+            rooms = GetRooms(protocol=account_exchange.protocol).call(roomlist=room_list)
+            for room in rooms:
+                room_account = Ac(primary_smtp_address=room.email_address, config=config,
+                                  autodiscover=False, access_type=DELEGATE)
+                calendar_items = calendar_items + list(room_account.calendar.filter(start__range=(start, end)))
         for booking in bookings_to_check:
-            for calendar_item in account_exchange.calendar.filter(start__range=(start, end)):
+            for calendar_item in calendar_items:
                 if booking.table.room.exchange_email == calendar_item.location and \
                         booking.date_from == calendar_item.start and booking.date_to == calendar_item.end and \
                         (booking.user.email in str(calendar_item.required_attendees) or
@@ -442,3 +454,34 @@ def delete_group_bookings_that_not_in_calendar():
         logger.error(msg=f"Unable to connect to exchange server: {os.environ['EXCHANGE_SERVER']}")
     except Exception as e:
         logger.error(msg=f"Something went wrong \n{e}")
+
+
+@shared_task()
+def exchange_booking_cancel(instance):
+    logger = logging.getLogger(__name__)
+    if instance.bookings.all()[0].table.room.exchange_email:
+        try:
+            credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+            config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+            account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                                  autodiscover=False, access_type=DELEGATE)
+            date_from = instance.bookings.all()[0].date_from
+            date_to = instance.bookings.all()[0].date_to
+            start = datetime(date_from.year, date_from.month,
+                             date_from.day, date_from.hour,
+                             date_from.minute, tzinfo=pytz.UTC)
+            end = datetime(date_to.year, date_to.month,
+                           date_to.day, date_to.hour,
+                           date_to.minute, tzinfo=pytz.UTC)
+            for calendar_item in account_exchange.calendar.filter(start=start, end=end):
+                if calendar_item.organizer.email_address == account_exchange.primary_smtp_address and \
+                        instance.bookings.all()[0].table.room.exchange_email == calendar_item.location:
+                    calendar_item.cancel()
+        except KeyError:
+            logger.error(msg="Exchange login, password or server wasn`t provided")
+        except UnauthorizedError:
+            logger.error(msg="Wrong login or password")
+        except TransportError:
+            logger.error(msg=f"Unable to connect to exchange server: {os.environ['EXCHANGE_SERVER']}")
+        except Exception as e:
+            logger.error(msg=f"Something went wrong \n{e}")

@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models import Q
 from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
@@ -7,8 +9,7 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 
-from bookings.exchange_booking_cancel import exchange_booking_cancel
-from bookings.models import Booking
+from bookings.models import Booking, JobStore
 from bookings.serializers import BookingPersonalSerializer
 from bookings.serializers_mobile import (
     MobileBookingActivateActionSerializer,
@@ -165,7 +166,8 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                 for last_booking in last_author_booking:
                     last_booking.make_booking_over()
                 return Response(status=status.HTTP_200_OK)
-            exchange_booking_cancel(instance)
+            JobStore.objects.create(job_id='exchange_booking_cancel_' + str(instance.id),
+                                    time_execute=datetime.datetime.now())
             for booking in instance.bookings.all():
                 if booking.user.id == account.id:
                     pass

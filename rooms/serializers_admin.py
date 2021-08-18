@@ -1,8 +1,16 @@
+import os
+
 from django.db.transaction import atomic
 from django.shortcuts import get_list_or_404
-from rest_framework import serializers
+from exchangelib import Account as Ac, Credentials, Configuration, DELEGATE
+from exchangelib.errors import UnauthorizedError, TransportError
+from exchangelib.services import GetRooms
+from rest_framework import serializers, status
 
+from core.handlers import ResponseException
 from files.serializers import TestBaseFileSerializer
+from offices.models import Office
+from room_types.models import RoomType
 from rooms.models import Room, RoomMarker
 from tables.models import Table
 from tables.serializers_admin import AdminTableSerializer
@@ -102,3 +110,32 @@ class AdminRoomMarkerCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomMarker
         fields = '__all__'
+
+
+class AdminRoomExchangeCreateSerializer(serializers.Serializer):
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), required=True)
+
+    def create(self, validated_data):
+        credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+        config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+        account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                              autodiscover=False, access_type=DELEGATE)
+        room_lists = account_exchange.protocol.get_roomlists()
+        created_rooms = []
+        try:
+            room_type = RoomType.objects.get(office=validated_data['office'], unified=True, is_deletable=False)
+        except RoomType.DoesNotExist:
+            raise ResponseException("Suitable room type not found", status_code=status.HTTP_404_NOT_FOUND)
+        for room_list in room_lists:
+            rooms = GetRooms(protocol=account_exchange.protocol).call(roomlist=room_list)
+            for room in rooms:
+                if not Room.objects.filter(exchange_email=room.email_address).exists():
+                    r = Room(title=room.name,
+                             exchange_email=room.email_address,
+                             type=room_type)
+                    r.save()
+                    table = Table(room=r, title=room.name)
+                    table.save()
+                    created_rooms.append(r)
+
+        return AdminRoomSerializer(instance=created_rooms, many=True).data

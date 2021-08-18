@@ -1,9 +1,14 @@
+import os
+
 import django_filters
 from django.db.models import Count, Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
+from exchangelib import Account as Ac, Credentials, Configuration, DELEGATE
+from exchangelib.errors import UnauthorizedError, TransportError
+from exchangelib.services import GetRooms
 from rest_framework import filters, status, viewsets
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, CreateAPIView
 from rest_framework.response import Response
 
 from core.pagination import LimitStartPagination
@@ -12,7 +17,8 @@ from rooms.filters_admin import AdminRoomFilter
 from rooms.models import Room, RoomMarker
 from rooms.serializers_admin import (AdminRoomListDeleteSerializer, AdminRoomSerializer,
                                      AdminRoomWithTablesSerializer, AdminRoomCreateUpdateSerializer,
-                                     AdminRoomMarkerCreateSerializer, SwaggerRoomList)
+                                     AdminRoomMarkerCreateSerializer, SwaggerRoomList,
+                                     AdminRoomExchangeCreateSerializer)
 
 
 @method_decorator(name='list', decorator=swagger_auto_schema(query_serializer=SwaggerRoomList))
@@ -60,3 +66,14 @@ class AdminRoomMarkerViewSet(viewsets.ModelViewSet):
     queryset = RoomMarker.objects.all()
     serializer_class = AdminRoomMarkerCreateSerializer
     permission_classes = (IsAdmin, )
+
+
+class AdminRoomExchangeView(CreateAPIView):
+    serializer_class = AdminRoomExchangeCreateSerializer
+    permission_classes = (IsAdmin, )
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.create(validated_data=serializer.data)
+        return Response(response, status=status.HTTP_201_CREATED)
