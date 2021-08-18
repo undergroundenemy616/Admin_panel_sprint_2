@@ -3,7 +3,7 @@ import os
 import requests
 from rest_framework import serializers
 
-from booking_api_django_new.settings.base import PUSH_HOST, ALLOW_TENANT
+from booking_api_django_new.base_settings import PUSH_HOST, ALLOW_TENANT
 from groups.models import Group
 from users.models import Account
 

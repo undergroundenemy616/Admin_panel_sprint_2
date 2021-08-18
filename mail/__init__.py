@@ -1,7 +1,7 @@
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
-from booking_api_django_new.settings.base import EMAIL_HOST_USER
+from booking_api_django_new.base_settings import EMAIL_HOST_USER
 
 
 def send_html_email_message(to: str, subject: str, template_args: dict):

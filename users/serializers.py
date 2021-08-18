@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
-from booking_api_django_new.settings.base import DEBUG
+from booking_api_django_new.base_settings import DEBUG
 from files.models import File
 from files.serializers import BaseFileSerializer
 from floors.models import Floor

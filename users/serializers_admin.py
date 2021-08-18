@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError as ValErr
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
-from booking_api_django_new.settings.base import DEBUG, ADMIN_HOST, BASE_DIR
+from booking_api_django_new.base_settings import DEBUG, ADMIN_HOST, BASE_DIR
 from core.utils import get_localization
 from users.tasks import send_register_email
 

@@ -4,7 +4,7 @@ import orjson
 import requests
 from rest_framework import serializers, status
 
-from booking_api_django_new.settings.base import (FILES_HOST, FILES_PASSWORD,
+from booking_api_django_new.base_settings import (FILES_HOST, FILES_PASSWORD,
                                                   FILES_USERNAME)
 from booking_api_django_new.filestorage_auth import check_token
 from core.handlers import ResponseException

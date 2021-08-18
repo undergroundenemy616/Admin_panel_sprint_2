@@ -7,7 +7,7 @@ from django.db import models
 from rest_framework import status
 
 from booking_api_django_new.filestorage_auth import check_token
-from booking_api_django_new.settings.base import FILES_HOST
+from booking_api_django_new.base_settings import FILES_HOST
 from core.handlers import ResponseException
 
 

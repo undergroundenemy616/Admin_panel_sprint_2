@@ -7,7 +7,7 @@ import requests
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from booking_api_django_new.settings.base import PUSH_HOST, PUSH_USERNAME, PUSH_PASSWORD, ALLOW_TENANT
+from booking_api_django_new.base_settings import PUSH_HOST, PUSH_USERNAME, PUSH_PASSWORD, ALLOW_TENANT
 
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin

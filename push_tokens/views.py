@@ -6,7 +6,7 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
 
-from booking_api_django_new.settings.base import PUSH_HOST
+from booking_api_django_new.base_settings import PUSH_HOST
 from core.pagination import DefaultPagination
 from core.permissions import IsAdmin, IsAuthenticatedOnPost
 from push_tokens.models import PushToken

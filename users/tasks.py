@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from rest_framework.generics import get_object_or_404
 from django.core.mail import send_mail
 
-from booking_api_django_new.settings.base import EMAIL_HOST_USER
+from booking_api_django_new.base_settings import EMAIL_HOST_USER
 from mail import send_html_email
 from users.broadcasts import SMSBroadcast
 from users.models import User

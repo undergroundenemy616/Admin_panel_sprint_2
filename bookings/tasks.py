@@ -5,7 +5,7 @@ from django.utils.timezone import now
 import bookings.models as bookings
 import os
 import requests
-from booking_api_django_new.settings.base import PUSH_HOST
+from booking_api_django_new.base_settings import PUSH_HOST
 from django.core.exceptions import ObjectDoesNotExist
 from celery.app.control import Control
 import logging

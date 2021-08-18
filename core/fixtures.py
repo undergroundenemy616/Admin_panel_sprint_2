@@ -6,7 +6,7 @@ import orjson
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
-from booking_api_django_new.settings.base import BASE_DIR
+from booking_api_django_new.base_settings import BASE_DIR
 
 
 class Fixtures:

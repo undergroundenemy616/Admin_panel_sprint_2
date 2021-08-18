@@ -19,7 +19,7 @@ import pdfkit
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from workalendar.europe import Russia
-from booking_api_django_new.settings.base import FILES_HOST, ALLOW_TENANT
+from booking_api_django_new.base_settings import FILES_HOST, ALLOW_TENANT
 from booking_api_django_new.filestorage_auth import check_token
 from bookings.models import Booking
 from bookings.serializers_mobile import calculate_date_activate_until

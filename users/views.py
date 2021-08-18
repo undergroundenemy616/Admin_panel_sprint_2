@@ -13,7 +13,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
                                                   TokenRefreshSerializer)
 
-from booking_api_django_new.settings.base import (EMAIL_HOST_USER,
+from booking_api_django_new.base_settings import (EMAIL_HOST_USER,
                                                   HARDCODED_PHONE_NUMBER,
                                                   HARDCODED_SMS_CODE, SMS_MOCK_CONFIRM)
 from core.authentication import AuthForAccountPut

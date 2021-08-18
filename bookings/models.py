@@ -16,7 +16,7 @@ from django.db import models
 from django.db.models import Min, Q
 from django.utils.timezone import now
 
-from booking_api_django_new.settings.base import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
+from booking_api_django_new.base_settings import (BOOKING_PUSH_NOTIFY_UNTIL_MINS,
                                                   BOOKING_TIMEDELTA_CHECK,
                                                   PUSH_HOST)
 from core.handlers import ResponseException

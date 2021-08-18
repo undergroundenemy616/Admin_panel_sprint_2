@@ -1,4 +1,4 @@
-from .base import *
+from booking_api_django_new.base_settings import *
 
 SHARED_APPS = [
     'django_tenants',

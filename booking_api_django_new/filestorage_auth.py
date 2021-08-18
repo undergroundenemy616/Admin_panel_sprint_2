@@ -2,7 +2,7 @@ import os
 import orjson
 import requests
 
-from booking_api_django_new.settings.base import FILES_HOST, FILES_USERNAME, FILES_PASSWORD
+from booking_api_django_new.base_settings import FILES_HOST, FILES_USERNAME, FILES_PASSWORD
 
 
 def check_token():

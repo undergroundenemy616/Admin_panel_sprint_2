@@ -3,19 +3,20 @@ import os
 from celery.schedules import crontab
 from tenant_schemas_celery.app import CeleryApp as TenantAwareCeleryApp
 from celery import Celery
-from booking_api_django_new.settings.base import ALLOW_TENANT
+from booking_api_django_new.base_settings import ALLOW_TENANT
 
 
 # this code copied from manage.py
 # set the default Django settings module for the 'celery' app.
-from booking_api_django_new.settings import non_tenant_settings as settings
-
 # you change change the name here
 
 if ALLOW_TENANT:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.tenant_settings')
+    from booking_api_django_new.settings import tenant_settings as settings
 else:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booking_api_django_new.settings.non_tenant_settings')
+    from booking_api_django_new.settings import non_tenant_settings as settings
+
 
 app = TenantAwareCeleryApp("booking_api_django_new") if ALLOW_TENANT else Celery("booking_api_django_new")
 

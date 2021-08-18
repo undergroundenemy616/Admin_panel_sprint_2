@@ -5,7 +5,7 @@ import orjson
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
-from booking_api_django_new.settings.base import BASE_DIR
+from booking_api_django_new.base_settings import BASE_DIR
 from core.handlers import ResponseException
 from offices.models import Office
 from tables.models import Table

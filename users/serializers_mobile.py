@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError as ValErr
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from booking_api_django_new.settings.base import DEBUG, KEY_EXPIRATION_EMAIL, KEY_EXPIRATION
+from booking_api_django_new.base_settings import DEBUG, KEY_EXPIRATION_EMAIL, KEY_EXPIRATION
 from core.handlers import ResponseException
 from bookings.models import Booking
 from files.models import File

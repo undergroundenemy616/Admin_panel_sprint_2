@@ -6,7 +6,7 @@ os.environ.setdefault('BRANCH', 'master')
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 
-from booking_api_django_new.settings.base import ALLOW_TENANT
+from booking_api_django_new.base_settings import ALLOW_TENANT
 
 if ALLOW_TENANT:
     from booking_api_django_new.settings.tenant_settings import DATABASES
