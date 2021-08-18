@@ -42,7 +42,7 @@ class AdminSendPushSerializer(serializers.Serializer):
     expo = serializers.DictField(child=serializers.CharField(), required=True)
 
     def send_message_to_push_service(self, request):
-        schema = request.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
+        schema = request.headers.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
         workspace = f"simpleoffice-{schema}"
         # check_token()
         # headers = {'Authorization': 'Bearer ' + os.environ.get('PUSH_TOKEN')}

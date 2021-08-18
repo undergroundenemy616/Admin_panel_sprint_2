@@ -25,7 +25,7 @@ class AdminPushGroupView(GenericAPIView):
     permission_classes = (IsAdmin, )
 
     def get(self, request, *args, **kwargs):
-        schema = request.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
+        schema = request.headers.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
         workspace = {'workspace': f"simpleoffice-{schema}"}
         if not workspace:
             return Response('Workspace not found', status=status.HTTP_404_NOT_FOUND)
@@ -65,7 +65,7 @@ class AdminPushUserView(GenericAPIView):
     permission_classes = (IsAdmin,)
 
     def get(self, request, *args, **kwargs):
-        schema = request.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
+        schema = request.headers.get('X-WORKSPACE') if not ALLOW_TENANT else request.tenant.schema_name
         workspace = {'workspace': f"simpleoffice-{schema}"}
         if not workspace:
             return Response('Workspace not found', status=status.HTTP_404_NOT_FOUND)
