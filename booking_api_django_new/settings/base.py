@@ -57,7 +57,7 @@ EMAIL_HOST_PASSWORD = 'Rfr:tktpyjujhcr&'
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
 
-ALLOW_TENANT = os.environ.get('ALLOW_TENANT')
+ALLOW_TENANT = True if os.environ.get('ALLOW_TENANT') == "True" else False
 ALLOWED_HOSTS = ['*']
 
 # Application definition
