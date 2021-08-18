@@ -422,6 +422,6 @@ HARDCODED_PHONE_NUMBER = (
 HARDCODED_SMS_CODE = 4832
 
 # Exchange Setup
-EXCHANGE_ADMIN_LOGIN = os.environ.get("max@liiis.onmicrosoft.com")
-EXCHANGE_ADMIN_PASS = os.environ.get("A8ZAWNxZSxQZczy1")
-EXCHANGE_SERVER = os.environ.get("outlook.office365.com")
+EXCHANGE_ADMIN_LOGIN = os.environ.get("EXCHANGE_ADMIN_LOGIN")
+EXCHANGE_ADMIN_PASS = os.environ.get("EXCHANGE_ADMIN_PASS")
+EXCHANGE_SERVER = os.environ.get("EXCHANGE_SERVER")
