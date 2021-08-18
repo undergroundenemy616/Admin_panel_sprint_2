@@ -9,5 +9,5 @@ urlpatterns = [
     path('', views_admin.AdminRoomViewSet.as_view(url_list)),
     path('/<uuid:pk>', views_admin.AdminRoomViewSet.as_view(url_detail)),
     path('/list_delete', views_admin.AdminRoomListDeleteView.as_view()),
-    path('/exchange', views_admin.AdminRoomExchangeView.as_view())
+    path('/exchange_room_create', views_admin.AdminRoomExchangeView.as_view())
 ]
