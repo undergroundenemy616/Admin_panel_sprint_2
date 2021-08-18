@@ -167,7 +167,8 @@ class MobileGroupMeetingBookingViewSet(viewsets.ModelViewSet):
                     last_booking.make_booking_over()
                 return Response(status=status.HTTP_200_OK)
             JobStore.objects.create(job_id='exchange_booking_cancel_' + str(instance.id),
-                                    time_execute=datetime.datetime.now())
+                                    time_execute=datetime.datetime.now(),
+                                    parameters={})
             for booking in instance.bookings.all():
                 if booking.user.id == account.id:
                     pass
