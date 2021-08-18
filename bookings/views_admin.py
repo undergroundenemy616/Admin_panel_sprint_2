@@ -181,6 +181,7 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         if request.query_params.get('user_id') == str(instance.author_id):
             JobStore.objects.create(job_id='exchange_booking_cancel_' + str(instance.id),
+                                    parameters={},
                                     time_execute=datetime.datetime.now())
             for booking in instance.bookings.all():
                 if request.query_params.get('user_id') == instance.author.id:
