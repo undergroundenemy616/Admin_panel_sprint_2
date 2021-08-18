@@ -38,3 +38,15 @@ app.conf.beat_schedule = {
         'schedule': crontab('0', '0', day_of_month='1'),
     }
 }
+
+if settings.EXCHANGE_ADMIN_LOGIN and settings.EXCHANGE_ADMIN_PASS and settings.EXCHANGE_SERVER:
+    app.conf.beat_schedule.update({
+        'create_bookings_from_exchange': {
+            'task': 'bookings.tasks.create_bookings_from_exchange',
+            'schedule': crontab(minute='*/1')
+        },
+        'delete_group_bookings_that_not_in_calendar': {
+            'task': 'bookings.tasks.delete_group_bookings_that_not_in_calendar',
+            'schedule': crontab(minute='*/1')
+        }
+    })

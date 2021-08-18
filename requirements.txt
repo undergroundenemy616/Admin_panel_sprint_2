@@ -52,3 +52,5 @@ django-filter~=2.4.0
 channels==3.0.3
 channels_redis==3.2.0
 
+
+exchangelib~=4.4.0

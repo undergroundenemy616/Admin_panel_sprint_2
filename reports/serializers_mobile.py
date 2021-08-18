@@ -1,3 +1,5 @@
+from django.core.exceptions import ValidationError as ValEr
+from django.core.validators import validate_email
 from rest_framework import serializers
 
 from booking_api_django_new.settings import EMAIL_FOR_DEMOS
@@ -26,12 +28,19 @@ class MobileReportSerializer(serializers.ModelSerializer):
 class MobileRequestDemoSerializer(serializers.Serializer):
     name = serializers.CharField()
     phone_number = serializers.CharField()
+    company = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
         try:
             attrs['phone_number'] = User.normalize_phone(attrs['phone_number'])
         except ValueError as e:
             raise ResponseException(e)
+        if attrs.get('email'):
+            try:
+                validate_email(attrs['email'])
+            except ValEr:
+                raise ResponseException(ValEr)
         return attrs
 
     def send_email(self):
@@ -43,5 +52,18 @@ class MobileRequestDemoSerializer(serializers.Serializer):
             raise ResponseException("Too many emails sent")
         else:
             self.context['request'].session['count_emails'] = 1
-        send_email.delay(email=EMAIL_FOR_DEMOS, subject='Запрос на демо версию из приложения',
-                         message=f"Имя: {self.validated_data['name']} \nТелефон: {self.validated_data['phone_number']}")
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            message = f"Имя: {self.validated_data['name']} \nТелефон: {self.validated_data['phone_number']}"
+            subject = 'Запрос на демо версию из приложения'
+            if self.validated_data.get('email'):
+                message = message + f"\nПочта: {self.validated_data['email']}"
+            if self.validated_data.get('company'):
+                message = message + f"\nКомпания: {self.validated_data['company']}"
+        else:
+            message = f"Name: {self.validated_data['name']} \nPhone number: {self.validated_data['phone_number']}"
+            subject = 'Request for a demo version from the application'
+            if self.validated_data.get('email'):
+                message = message + f"\nEmail: {self.validated_data['email']}"
+            if self.validated_data.get('company'):
+                message = message + f"\nCompany: {self.validated_data['company']}"
+        send_email.delay(email=EMAIL_FOR_DEMOS, subject=subject, message=message)

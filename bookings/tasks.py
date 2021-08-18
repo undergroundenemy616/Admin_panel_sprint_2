@@ -1,7 +1,15 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+import pytz
 from celery import shared_task
+from django.core.exceptions import ValidationError as ValErr
+from django.core.validators import validate_email
+from django.db.models import Q
 from django.utils.timezone import now
+from exchangelib import Account as Ac, Credentials, Configuration, DELEGATE
+from exchangelib.errors import UnauthorizedError, TransportError
+from exchangelib.services import GetRooms
+
 import bookings.models as bookings
 import os
 import requests
@@ -11,6 +19,11 @@ from celery.app.control import Control
 import logging
 from booking_api_django_new.celery import app as celery_app
 from django.core.mail import mail_admins
+
+from group_bookings.models import GroupBooking
+from tables.models import Table
+from users.models import Account
+from users.tasks import send_email
 
 
 def all_job_delete(uuid):
@@ -290,3 +303,185 @@ def delete_task_from_db():
     job_to_delete = bookings.JobStore.objects.filter(executed=True)
     for job in job_to_delete:
         job.delete()
+
+
+@shared_task()
+def create_bookings_from_exchange():
+    logger = logging.getLogger(__name__)
+    try:
+        queryset = Account.objects.all().select_related('user')
+        credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+        config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+        account = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config, autodiscover=False,
+                     access_type=DELEGATE)
+        start = datetime(datetime.now().year, 1, 1, 0, 0, tzinfo=account.default_timezone)
+        end = datetime(datetime.now().year, 12, 31, 23, 59, tzinfo=account.default_timezone)
+        rooms_data = []
+        room_lists = account.protocol.get_roomlists()
+        calendar_view = list(account.calendar.view(start=start, end=end))
+        for room_list in room_lists:
+            rooms = GetRooms(protocol=account.protocol).call(roomlist=room_list)
+            for room in rooms:
+                rooms_data.append({
+                    "title": room.name,
+                    "email": room.email_address
+                })
+                room_account = Ac(primary_smtp_address=room.email_address, config=config, autodiscover=False,
+                                  access_type=DELEGATE)
+                calendar_view = calendar_view + list(room_account.calendar.view(start=start, end=end))
+        for f in calendar_view:
+            if f.is_meeting:
+                author_email = f.organizer.email_address
+                date_to = pytz.UTC.localize(datetime.strptime(str(f.end).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+                date_from = pytz.UTC.localize(datetime.strptime(str(f.start).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+                timezone = pytz.timezone(str(f._start_timezone))
+                message_date_from = timezone.localize(datetime.strptime(str(f.end).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+                message_date_to = timezone.localize(datetime.strptime(str(f.start).split('+')[0], "%Y-%m-%d %H:%M:%S"))
+                room_title = f.location
+                room_email = None
+                users = [{
+                    "email": f.organizer.email_address,
+                    "name": f.organizer.name
+                }]
+                user_emails = [f.organizer.email_address]
+                guests = []
+                if f.required_attendees:
+                    for attendee in f.required_attendees:
+                        if Account.objects.filter(Q(email=attendee.mailbox.email_address)
+                                                  |
+                                                  Q(user__email=attendee.mailbox.email_address)).exists():
+                            users.append({
+                                "email": attendee.mailbox.email_address,
+                                "name": attendee.mailbox.name
+                            })
+                            user_emails.append(attendee.mailbox.email_address)
+                        else:
+                            guests.append({
+                                attendee.mailbox.name: attendee.mailbox.email_address,
+                            })
+                            try:
+                                validate_email(attendee.mailbox.email_address)
+                                message = f"Здравствуйте, {attendee.mailbox.name}. Вы были приглашены на встречу, " \
+                                          f"которая пройдёт в {f.location}. " \
+                                          f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                          f"{datetime.strftime(message_date_to, '%H:%M')}"
+                                send_email.delay(email=attendee.mailbox.email_address, subject="Встреча", message=message)
+                            except ValErr:
+                                pass
+                for room in rooms_data:
+                    if room['title'] in room_title:
+                        room_email = room['email']
+                users = {user['email']: user for user in users}.values()
+                try:
+                    table = Table.objects.get(room__exchange_email=room_email)
+                    if not bookings.Booking.objects.is_overflowed(table, date_to=date_to, date_from=date_from):
+                        author = queryset.get(Q(email=author_email)
+                                              |
+                                              Q(user__email=author_email))
+                        group_booking = GroupBooking.objects.create(author=author, guests=guests)
+                        users_objects = queryset.filter(Q(email__in=list(set(user_emails)))
+                                                        |
+                                                        Q(user__email__in=user_emails))
+                        for i in range(len(users)):
+                            booking = bookings.Booking(
+                                date_to=date_to,
+                                date_from=date_from,
+                                table=table,
+                                user=users_objects.all()[i],
+                                group_booking=group_booking,
+                                theme=f.subject
+                            )
+                            booking.save()
+                except (Table.DoesNotExist, Account.DoesNotExist):
+                    pass
+    except KeyError:
+        logger.error(msg="Exchange login, password or server wasn`t provided")
+    except UnauthorizedError:
+        logger.error(msg="Wrong login or password")
+    except TransportError:
+        logger.error(msg=f"Unable to connect to exchange server: {os.environ['EXCHANGE_SERVER']}")
+    except Exception as e:
+        logger.error(msg=f"Something went wrong \n{e}")
+
+
+@shared_task()
+def delete_group_bookings_that_not_in_calendar():
+    logger = logging.getLogger(__name__)
+    try:
+        credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+        config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+        account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                              autodiscover=False, access_type=DELEGATE)
+
+        start = datetime(datetime.now().year, datetime.now().month, datetime.now().day, tzinfo=pytz.UTC)
+        end = datetime(datetime.now().year, datetime.now().month, datetime.now().day, 23, 59, tzinfo=pytz.UTC)
+
+        bookings_to_check = bookings.Booking.objects.filter(Q(date_from__date=start.date())
+                                                            &
+                                                            Q(date_to__date=end.date())
+                                                            &
+                                                            Q(table__room__exchange_email__isnull=False))
+
+        bookings_in_exchange = []
+        calendar_items = list(account_exchange.calendar.filter(start__range=(start, end)))
+        room_lists = account_exchange.protocol.get_roomlists()
+        for room_list in room_lists:
+            rooms = GetRooms(protocol=account_exchange.protocol).call(roomlist=room_list)
+            for room in rooms:
+                room_account = Ac(primary_smtp_address=room.email_address, config=config,
+                                  autodiscover=False, access_type=DELEGATE)
+                calendar_items = calendar_items + list(room_account.calendar.filter(start__range=(start, end)))
+        for booking in bookings_to_check:
+            for calendar_item in calendar_items:
+                if booking.table.room.exchange_email == calendar_item.location and \
+                        booking.date_from == calendar_item.start and booking.date_to == calendar_item.end and \
+                        (booking.user.email in str(calendar_item.required_attendees) or
+                         booking.user.user.email in str(calendar_item.required_attendees)):
+                    bookings_in_exchange.append(booking.id)
+
+            group_bookings = GroupBooking.objects.filter(~Q(bookings__id__in=bookings_in_exchange)
+                                                         &
+                                                         Q(bookings__table__room__exchange_email__isnull=False)). \
+                distinct()
+
+            if group_bookings:
+                group_bookings.delete()
+    except KeyError:
+        logger.error(msg="Exchange login, password or server wasn`t provided")
+    except UnauthorizedError:
+        logger.error(msg="Wrong login or password")
+    except TransportError:
+        logger.error(msg=f"Unable to connect to exchange server: {os.environ['EXCHANGE_SERVER']}")
+    except Exception as e:
+        logger.error(msg=f"Something went wrong \n{e}")
+
+
+@shared_task()
+def exchange_booking_cancel(instance):
+    logger = logging.getLogger(__name__)
+    if instance.bookings.all()[0].table.room.exchange_email:
+        try:
+            credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+            config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+            account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                                  autodiscover=False, access_type=DELEGATE)
+            date_from = instance.bookings.all()[0].date_from
+            date_to = instance.bookings.all()[0].date_to
+            start = datetime(date_from.year, date_from.month,
+                             date_from.day, date_from.hour,
+                             date_from.minute, tzinfo=pytz.UTC)
+            end = datetime(date_to.year, date_to.month,
+                           date_to.day, date_to.hour,
+                           date_to.minute, tzinfo=pytz.UTC)
+            for calendar_item in account_exchange.calendar.filter(start=start, end=end):
+                if calendar_item.organizer.email_address == account_exchange.primary_smtp_address and \
+                        instance.bookings.all()[0].table.room.exchange_email == calendar_item.location:
+                    calendar_item.cancel()
+        except KeyError:
+            logger.error(msg="Exchange login, password or server wasn`t provided")
+        except UnauthorizedError:
+            logger.error(msg="Wrong login or password")
+        except TransportError:
+            logger.error(msg=f"Unable to connect to exchange server: {os.environ['EXCHANGE_SERVER']}")
+        except Exception as e:
+            logger.error(msg=f"Something went wrong \n{e}")

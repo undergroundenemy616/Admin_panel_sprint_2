@@ -420,3 +420,8 @@ HARDCODED_PHONE_NUMBER = (
     "+13371337133"  # hardcoded phone number for passing AppStore and PlayMarket tests
 )
 HARDCODED_SMS_CODE = 4832
+
+# Exchange Setup
+EXCHANGE_ADMIN_LOGIN = os.environ.get("EXCHANGE_ADMIN_LOGIN")
+EXCHANGE_ADMIN_PASS = os.environ.get("EXCHANGE_ADMIN_PASS")
+EXCHANGE_SERVER = os.environ.get("EXCHANGE_SERVER")

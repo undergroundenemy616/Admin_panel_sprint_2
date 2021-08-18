@@ -1,6 +1,7 @@
+import datetime
+
 import orjson
 from django.db.models import Q
-from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.filters import SearchFilter
@@ -9,7 +10,7 @@ from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 
 from bookings.filters_admin import AdminBookingFilter
-from bookings.models import Booking
+from bookings.models import Booking, JobStore
 from bookings.serializers_admin import (AdminBookingCreateFastSerializer,
                                         AdminBookingSerializer,
                                         AdminSwaggerDashboard,
@@ -28,6 +29,7 @@ from group_bookings.serializers_admin import (AdminGroupBookingSerializer,
                                               AdminGroupWorkspaceSerializer,
                                               AdminGroupCombinedSerializer)
 from group_bookings.serializers_mobile import MobileGroupBookingSerializer
+from offices.models import Office
 from users.models import Account
 from users.serializers_admin import AdminUserSerializer
 
@@ -177,7 +179,9 @@ class AdminGroupMeetingBookingViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        if request.query_params.get('user_id') == instance.author_id:
+        if request.query_params.get('user_id') == str(instance.author_id):
+            JobStore.objects.create(job_id='exchange_booking_cancel_' + str(instance.id),
+                                    time_execute=datetime.datetime.now())
             for booking in instance.bookings.all():
                 if request.query_params.get('user_id') == instance.author.id:
                     pass
