@@ -372,28 +372,29 @@ def create_bookings_from_exchange():
                     if room['title'] in room_title:
                         room_email = room['email']
                 users = {user['email']: user for user in users}.values()
-                try:
-                    table = Table.objects.get(room__exchange_email=room_email)
-                    if not bookings.Booking.objects.is_overflowed(table, date_to=date_to, date_from=date_from):
-                        author = queryset.get(Q(email=author_email)
-                                              |
-                                              Q(user__email=author_email))
-                        group_booking = GroupBooking.objects.create(author=author, guests=guests)
-                        users_objects = queryset.filter(Q(email__in=list(set(user_emails)))
-                                                        |
-                                                        Q(user__email__in=user_emails))
-                        for i in range(len(users)):
-                            booking = bookings.Booking(
-                                date_to=date_to,
-                                date_from=date_from,
-                                table=table,
-                                user=users_objects.all()[i],
-                                group_booking=group_booking,
-                                theme=f.subject
-                            )
-                            booking.save()
-                except (Table.DoesNotExist, Account.DoesNotExist):
-                    pass
+                if room_email:
+                    try:
+                        table = Table.objects.get(room__exchange_email=room_email, room__type__unified=True)
+                        if not bookings.Booking.objects.is_overflowed(table, date_to=date_to, date_from=date_from):
+                            author = queryset.get(Q(email=author_email)
+                                                  |
+                                                  Q(user__email=author_email))
+                            group_booking = GroupBooking.objects.create(author=author, guests=guests)
+                            users_objects = queryset.filter(Q(email__in=list(set(user_emails)))
+                                                            |
+                                                            Q(user__email__in=user_emails))
+                            for i in range(len(users)):
+                                booking = bookings.Booking(
+                                    date_to=date_to,
+                                    date_from=date_from,
+                                    table=table,
+                                    user=users_objects.all()[i],
+                                    group_booking=group_booking,
+                                    theme=f.subject
+                                )
+                                booking.save()
+                    except (Table.DoesNotExist, Account.DoesNotExist):
+                        pass
     except KeyError:
         logger.error(msg="Exchange login, password or server wasn`t provided")
     except UnauthorizedError:
@@ -434,9 +435,7 @@ def delete_group_bookings_that_not_in_calendar():
         for booking in bookings_to_check:
             for calendar_item in calendar_items:
                 if booking.table.room.exchange_email == calendar_item.location and \
-                        booking.date_from == calendar_item.start and booking.date_to == calendar_item.end and \
-                        (booking.user.email in str(calendar_item.required_attendees) or
-                         booking.user.user.email in str(calendar_item.required_attendees)):
+                        booking.date_from == calendar_item.start and booking.date_to == calendar_item.end:
                     bookings_in_exchange.append(booking.id)
 
             group_bookings = GroupBooking.objects.filter(~Q(bookings__id__in=bookings_in_exchange)
