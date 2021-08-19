@@ -12,7 +12,7 @@ class SuitableRoomParameters(serializers.Serializer):
     date_from = serializers.DateTimeField(required=True)
     date_to = serializers.DateTimeField(required=True)
     type = serializers.CharField(required=True)
-    quantity = serializers.IntegerField(required=True)
+    quantity = serializers.IntegerField(required=False)
 
 
 class MobileRoomSerializer(serializers.ModelSerializer):
