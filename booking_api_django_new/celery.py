@@ -30,19 +30,19 @@ app.conf.timezone = 'UTC'
 
 app.conf.beat_schedule = {
     'check_booking_status': {
-        'task': 'bookings.check_booking_status_in_all_schemas',
+        'task': 'bookings.check_booking_status_in_all_schemas' if ALLOW_TENANT else 'bookings.check_booking_status',
         'schedule': crontab('0', '0', '*', '*', '*'),
     },
     'transfer_task_to_redis': {
-        'task': 'bookings.tasks.transfer_task_to_redis_in_all_schemas',
+        'task': 'bookings.tasks.transfer_task_to_redis_in_all_schemas' if ALLOW_TENANT else 'bookings.tasks.transfer_task_to_redis',
         'schedule': crontab('1-59/15', '4-19', '*', '*', '*'),
     },
     'delete_task_from_db': {
-        'task': 'bookings.tasks.delete_task_from_db_in_all_schemas',
+        'task': 'bookings.tasks.delete_task_from_db_in_all_schemas' if ALLOW_TENANT else 'bookings.tasks.delete_task_from_db',
         'schedule': crontab('1', '0', '*', '*', '*'),
     },
     'delete_old_statistics': {
-        'task': 'files.tasks.delete_old_statistics_in_all_schemas',
+        'task': 'files.tasks.delete_old_statistics_in_all_schemas' if ALLOW_TENANT else 'files.tasks.delete_old_statistics',
         'schedule': crontab('0', '0', day_of_month='1'),
     }
 }
