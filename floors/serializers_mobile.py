@@ -39,10 +39,10 @@ class MobileFloorMarkerParameters(serializers.Serializer):
     date_to = serializers.DateTimeField(required=False)
     tag = serializers.ListField(required=False)
 
-    def validate(self, attrs):
-        if attrs.get('room_type') and not RoomType.objects.filter(title=attrs.get('room_type')):
-            raise ValidationError("RoomType not found", code=404)
-        return attrs
+    # def validate(self, attrs):
+    #     if attrs.get('room_type') and not RoomType.objects.filter(title=attrs.get('room_type')):
+    #         raise ValidationError("RoomType not found", code=404)
+    #     return attrs
 
 
 class MobileFloorSuitableParameters(serializers.Serializer):

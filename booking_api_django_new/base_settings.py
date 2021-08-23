@@ -129,6 +129,38 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
+INSTALLED_APPS = [
+    'users.apps.UsersConfig',
+    'groups.apps.GroupsConfig',
+    'group_bookings',
+    'files',
+    'floors',
+    'licenses',
+    'offices',
+    'rooms',
+    'tables',
+    'room_types',
+    'reports',
+    'bookings',
+    'push_tokens',
+    'teams',
+    'rest_framework',
+    'drf_yasg',
+    'management',
+    'mail',
+    'django_apscheduler',
+    'django_filters',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.postgres',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django-advanced_password_validation',
+]
+# 'django.contrib.admin',
+#REDIS_URL = os.environ.get('REDIS_URL') or "redis://2.59.41.133:5556"
+
 REDIS_HOST = os.environ.get('REDIS_HOST')
 REDIS_PORT = os.environ.get('REDIS_PORT')
 REDIS_SECRET_KEY = os.environ.get('REDIS_SECRET_KEY')
@@ -216,6 +248,11 @@ LOGGING = {
         },
     },
     'loggers': {
+        'bookings': {
+            'handlers': ['console', 'logfile'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'django.request': {
             'handlers': ['console', 'logfile'],
             'level': 'INFO',
@@ -224,6 +261,23 @@ LOGGING = {
     },
 }
 
+MIDDLEWARE = [
+    'core.middlewares.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'core.middlewares.SimpleLogMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+# 'django.contrib.messages.middleware.MessageMiddleware',
+if LOCAL:
+    MIDDLEWARE += ['booking_api_django_new.debug.PrintSqlQuery']
+    MIDDLEWARE += ['core.middlewares.RequestTimeMiddleware']
+
+ROOT_URLCONF = 'booking_api_django_new.urls'
 
 TEMPLATES = [
     {
@@ -242,6 +296,15 @@ TEMPLATES = [
 ]
 
 
+ASGI_APPLICATION = 'booking_api_django_new.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            'hosts': [REDIS_URL]
+        },
+    },
+}
 WSGI_APPLICATION = 'booking_api_django_new.wsgi.application'
 
 
@@ -285,6 +348,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 SWAGGER_SETTINGS = {
+    'DOC_EXPANSION': 'list',
+    'OPERATIONS_SORTER': 'method',
     'SHOW_REQUEST_HEADERS': True,
     'USE_SESSION_AUTH': False,
     'SECURITY_DEFINITIONS': {
@@ -324,3 +389,8 @@ HARDCODED_PHONE_NUMBER = (
     "+13371337133"  # hardcoded phone number for passing AppStore and PlayMarket tests
 )
 HARDCODED_SMS_CODE = 4832
+
+# Exchange Setup
+EXCHANGE_ADMIN_LOGIN = os.environ.get("EXCHANGE_ADMIN_LOGIN")
+EXCHANGE_ADMIN_PASS = os.environ.get("EXCHANGE_ADMIN_PASS")
+EXCHANGE_SERVER = os.environ.get("EXCHANGE_SERVER")

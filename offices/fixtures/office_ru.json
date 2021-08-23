@@ -3,7 +3,7 @@
     "office": {
       "title": "Тестовый БЦ",
       "description": "Бц для первичного тестирования",
-      "working_hours": "Ежедневно с 10 по 20",
+      "working_hours": "09:00-20:00",
       "service_email": "nap@liis.su"
     }
   }

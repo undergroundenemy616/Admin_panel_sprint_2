@@ -1,11 +1,10 @@
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import (ListModelMixin, Response,
-                                   status)
+from rest_framework.mixins import ListModelMixin, Response, status
 
 from core.permissions import IsAdmin
 from floors.models import Floor
-from floors.serializers import (NestedFloorSerializer, SwaggerFloorParameters)
+from floors.serializers import NestedFloorSerializer, SwaggerFloorParameters
 from offices.models import Office
 from rooms.serializers_panel import PanelFloorSerializerWithMap
 

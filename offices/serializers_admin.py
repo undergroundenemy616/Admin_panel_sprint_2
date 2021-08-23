@@ -191,7 +191,7 @@ class AdminOfficeCreateSerializer(serializers.ModelSerializer):
                                    work_interval_days=90,
                                    is_deletable=False),
                           RoomType(office=instance,
-                                   title='Meeting',
+                                   title='Meeting room',
                                    bookable=True,
                                    work_interval_hours=24,
                                    unified=True,

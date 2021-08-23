@@ -16,6 +16,9 @@ from django.core.validators import validate_email
 from django.db.models import Q, F, Func
 from django.db.transaction import atomic
 import pdfkit
+from exchangelib import CalendarItem, Account as Ac, Credentials, Configuration, DELEGATE
+from exchangelib.errors import UnauthorizedError, TransportError
+from exchangelib.items import SEND_TO_ALL_AND_SAVE_COPY
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from workalendar.europe import Russia
@@ -172,14 +175,24 @@ class AdminBookingSerializer(serializers.ModelSerializer):
                                                  validated_data['date_from'],
                                                  validated_data['date_to']):
             raise ResponseException('Table already booked for this date.')
-        return self.Meta.model.objects.create(
-            date_to=validated_data['date_to'],
-            date_from=validated_data['date_from'],
-            table=validated_data['table'],
-            user=validated_data['user'],
-            theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
-            kwargs=self.context['request'].headers.get('Language', None)
-        )
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            return self.Meta.model.objects.create(
+                date_to=validated_data['date_to'],
+                date_from=validated_data['date_from'],
+                table=validated_data['table'],
+                user=validated_data['user'],
+                theme=validated_data['theme'] if 'theme' in validated_data else "Без темы",
+                kwargs=self.context['request'].headers.get('Language', None)
+            )
+        else:
+            return self.Meta.model.objects.create(
+                date_to=validated_data['date_to'],
+                date_from=validated_data['date_from'],
+                table=validated_data['table'],
+                user=validated_data['user'],
+                theme=validated_data['theme'] if 'theme' in validated_data else "No theme",
+                kwargs=self.context['request'].headers.get('Language', None)
+            )
 
     @atomic()
     def to_representation(self, instance):
@@ -213,6 +226,7 @@ class AdminBookingCreateFastSerializer(AdminBookingSerializer):
                     date_from=date_from,
                     table=table,
                     user=validated_data['user'],
+                    theme='Без темы' if self.context['request'].headers.get('Language', None) == 'ru' else 'No theme',
                     kwargs=self.context['request'].headers.get('Language', None)
                 )
         raise serializers.ValidationError('No table found for fast booking')
@@ -597,10 +611,16 @@ class AdminBookingEmployeeStatisticsSerializer(serializers.Serializer):
         for row in list_rows:
             row['places'] = most_frequent(row['places'])
 
-        for table in sql_results:
-            for row in list_rows:
-                if table['table_id'] == row['places']:
-                    row['table'] = "Место: " + table['table_title'] + ", этаж: " + table['floor_title']
+        if self.context.headers.get('Language', None) == 'ru':
+            for table in sql_results:
+                for row in list_rows:
+                    if table['table_id'] == row['places']:
+                        row['table'] = "Место: " + table['table_title'] + ", этаж: " + table['floor_title']
+        else:
+            for table in sql_results:
+                for row in list_rows:
+                    if table['table_id'] == row['places']:
+                        row['table'] = "Place: " + table['table_title'] + ", floor: " + table['floor_title']
 
         workbook = xlsxwriter.Workbook(secure_file_name)
 
@@ -1090,20 +1110,35 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
                 contact_data = guest[guest_name]
                 try:
                     validate_email(contact_data)
-                    message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
-                              f"которая пройдёт в {attrs['room'].floor.office.title}, " \
-                              f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
-                              f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
-                              f"{datetime.strftime(message_date_to, '%H:%M')}"
-                    send_email.delay(email=contact_data, subject="Встреча", message=message)
-                except ValErr:
-                    try:
-                        contact_data = User.normalize_phone(contact_data)
+                    if self.context['request'].headers.get('Language', None) == 'ru':
                         message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
                                   f"которая пройдёт в {attrs['room'].floor.office.title}, " \
                                   f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
                                   f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
                                   f"{datetime.strftime(message_date_to, '%H:%M')}"
+                        send_email.delay(email=contact_data, subject="Встреча", message=message)
+                    else:
+                        message = f"Hello, {guest_name}. You invited to meeting, " \
+                                  f"that take place at {attrs['room'].floor.office.title}, " \
+                                  f"floor {attrs['room'].floor.title}, room {attrs['room'].title}. " \
+                                  f"Meeting date and time {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                  f"{datetime.strftime(message_date_to, '%H:%M')}"
+                        send_email.delay(email=contact_data, subject="Meeting", message=message)
+                except ValErr:
+                    try:
+                        contact_data = User.normalize_phone(contact_data)
+                        if self.context['request'].headers.get('Language', None) == 'ru':
+                            message = f"Здравствуйте, {guest_name}. Вы были приглашены на встречу, " \
+                                      f"которая пройдёт в {attrs['room'].floor.office.title}, " \
+                                      f"этаж {attrs['room'].floor.title}, кабинет {attrs['room'].title}. " \
+                                      f"Дата и время проведения {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                      f"{datetime.strftime(message_date_to, '%H:%M')}"
+                        else:
+                            message = f"Hello, {guest_name}. You invited to meeting, " \
+                                      f"that take place at {attrs['room'].floor.office.title}, " \
+                                      f"floor {attrs['room'].floor.title}, room {attrs['room'].title}. " \
+                                      f"Meeting date and time {datetime.strftime(message_date_from, '%d.%m.%Y %H:%M')}-" \
+                                      f"{datetime.strftime(message_date_to, '%H:%M')}"
                         send_sms.delay(phone_number=contact_data, message=message)
                     except ValueError:
                         raise ResponseException("Wrong format of email or phone",
@@ -1112,19 +1147,68 @@ class AdminMeetingGroupBookingSerializer(serializers.ModelSerializer):
 
     @atomic()
     def group_create_meeting(self, context):
+        guests = self.validated_data.get('guests') if self.validated_data.get('guests') else []
         group_booking = GroupBooking.objects.create(author=self.validated_data['author'],
-                                                    guests=self.validated_data.get('guests'))
+                                                    guests=guests)
 
         date_activate_until = calculate_date_activate_until(self.validated_data['date_from'],
                                                             self.validated_data['date_to'])
+        language = self.context['request'].headers.get('Language', None)
         for user in self.validated_data['users']:
             b = Booking(user=user,
                         table=self.validated_data['room'].tables.all()[0],
                         date_to=self.validated_data['date_to'],
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
-                        group_booking=group_booking)
-            b.save()
+                        group_booking=group_booking,
+                        theme='Без темы' if language == 'ru' else 'No theme')
+            b.save(kwargs=self.context['request'].headers.get('Language', None))
+        if self.validated_data['room'].exchange_email:
+            try:
+                required_attendees = [self.validated_data['room'].exchange_email]
+                for user in self.validated_data['users']:
+                    required_attendees.append(user.email if user.email else user.user.email)
+                credentials = Credentials(os.environ['EXCHANGE_ADMIN_LOGIN'], os.environ['EXCHANGE_ADMIN_PASS'])
+                config = Configuration(server=os.environ['EXCHANGE_SERVER'], credentials=credentials)
+                account_exchange = Ac(primary_smtp_address=os.environ['EXCHANGE_ADMIN_LOGIN'], config=config,
+                                      autodiscover=False, access_type=DELEGATE)
+                date_to = self.validated_data['date_to']
+                date_from = self.validated_data['date_from']
+                office = Office.objects.get(id=self.validated_data['room'].floor.office_id)
+                time_zone = pytz.timezone(office.timezone).utcoffset(datetime.now())
+                local_date_from = date_from + time_zone
+                local_date_to = date_to + time_zone
+                if self.context['request'].headers.get('Language', None) == 'ru':
+                    message_title = "Приглашение на встречу"
+                    message_body = f"Вы были приглашены на встречу, которая пройдёт в {self.validated_data['room'].title}."
+                else:
+                    message_title = "Meeting invitation"
+                    message_body = f"You have been invited to a meeting in {self.validated_data['room'].title}."
+                exchange_event = CalendarItem(
+                    account=account_exchange,
+                    folder=account_exchange.calendar,
+                    start=datetime(local_date_from.year, local_date_from.month, local_date_from.day,
+                                   local_date_from.hour, local_date_from.minute,
+                                   tzinfo=account_exchange.default_timezone),
+                    end=datetime(local_date_to.year, local_date_to.month, local_date_to.day,
+                                 local_date_to.hour, local_date_to.minute, tzinfo=account_exchange.default_timezone),
+                    subject=message_title,
+                    body=message_body,
+                    required_attendees=required_attendees,
+                    location=self.validated_data['room'].exchange_email,
+                    is_meeting=True
+                )
+                exchange_event.save(send_meeting_invitations=SEND_TO_ALL_AND_SAVE_COPY)
+            except KeyError:
+                raise ResponseException("Exchange login, password or server wasn`t provided",
+                                        status_code=status.HTTP_400_BAD_REQUEST)
+            except UnauthorizedError:
+                raise ResponseException("Wrong login or password", status_code=status.HTTP_400_BAD_REQUEST)
+            except TransportError:
+                raise ResponseException(f"Unable to connect to exchange server: {os.environ['EXCHANGE_SERVER']}",
+                                        status_code=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                raise ResponseException(f"Something went wrong \n{e}", status_code=status.HTTP_400_BAD_REQUEST)
 
         return AdminGroupBookingSerializer(instance=group_booking).data
 
@@ -1172,6 +1256,6 @@ class AdminWorkplaceGroupBookingSerializer(serializers.ModelSerializer):
                         date_from=self.validated_data['date_from'],
                         date_activate_until=date_activate_until,
                         group_booking=group_booking)
-            b.save()
+            b.save(kwargs=self.context['request'].headers.get('Language', None))
 
         return AdminGroupWorkspaceSerializer(instance=group_booking).data

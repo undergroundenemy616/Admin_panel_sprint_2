@@ -16,7 +16,8 @@ from floors.models import Floor
 from groups.models import Group
 from mail import send_html_email_message
 from offices.models import Office, OfficeZone
-from users.models import Account, AppEntrances, OfficePanelRelation, User
+from rooms.models import Room
+from users.models import Account, User, AppEntrances, OfficePanelRelation
 
 
 class SwaggerAccountParametr(serializers.Serializer):
@@ -163,6 +164,8 @@ class RegisterUserFromAPSerializer(serializers.Serializer):
                                          gender=self.data.get('gender'), last_name=self.data.get('lastname'),
                                          middle_name=self.data.get('middlename'))
         user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        if not user_group:
+            user_group = Group.objects.get(access=4, is_deletable=False, title='Guests')
         user.is_active = True
         user.save(update_fields=['is_active'])
         account.groups.add(user_group)
@@ -202,6 +205,8 @@ class RegisterStaffSerializer(serializers.ModelSerializer):
         validated_data.setdefault('is_staff', True)
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
         group = Group.objects.filter(title='Администратор', is_deletable=False).first()
+        if not group:
+            group = Group.objects.filter(title='Administrator', is_deletable=False).first()
         if not group:
             raise ValidationError('Unable to find admin group')
         email = validated_data.get('email')
@@ -373,6 +378,7 @@ class OfficePanelSerializer(serializers.Serializer):
     firstname = serializers.CharField(max_length=64)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), allow_null=True)
 
     @atomic()
     def create(self, validated_data):
@@ -411,5 +417,7 @@ class OfficePanelSerializer(serializers.Serializer):
         response = TestAccountSerializer(instance.account).data
         response['office'] = {"id": instance.office.id, "title": instance.office.title}
         response['floor'] = {"id": instance.floor.id, "title": instance.floor.title}
+        if instance.room:
+            response['room'] = {"id": instance.room.id, "title": instance.room.title}
         response['access_code'] = instance.access_code
         return response

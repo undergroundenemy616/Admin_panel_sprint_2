@@ -11,6 +11,8 @@ class PanelRegisterUserSerializer(serializers.Serializer):
         user, created = User.objects.get_or_create(phone_number=self.data['phone_number'])
         account, account_created = Account.objects.get_or_create(user=user)
         user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+        if not user_group:
+            user_group = Group.objects.get(access=4, is_deletable=False, title='Guests')
         if account_created:
             user.is_active = True
             user.save(update_fields=['is_active'])

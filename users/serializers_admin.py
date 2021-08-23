@@ -15,6 +15,7 @@ from rest_framework.exceptions import ValidationError
 
 from booking_api_django_new.base_settings import DEBUG, ADMIN_HOST, BASE_DIR
 from core.utils import get_localization
+from rooms.models import Room
 from users.tasks import send_register_email
 
 from bookings.models import Booking
@@ -45,6 +46,8 @@ class AdminOfficePanelSerializer(serializers.ModelSerializer):
             "title": instance.office_panels.floor.title
         }
         response['access_code'] = instance.office_panels.access_code
+        response['room'] = {'id': instance.office_panels.room_id,
+                            'title': instance.office_panels.room.title} if instance.office_panels.room else None
         return response
 
 
@@ -52,11 +55,14 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
     firstname = serializers.CharField(max_length=64)
     office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all())
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
 
     @atomic()
     def create(self, validated_data):
         user = User.objects.create_user(is_active=True, is_staff=True)
         group = Group.objects.filter(title='Информационная панель', is_deletable=False).first()
+        if not group:
+            group = Group.objects.filter(title='Info panel', is_deletable=False).first()
         account = Account.objects.create(user=user, first_name=validated_data.get('firstname'), account_type='kiosk')
         if group:
             account.groups.add(group)
@@ -69,6 +75,7 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
             account.groups.add(group)
         instance = OfficePanelRelation.objects.create(account=account, office=validated_data.get('office'),
                                                       floor=validated_data.get('floor'),
+                                                      room=validated_data.get('room'),
                                                       access_code=int(time.time()))
         return instance
 
@@ -79,6 +86,7 @@ class AdminOfficePanelCreateUpdateSerializer(serializers.Serializer):
         instance.save()
         office_panel.office = validated_data.get('office')
         office_panel.floor = validated_data.get('floor')
+        office_panel.room = validated_data.get('room')
         office_panel.save()
         return office_panel
 
@@ -167,6 +175,7 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         localization = get_localization(self.context['request'], 'users')
 
         user.set_password(password)
+        user.save()
 
         send_register_email.delay(email=user.email, subject=localization['greetings'],
                                   args={"username": user.email, "password": password},
@@ -174,8 +183,12 @@ class AdminUserCreateUpdateSerializer(serializers.ModelSerializer):
         instance = super(AdminUserCreateUpdateSerializer, self).create(validated_data)
         try:
             user_group = Group.objects.get(access=4, is_deletable=False, title='Посетитель')
+            if not user_group:
+                user_group = Group.objects.get(access=4, is_deletable=False, title='Guests')
         except IntegrityError:
             raise ResponseException("Problem's with groups. Contact administrator")
+        except Exception as e:
+            user_group = Group.objects.get(access=4, is_deletable=False)
         instance.groups.add(user_group)
         return instance
 
@@ -215,6 +228,7 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
 
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
+        email = validated_data.get('email')
         user = User.objects.create(is_active=True, is_staff=True, email=validated_data.pop('email'),
                                    phone_number=validated_data.pop('phone_number'))
         user.set_password(password)
@@ -224,22 +238,36 @@ class AdminCreateOperatorSerializer(serializers.ModelSerializer):
 
         group = Group.objects.filter(title='Администратор', is_deletable=False).first()
         if not group:
-            raise ValidationError(detail={"message": 'Unable to find admin group'}, code=400)
+            group = Group.objects.filter(title='Administrator', is_deletable=False).first()
+            if not group:
+                raise ValidationError(detail={"message": 'Unable to find admin group'}, code=400)
         instance.groups.add(group)
 
-        email = validated_data.get('email')
         if not ADMIN_HOST:
             raise ValidationError(detail={"message": "ADMIN_HOST not specified"}, code=400)
 
-        send_html_email_message(
-            to=email,
-            subject="Добро пожаловать в Simple-Office!",
-            template_args={
-                'host': ADMIN_HOST,
-                'username': email,
-                'password': password
-            }
-        )
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            send_html_email_message(
+                to=email,
+                subject="Добро пожаловать в Simple-Office!",
+                template_args={
+                    'host': ADMIN_HOST,
+                    'username': email,
+                    'password': password
+                },
+                language='ru'
+            )
+        else:
+            send_html_email_message(
+                to=email,
+                subject="Welcome to Simple-Office!",
+                template_args={
+                    'host': ADMIN_HOST,
+                    'username': email,
+                    'password': password
+                },
+                language='en'
+            )
         return instance
 
     def to_representation(self, instance):
@@ -257,30 +285,38 @@ class AdminPasswordResetSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         account = attrs.get('user')
-        if not account.email:
+        if not account.email and not account.user.email:
             raise ValidationError(detail="User has no email specified", code=400)
         return attrs
 
     @atomic()
     def save(self, **kwargs):
         account = Account.objects.get(pk=self.data['user'])
-        if not account.user.email:
-            account.user.email = account.email
-            subject = "Добро пожаловать в Simple-Office!"
+        if self.context['request'].headers.get('Language', None) == 'ru':
+            if not account.user.email:
+                account.user.email = account.email
+                subject = "Добро пожаловать в Simple-Office!"
+            else:
+                subject = "Ваш пароль был успешно сброшен!"
         else:
-            subject = "Ваш пароль был успешно сброшен!"
+            if not account.user.email:
+                account.user.email = account.email
+                subject = "Welcome to Simple-Office!"
+            else:
+                subject = "Your password was successfully reset"
 
         password = "".join([random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()") for _ in range(8)])
         account.user.set_password(password)
 
         send_html_email_message(
-            to=account.email,
+            to=account.user.email,
             subject=subject,
             template_args={
                 'host': os.environ.get('ADMIN_HOST'),
                 'username': account.user.email,
                 'password': password
-            }
+            },
+            language=self.context['request'].headers.get('Language', 'ru')
         )
         account.user.save()
 

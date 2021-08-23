@@ -66,6 +66,9 @@ class User(AbstractBaseUser):
 
     @classmethod
     def normalize_phone(cls, phone_number):
+        characters_to_remove = ['-', ' ', '.', '*', '(', ')', '/']
+        for character in characters_to_remove:
+            phone_number = phone_number.replace(character, '')
         if not cls.check_phone_len(phone_number):
             msg = 'Phone number must be greater or equal than 11 characters and less or equal than 16 for normalize it!'
             raise ValueError(msg)
@@ -176,6 +179,7 @@ class OfficePanelRelation(models.Model):
     office = models.ForeignKey(Office, null=False, related_name='office_panels', on_delete=models.CASCADE)
     floor = models.ForeignKey(Floor, null=False, related_name='office_panels', on_delete=models.CASCADE)
     account = models.OneToOneField(Account, null=False, related_name='office_panels', on_delete=models.CASCADE)
+    room = models.ForeignKey("rooms.Room", related_name='office_panels', null=True, on_delete=models.SET_NULL)
     access_code = models.IntegerField(unique=True, null=False)
 
 

@@ -5,10 +5,8 @@
     "fields": {
       "title": "Тестовый Бц",
       "description": "Бц для первичного тестирования",
-      "working_hours": "Ежедневно с 10 по 20",
+      "working_hours": "09:00-20:00",
       "service_email": "nap@liis.su",
-      "images": ["8e922d9c-28fa-4a49-8bbd-4ac82d730c53",
-      "8ee4ad56-125d-4309-8f73-d12ebf447455"],
       "license": "f28b1123-778a-4c89-b9e3-3999a7dc0fa5"
     }
   },

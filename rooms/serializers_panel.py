@@ -1,15 +1,68 @@
+import datetime
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from rest_framework import serializers
 
+from bookings.models import Booking
 from floors.models import Floor, FloorMap
-from floors.serializers import floor_map_serializer
+from floors.serializers import TestFloorSerializerWithMap, floor_map_serializer
 from offices.models import Office
 from rooms.serializers import TestRoomSerializer
 from tables.models import Table
 
 
+class PanelFileSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    path = serializers.CharField()
+    thumb = serializers.CharField()
+
+
+class PanelSingleTableSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    is_occupied = serializers.BooleanField()
+
+
 class PanelRoomGetSerializer(serializers.Serializer):
     floor = serializers.PrimaryKeyRelatedField(queryset=Floor.objects.all(), required=False)
+
+
+class PanelSingleRoomSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    tables = PanelSingleTableSerializer(many=True, required=False)
+    images = PanelFileSerializer(many=True, required=False)
+
+    def to_representation(self, instance):
+        response = super(PanelSingleRoomSerializer, self).to_representation(instance)
+        try:
+            date_from = datetime.datetime.strptime(self.context.get('date_from'),
+                                                   '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
+            date_to = datetime.datetime.strptime(self.context.get('date_to'),
+                                                 '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=datetime.timezone.utc)
+        except Exception as e:
+            return
+        existing_booking = Booking.objects.filter(table=instance.tables.first(), status__in=['active', 'waiting']). \
+            filter((Q(date_from__lt=date_to, date_to__gte=date_to)
+                    | Q(date_from__lte=date_from, date_to__gt=date_from)
+                    | Q(date_from__gte=date_from, date_to__lte=date_to)) & Q(date_from__lt=date_to))
+        if existing_booking:
+            response['status'] = 'occupied'
+            response['date_from'] = existing_booking[0].date_from
+            response['date_to'] = existing_booking[0].date_to
+            response['theme'] = existing_booking[0].theme
+            response['user'] = {
+                'id': existing_booking[0].user.id,
+                'phone': existing_booking[0].user.user.phone_number,
+                'firstname': existing_booking[0].user.first_name,
+                'lastname': existing_booking[0].user.last_name,
+                'middlename': existing_booking[0].user.middle_name,
+            }
+        else:
+            response['status'] = 'not occupied'
+        return response
 
 
 class PanelFloorSerializerWithMap(serializers.Serializer):

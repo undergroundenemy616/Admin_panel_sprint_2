@@ -33,4 +33,4 @@ class AdminRoomFilter(django_filters.FilterSet):
     class Meta:
         model = Room
         fields = ['office', 'floor', 'room_type', 'bookable', 'unified',
-                  'type', 'zone', 'tags', 'office_panel']
+                  'type', 'zone', 'tags', 'office_panel', 'free']

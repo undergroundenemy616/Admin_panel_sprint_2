@@ -33,7 +33,20 @@ class SuitableRoomsMobileView(GenericAPIView):
         date_from = serializer.data.get('date_from')
         date_to = serializer.data.get('date_to')
         quantity = serializer.data.get('quantity')
-        room_type_title = serializer.data.get('type')
+
+        """-------------------LOCALIZATION--------------------"""
+        predefined_room_types = RoomType.objects.filter(office_id=office,
+                                                        is_deletable=False).values('title')
+        language = 'en' if predefined_room_types[0]['title'][1] in 'abcdefghijklmnopqrstuvwxyz' else 'ru'
+        if language == 'ru':
+            query_room_type = request.query_params.get('type')
+        else:
+            if request.query_params.get('type') == 'Рабочее место':
+                query_room_type = 'Workplace'
+            else:
+                query_room_type = 'Meeting room'
+        """-------------------LOCALIZATION-----END--------------------"""
+        room_type_title = query_room_type
 
         try:
             room_type = RoomType.objects.get(title=room_type_title, office_id=office, bookable=True)
@@ -45,21 +58,13 @@ class SuitableRoomsMobileView(GenericAPIView):
         tables = Table.objects.filter(room__id__in=rooms).select_related('table_marker', 'room',
                                                                          'room__floor', 'room__zone')
 
-        bookings = Booking.objects.filter(Q(table__id__in=tables, status__in=['waiting', 'active']) &
-                                          (Q(date_from__lt=date_to, date_to__gte=date_to)
-                                           | Q(date_from__lte=date_from, date_to__gt=date_from)
-                                           | Q(date_from__gte=date_from, date_to__lte=date_to)) &
-                                          Q(date_from__lt=date_to)).values_list('table__id', flat=True)
-
-        tables = tables.exclude(id__in=bookings)
-
         response = []
 
-        if tables.count() < quantity:
+        if quantity and tables.count() < quantity:
             quantity = tables.count()
 
         for table in tables:
-            if not room_type.unified and len(response) != quantity:
+            if not room_type.unified:
                 try:
                     if table.table_marker:
                         response.append({
@@ -75,12 +80,14 @@ class SuitableRoomsMobileView(GenericAPIView):
                                 'id': str(table.id),
                                 'title': table.title,
                                 'images': MobileBaseFileSerializer(instance=table.images, many=True).data,
-                                'marker': MobileTableMarkerSerializer(instance=table.table_marker).data
+                                'marker': MobileTableMarkerSerializer(instance=table.table_marker).data,
+                                'is_available': False if Booking.objects.is_overflowed(table, date_from,
+                                                                                       date_to) else True
                             }
                         })
                 except Table.table_marker.RelatedObjectDoesNotExist:
                     pass
-            elif room_type.unified and len(response) != quantity:
+            elif room_type.unified:
                 try:
                     if table.room.room_marker:
                         response.append({
@@ -96,7 +103,9 @@ class SuitableRoomsMobileView(GenericAPIView):
                                 'id': str(table.id),
                                 'title': table.title,
                                 'images': MobileBaseFileSerializer(instance=table.images, many=True).data,
-                                'marker': MobileRoomMarkerSerializer(instance=table.room.room_marker).data
+                                'marker': MobileRoomMarkerSerializer(instance=table.room.room_marker).data,
+                                'is_available': False if Booking.objects.is_overflowed(table, date_from,
+                                                                                       date_to) else True
                             }
                         })
                 except Room.room_marker.RelatedObjectDoesNotExist:
@@ -104,7 +113,11 @@ class SuitableRoomsMobileView(GenericAPIView):
             else:
                 break
 
-        if response:
+        if response and quantity:
+            response = sorted(response, key=lambda k: k['table']['is_available'], reverse=True)
+            return Response(orjson.loads(orjson.dumps(response[:quantity])), status=status.HTTP_200_OK)
+        elif response and not quantity:
+            response = sorted(response, key=lambda k: k['table']['is_available'], reverse=True)
             return Response(orjson.loads(orjson.dumps(response)), status=status.HTTP_200_OK)
         else:
             return Response("Suitable places not found", status=status.HTTP_200_OK)
