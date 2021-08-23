@@ -30,6 +30,7 @@ SHARED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django-advanced_password_validation',
+    'channels',
 ]
 
 TENANT_APPS = [
@@ -60,6 +61,7 @@ TENANT_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django-advanced_password_validation',
+    'channels',
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]

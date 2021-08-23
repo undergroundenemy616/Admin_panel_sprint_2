@@ -331,7 +331,14 @@ def delete_task_from_db():
         job.delete()
 
 
-@shared_task()
+@celery_app.task()
+def create_bookings_from_exchange_in_all_schemas():
+    for tenant in get_tenant_model().objects.exclude(schema_name='public'):
+        with tenant_context(tenant):
+            create_bookings_from_exchange.delay()
+
+
+@celery_app.task()
 def create_bookings_from_exchange():
     logger = logging.getLogger(__name__)
     try:
@@ -431,7 +438,14 @@ def create_bookings_from_exchange():
         logger.error(msg=f"Something went wrong \n{e}")
 
 
-@shared_task()
+@celery_app.task()
+def delete_group_bookings_that_not_in_calendar_in_all_schemas():
+    for tenant in get_tenant_model().objects.exclude(schema_name='public'):
+        with tenant_context(tenant):
+            delete_group_bookings_that_not_in_calendar.delay()
+
+
+@celery_app.task()
 def delete_group_bookings_that_not_in_calendar():
     logger = logging.getLogger(__name__)
     try:
@@ -481,7 +495,7 @@ def delete_group_bookings_that_not_in_calendar():
         logger.error(msg=f"Something went wrong \n{e}")
 
 
-@shared_task()
+@celery_app.task()
 def exchange_booking_cancel(instance):
     logger = logging.getLogger(__name__)
     if instance.bookings.all()[0].table.room.exchange_email:

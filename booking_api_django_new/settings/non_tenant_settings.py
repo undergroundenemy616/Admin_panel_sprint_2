@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django-advanced_password_validation',
+    'channels',
 ]
 
 MIDDLEWARE = [

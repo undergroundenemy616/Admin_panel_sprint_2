@@ -50,11 +50,11 @@ app.conf.beat_schedule = {
 if settings.EXCHANGE_ADMIN_LOGIN and settings.EXCHANGE_ADMIN_PASS and settings.EXCHANGE_SERVER:
     app.conf.beat_schedule.update({
         'create_bookings_from_exchange': {
-            'task': 'bookings.tasks.create_bookings_from_exchange',
+            'task': 'bookings.tasks.create_bookings_from_exchange_in_all_schemas' if ALLOW_TENANT else 'bookings.tasks.create_bookings_from_exchange',
             'schedule': crontab(minute='*/1')
         },
         'delete_group_bookings_that_not_in_calendar': {
-            'task': 'bookings.tasks.delete_group_bookings_that_not_in_calendar',
+            'task': 'bookings.tasks.delete_group_bookings_that_not_in_calendar_in_all_schemas' if ALLOW_TENANT else 'bookings.tasks.delete_group_bookings_that_not_in_calendar',
             'schedule': crontab(minute='*/1')
         }
     })
