@@ -10,7 +10,6 @@ class MoviePagination(PageNumberPagination):
     max_page_size = 50
 
     def get_page_metadata(self):
-        # returns total_results, total_pages, page, per_page
         return {
             'total_results': self.page.paginator.count,
             'total_pages': self.page.paginator.num_pages,
